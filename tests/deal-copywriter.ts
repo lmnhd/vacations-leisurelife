@@ -15,6 +15,8 @@
 
 import {
   assembleDealUnifiedManifest,
+  assertSupportedPublicClaims,
+  buildDealCopywriterPrompt,
   emptyDealAdCopyCache,
   generateDealAdCopy,
   selectDealAdCopyVariant,
@@ -225,6 +227,41 @@ async function main(): Promise<void> {
   );
   check("unified id derives from the manifest", unified.id === `unified-${tripManifest.id}`);
 
+  const noPromoTripManifest: DealTripManifest = {
+    ...tripManifest,
+    id: "manifest-january-reset-no-promo",
+    appliedPromos: [],
+    promoStrategy:
+      "No promo was selected during the workbench handoff; copywriting should sell the angle without perk or savings claims.",
+  };
+  const noPromoUnified = assembleDealUnifiedManifest(angle, noPromoTripManifest, {
+    generatedAtIso: GEN_AT,
+  });
+  const noPromoPrompt = buildDealCopywriterPrompt(noPromoUnified, 2);
+  check(
+    "no-promo prompt uses the internal omit mode",
+    noPromoPrompt.includes('"promotionMode": "omit"')
+  );
+  check(
+    "no-promo prompt removes the manifest's absence prose",
+    !noPromoPrompt.includes("No promo was selected during the workbench handoff")
+  );
+  check(
+    "no-promo prompt explicitly blocks customer-facing absence claims",
+    noPromoPrompt.includes("Do not mention whether a promotion exists")
+  );
+  check(
+    "copywriter prompt limits port names and availability claims",
+    noPromoPrompt.includes("Port names prove only that the itinerary calls there") &&
+      noPromoPrompt.includes("Do not claim that inventory is open")
+  );
+  const promoPrompt = buildDealCopywriterPrompt(unified, 2);
+  check(
+    "promo-backed prompt uses apply mode and retains its qualified strategy",
+    promoPrompt.includes('"promotionMode": "apply"') &&
+      promoPrompt.includes(tripManifest.promoStrategy)
+  );
+
   // --- Copywriter ------------------------------------------------------------
   console.log("\nAd copy generation:");
   let missingPromoContextRejected = false;
@@ -242,6 +279,41 @@ async function main(): Promise<void> {
   check(
     "applicable promo without its source record fails closed",
     missingPromoContextRejected
+  );
+
+  const noPromoResult = await generateDealAdCopy({
+    unifiedManifest: noPromoUnified,
+    variantCount: 2,
+    generatedAtIso: GEN_AT,
+  });
+  check(
+    "intentional no-promo manifest generates safe copy",
+    noPromoResult.adCopy.variants.length > 0 &&
+      noPromoResult.adCopy.variants.every((variant) => variant.promoApplied === "none")
+  );
+  const noPromoPublicCopy = noPromoResult.adCopy.variants
+    .map((variant) => `${variant.headline} ${variant.bodyCopy} ${variant.pricingDisclaimers}`)
+    .join(" ")
+    .toLowerCase();
+  check(
+    "saved no-promo copy does not claim that no offer exists",
+    !noPromoPublicCopy.includes("no promotional offer") &&
+      !noPromoPublicCopy.includes("no promotion")
+  );
+  let unsupportedCertaintyRejected = false;
+  try {
+    assertSupportedPublicClaims(noPromoUnified, [
+      {
+        ...noPromoResult.adCopy.variants[0],
+        bodyCopy: "The details are verified and availability is live.",
+      },
+    ]);
+  } catch {
+    unsupportedCertaintyRejected = true;
+  }
+  check(
+    "validator rejects unsupported certainty and availability claims",
+    unsupportedCertaintyRejected
   );
 
   const { adCopy, rejectedPromoIds } = await generateDealAdCopy({
@@ -322,6 +394,19 @@ async function main(): Promise<void> {
   check("upsert replaces older copy for the same unified manifest", cache.adCopies.length === 1);
   check("upsert keeps the latest rewritten ad copy", cache.adCopies[0].id === `${adCopy.id}-rewrite`);
   check("validator accepts the ad copy cache", validateDealAdCopyCache(cache).ok);
+
+  const operatorCurated = {
+    ...adCopy,
+    id: `${adCopy.id}-operator-curated`,
+    generator: "operator_curated" as const,
+    editorialNote: "Directly curated from the approved sentiment dossier.",
+    sourceResearchPaths: ["sentiment-dossier.md"],
+    aiTrace: undefined,
+  };
+  check(
+    "validator accepts transparently operator-curated ad copy",
+    validateDealAdCopyCache({ ...cache, adCopies: [operatorCurated] }).ok
+  );
 
   const emptyVariant = {
     ...cache,

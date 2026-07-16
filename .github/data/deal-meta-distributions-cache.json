@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-04T15:21:25.529Z",
+  "generatedAtIso": "2026-07-16T17:25:59.400Z",
   "distributions": [
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
@@ -1009,6 +1009,185 @@
         "facebook_page_dispatched_at=2026-07-04T15:21:25.527Z"
       ],
       "facebookPagePostId": "1071836329342347_122120126282816807"
+    },
+    {
+      "id": "funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16",
+      "dealId": "1640418",
+      "sourceMetaAdSynthesisId": "funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16",
+      "generatedAtIso": "2026-07-16T17:25:36.159Z",
+      "mode": "organic_page_only",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1640418",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1640418",
+        "caption": "The holidays drained you & winter's barely started. 8 adults-only nights from Miami — your grown-up reset button. Book now.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "Mid-January. You Need This.",
+            "primaryText": "The holidays drained you & winter's barely started. 8 adults-only nights from Miami — your grown-up reset button. Book now.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640418/meta-ad-synthesis/funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16/card0-1784221157569.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "Western Caribbean, 5 Ports, 0 Kids",
+            "primaryText": "Costa Maya, Roatán, Belize City, Cozumel & Bimini in 8 nights on Resilient Lady. Jan 16, 2027. Adults only. Lock it in.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640418/meta-ad-synthesis/funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16/card1-1784221154002.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "No Kids. No Buffets. No Upcharges.",
+            "primaryText": "Every restaurant included on Resilient Lady. Bring your partner, your crew, or just yourself. 8 nights of eating like it matters.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640418/meta-ad-synthesis/funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16/card2-1784221149395.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "Put Jan 16 on the Calendar",
+            "primaryText": "Stop doomscrolling through winter. Resilient Lady sails from Miami in 8 nights of pure grown-up energy. See the full itinerary.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640418/meta-ad-synthesis/funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16/card3-1784221147648.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "resilient lady",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "grown-up winter break",
+            "Travel + Leisure",
+            "Conde Nast Traveler",
+            "All-inclusive resort",
+            "FineDiningLovers",
+            "Travel Agents and Booking",
+            "Adventure travel",
+            "Travel content and inspiration"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003121064322",
+              "name": "Travel + Leisure",
+              "sourceQuery": "Travel + Leisure",
+              "audienceSizeLowerBound": 92425749,
+              "audienceSizeUpperBound": 108692681
+            },
+            {
+              "id": "6003070150915",
+              "name": "Condé Nast Traveler",
+              "sourceQuery": "Conde Nast Traveler",
+              "resolvedQuery": "nast traveler",
+              "audienceSizeLowerBound": 6108911,
+              "audienceSizeUpperBound": 7184080
+            },
+            {
+              "id": "6003491086831",
+              "name": "All-inclusive resort",
+              "sourceQuery": "All-inclusive resort",
+              "audienceSizeLowerBound": 7637202,
+              "audienceSizeUpperBound": 8981350
+            },
+            {
+              "id": "6011956651362",
+              "name": "FineDiningLovers",
+              "sourceQuery": "FineDiningLovers",
+              "audienceSizeLowerBound": 459209,
+              "audienceSizeUpperBound": 540030
+            },
+            {
+              "id": "6777460559594",
+              "name": "Travel Agents and Booking",
+              "sourceQuery": "Travel Agents and Booking",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            },
+            {
+              "id": "6002868021822",
+              "name": "Adventure travel",
+              "sourceQuery": "Adventure travel",
+              "audienceSizeLowerBound": 275203844,
+              "audienceSizeUpperBound": 323639721
+            },
+            {
+              "id": "6790608003312",
+              "name": "Travel content and inspiration",
+              "sourceQuery": "Travel content and inspiration",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            }
+          ],
+          "unresolvedQueries": [
+            "resilient lady",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "grown-up winter break"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "targeting_automation": {
+              "advantage_audience": 1,
+              "individual_setting": {
+                "age": 1
+              }
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003121064322",
+                    "name": "Travel + Leisure"
+                  },
+                  {
+                    "id": "6003070150915",
+                    "name": "Condé Nast Traveler"
+                  },
+                  {
+                    "id": "6003491086831",
+                    "name": "All-inclusive resort"
+                  },
+                  {
+                    "id": "6011956651362",
+                    "name": "FineDiningLovers"
+                  },
+                  {
+                    "id": "6777460559594",
+                    "name": "Travel Agents and Booking"
+                  },
+                  {
+                    "id": "6002868021822",
+                    "name": "Adventure travel"
+                  },
+                  {
+                    "id": "6790608003312",
+                    "name": "Travel content and inspiration"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (22): Travel + Leisure, Conde Nast Traveler, All-inclusive resort, FineDiningLovers, Travel Agents and Booking, Adventure travel, Travel content and inspiration, Travel attractions and activities, Cruises, Caribbean, Virgin Voyages, Resilient Lady, Miami, Florida, United States, Costa Maya, Mexico, Roatan, Honduras, Belize City, Belize, Cozumel, Mexico, The Beach Club At Bimini, Bahamas, luxury goods, lifestyle, women, relationships"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1640418 — Your 8-Night January Reset",
+        "adSetName": "[DRAFT] Deal 1640418 Audience",
+        "creativeName": "deal-1640418-funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16-carousel",
+        "adName": "deal-1640418-funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16"
+      },
+      "notes": [
+        "facebook_page_id=1071836329342347",
+        "facebook_page_post_id=1071836329342347_122121512612816807",
+        "facebook_page_published=true",
+        "facebook_page_media_type=multi_image",
+        "facebook_page_card_count=4",
+        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1640418",
+        "facebook_page_dispatched_at=2026-07-16T17:25:59.398Z"
+      ],
+      "facebookPagePostId": "1071836329342347_122121512612816807"
     }
   ]
 }

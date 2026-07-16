@@ -731,8 +731,13 @@ check(
   noPromoAdCardsPage?.adCards?.eyebrow
 );
 check(
-  "no real promo -> eyebrow uses customer-facing ad-copy framing",
-  noPromoAdCardsPage?.adCards?.eyebrow === "From the ad",
+  "no real promo -> eyebrow uses guest-facing trip framing",
+  noPromoAdCardsPage?.adCards?.eyebrow === "Why this trip",
+  noPromoAdCardsPage?.adCards?.eyebrow
+);
+check(
+  "no real promo -> eyebrow never mentions advertising",
+  !/\bad\b/i.test(noPromoAdCardsPage?.adCards?.eyebrow ?? ""),
   noPromoAdCardsPage?.adCards?.eyebrow
 );
 check(

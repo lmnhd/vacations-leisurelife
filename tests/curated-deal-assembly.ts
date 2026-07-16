@@ -14,12 +14,15 @@ import {
   approveCuratedDeal,
   assembleCuratedDeal,
   assembleCuratedDealFromManifest,
+  buildDealBriefId,
+  buildTripManifestId,
   defaultDealExpiresOnIso,
   evaluateApprovalGates,
   hasDealSailed,
   isDealExpired,
   isDealHomepageEligible,
   rejectCuratedDeal,
+  resolveInitialCabinPricing,
   runDealCampaignStage,
   validateCuratedDealsCache,
   type AssembleCuratedDealInput,
@@ -51,6 +54,18 @@ function allText(value: unknown): string {
 
 const GEN_AT = "2026-06-09T00:00:00.000Z";
 
+console.log("Canonical Deal IDs:");
+check(
+  "trip manifest id leads with the package id",
+  buildTripManifestId("1640418", "Your 8-Night January Reset") ===
+    "manifest-1640418-your-8-night-january-reset"
+);
+check(
+  "brief id leads with the package id",
+  buildDealBriefId("1640418", "Your 8-Night January Reset") ===
+    "brief-1640418-your-8-night-january-reset"
+);
+
 const baseInput: AssembleCuratedDealInput = {
   dealId: "deal-test-southern-caribbean",
   briefId: "brief-test-warm-escape",
@@ -65,7 +80,7 @@ const baseInput: AssembleCuratedDealInput = {
     sailDateIso: "2026-11-08",
     departurePort: "Fort Lauderdale",
     portsOfCall: ["Perfect Day at CocoCay", "Aruba", "Curacao"],
-    cabinPrices: { currencyCode: "USD" },
+    cabinPrices: { inside: 699, currencyCode: "USD" },
     promoSignals: ["Caribbean"],
   },
   generatedAtIso: GEN_AT,
@@ -218,6 +233,47 @@ const manifestAssemblyAdCopy: DealAdCopy = {
 
 async function main(): Promise<void> {
 console.log("Phase 9 / 9A - Curated Deal assembly + approval gate\n");
+
+console.log("Booking-link cabin pricing hydration:");
+let bookingPageReads = 0;
+const hydratedPricing = await resolveInitialCabinPricing(
+  { currencyCode: "USD" },
+  "https://bookings.cbagenttools.com/swift/cruise/package/1640418?siid=1049337&lang=1",
+  async () => {
+    bookingPageReads += 1;
+    return {
+      ok: true,
+      prices: { inside: 899, balcony: 1299, currencyCode: "USD" },
+    };
+  }
+);
+check("missing pricing is hydrated from the acquired booking URL", hydratedPricing.status === "hydrated");
+check("hydrated pricing carries live cabin tiers", hydratedPricing.pricing?.balcony === 1299);
+check("booking page is read once when pricing is missing", bookingPageReads === 1);
+
+const retainedPricing = await resolveInitialCabinPricing(
+  { inside: 699, currencyCode: "USD" },
+  "https://bookings.cbagenttools.com/swift/cruise/package/1640418?siid=1049337&lang=1",
+  async () => {
+    bookingPageReads += 1;
+    return { ok: false, failureReason: "should not be called" };
+  }
+);
+check("existing cabin pricing bypasses the booking-page scrape", retainedPricing.status === "already_present");
+check("existing cabin pricing remains unchanged", retainedPricing.pricing?.inside === 699);
+check("existing pricing does not trigger another booking-page read", bookingPageReads === 1);
+
+const unresolvedPricing = await resolveInitialCabinPricing(
+  { currencyCode: "USD" },
+  "https://bookings.cbagenttools.com/swift/cruise/package/1640418?siid=1049337&lang=1",
+  async () => ({ ok: false, failureReason: "Every cabin tier showed a dash." })
+);
+check("handoff can identify a pricing-unavailable booking link", unresolvedPricing.status === "unavailable");
+
+const missingPricingGate = evaluateApprovalGates({
+  cruiseFacts: { ...baseInput.cruiseFacts, cabinPrices: { currencyCode: "USD" } },
+}).find((gate) => gate.id === "cabin_pricing");
+check("missing cabin pricing is a blocking approval failure", missingPricingGate?.blocking === true && !missingPricingGate.passed);
 
 // --- Assembly produces a non-publishable needs_review Deal ---------------------
 const deal = await assembleCuratedDeal({ ...baseInput, promoRecords: [promoRecord] });

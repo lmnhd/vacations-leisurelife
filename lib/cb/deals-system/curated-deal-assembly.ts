@@ -235,6 +235,12 @@ export function evaluateApprovalGates(
     textOnly ||
     media?.readiness === "ready" ||
     media?.readiness === "waived_text_only";
+  const cabinPricingReady = [
+    deal.cruiseFacts?.cabinPrices.inside,
+    deal.cruiseFacts?.cabinPrices.outside,
+    deal.cruiseFacts?.cabinPrices.balcony,
+    deal.cruiseFacts?.cabinPrices.suite,
+  ].some((value) => typeof value === "number" && value > 0);
 
   return [
     {
@@ -251,6 +257,15 @@ export function evaluateApprovalGates(
       label: "Link health is valid",
       passed: deal.linkHealth?.status === "valid",
       detail: `Link health is "${deal.linkHealth?.status ?? "unknown"}". Run operator browser validation to reach "valid".`,
+      blocking: true,
+    },
+    {
+      id: "cabin_pricing",
+      label: "Cabin pricing resolved",
+      passed: cabinPricingReady,
+      detail: cabinPricingReady
+        ? "At least one numeric cabin-tier fare is available."
+        : "No cabin-tier fares are available. Re-read the acquired booking URL before approval.",
       blocking: true,
     },
     {

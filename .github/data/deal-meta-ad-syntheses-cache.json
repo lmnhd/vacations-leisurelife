@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T20:42:21.128Z",
+  "generatedAtIso": "2026-07-16T16:59:19.195Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
@@ -271,6 +271,60 @@
           "previousImages": []
         }
       ]
+    },
+    {
+      "generatedAtIso": "2026-07-16T16:57:40.174Z",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "sourceFunnelSynthesisId": "funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16",
+      "cards": [
+        {
+          "headline": "Mid-January. You Need This.",
+          "cardIndex": 0,
+          "primaryText": "The holidays drained you & winter's barely started. 8 adults-only nights from Miami — your grown-up reset button. Book now.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640418/meta-ad-synthesis/funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16/card0-1784221157569.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nMid-January. You Need This.\nThe holidays drained you & winter's barely started. 8 adults-only nights from Miami — your grown-up reset button. Book now.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-07-16T16:59:17.569Z",
+          "previousImages": []
+        },
+        {
+          "primaryText": "Costa Maya, Roatán, Belize City, Cozumel & Bimini in 8 nights on Resilient Lady. Jan 16, 2027. Adults only. Lock it in.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640418/meta-ad-synthesis/funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16/card1-1784221154002.png",
+          "generatedAtIso": "2026-07-16T16:59:14.002Z",
+          "generator": "gpt_image_2",
+          "headline": "Western Caribbean, 5 Ports, 0 Kids",
+          "previousImages": [],
+          "cardIndex": 1,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nWestern Caribbean, 5 Ports, 0 Kids\nCosta Maya, Roatán, Belize City, Cozumel & Bimini in 8 nights on Resilient Lady. Jan 16, 2027. Adults only. Lock it in.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        },
+        {
+          "primaryText": "Every restaurant included on Resilient Lady. Bring your partner, your crew, or just yourself. 8 nights of eating like it matters.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640418/meta-ad-synthesis/funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16/card2-1784221149395.png",
+          "generatedAtIso": "2026-07-16T16:59:09.395Z",
+          "generator": "gpt_image_2",
+          "headline": "No Kids. No Buffets. No Upcharges.",
+          "previousImages": [],
+          "cardIndex": 2,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nNo Kids. No Buffets. No Upcharges.\nEvery restaurant included on Resilient Lady. Bring your partner, your crew, or just yourself. 8 nights of eating like it matters.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        },
+        {
+          "primaryText": "Stop doomscrolling through winter. Resilient Lady sails from Miami in 8 nights of pure grown-up energy. See the full itinerary.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640418/meta-ad-synthesis/funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16/card3-1784221147648.png",
+          "generatedAtIso": "2026-07-16T16:59:07.648Z",
+          "generator": "gpt_image_2",
+          "headline": "Put Jan 16 on the Calendar",
+          "previousImages": [],
+          "cardIndex": 3,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nPut Jan 16 on the Calendar\nStop doomscrolling through winter. Resilient Lady sails from Miami in 8 nights of pure grown-up energy. See the full itinerary.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        }
+      ],
+      "sailingAngleTitle": "Your 8-Night January Reset",
+      "id": "funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16",
+      "dealId": "1640418"
     }
   ]
 }

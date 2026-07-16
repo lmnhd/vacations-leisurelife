@@ -128,6 +128,11 @@ function AdCopyCard({
           <p className="mt-0.5 text-[11px] text-slate-400">{adCopy.targetAudienceTag}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {adCopy.generator === "operator_curated" && (
+            <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100">
+              operator curated
+            </span>
+          )}
           {justWritten && (
             <span className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200">
               just written
@@ -156,6 +161,12 @@ function AdCopyCard({
           <span className="text-slate-500">(defaulting to the primary — pick one to lock it in)</span>
         )}
       </p>
+
+      {adCopy.editorialNote && (
+        <p className="mt-2 rounded-lg border border-amber-300/20 bg-amber-400/5 px-3 py-2 text-[11px] leading-5 text-amber-100/80">
+          {adCopy.editorialNote}
+        </p>
+      )}
 
       <div className="mt-3 space-y-3">
         {adCopy.variants.map((v, i) => (

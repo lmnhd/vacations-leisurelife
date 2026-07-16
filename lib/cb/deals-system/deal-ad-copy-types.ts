@@ -37,7 +37,8 @@ export interface DealAdCopy {
   /** Slug; idempotency key in the cache. */
   id: string;
   generatedAtIso: string;
-  generator: "gpt";
+  /** AI-generated or directly curated by an operator/agent from approved research. */
+  generator: "gpt" | "operator_curated";
   sourceUnifiedManifestId: string;
   campaignName: string;
   targetAudienceTag: string;
@@ -50,6 +51,10 @@ export interface DealAdCopy {
    * the headline/hero so the published deal page uses the operator's pick.
    */
   selectedVariantIndex?: number;
+  /** Why direct editorial judgment replaced or refined model output. */
+  editorialNote?: string;
+  /** Research artifacts used during direct curation. */
+  sourceResearchPaths?: string[];
   aiTrace?: DealAiGenerationTrace;
 }
 

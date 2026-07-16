@@ -4,7 +4,7 @@
  * Asserts that:
  *  - empty cache factories validate
  *  - the four on-disk cache files load and validate
- *  - the hand-authored sample Curated Deal does NOT publish (publishing gate)
+ *  - any optional hand-authored sample Curated Deal does NOT publish
  *  - the hand-authored sample Link Broker record validates
  *  - malformed payloads are rejected (negative cases)
  *
@@ -78,19 +78,26 @@ check("cb-link-broker-cache.json validates", brokerResult.ok, brokerResult.error
 const callbackResult = validateCallbackRequestsCache(readJson(DEALS_CACHE_PATHS.callbackRequests));
 check("deal-callback-requests-cache.json validates", callbackResult.ok, callbackResult.errors.join("; "));
 
-// 3. Sample Curated Deal must NOT publish (status !== bookable / link not valid).
+// 3. The local cache may legitimately be empty. If the optional hand-authored
+// sample is present, it must remain non-publishable; all on-disk records must
+// also satisfy the link-health publishing invariant.
 console.log("\nPublishing gate (no public Deal without a valid booking path):");
 const sampleDeal = dealsResult.value?.deals.find(
   (d) => d.id === "sample-deal-bahamas-not-published"
 );
-check("sample Curated Deal exists", Boolean(sampleDeal));
 check(
-  "sample Curated Deal does not publish (status is not bookable)",
-  sampleDeal?.status !== "bookable"
+  "optional sample Curated Deal does not publish",
+  !sampleDeal || sampleDeal.status !== "bookable"
 );
 check(
-  "sample Curated Deal link health is not valid",
-  sampleDeal?.linkHealth.status !== "valid"
+  "optional sample Curated Deal link health is not valid",
+  !sampleDeal || sampleDeal.linkHealth.status !== "valid"
+);
+check(
+  "on-disk Deals never combine bookable status with an invalid link",
+  (dealsResult.value?.deals ?? []).every(
+    (deal) => deal.status !== "bookable" || deal.linkHealth.status === "valid"
+  )
 );
 
 // 4. Sample Link Broker record validates and is a non-portal-generated class.

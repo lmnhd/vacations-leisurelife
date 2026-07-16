@@ -29,6 +29,14 @@ import type { DealUnifiedManifest } from "./deal-unified-manifest-types";
 const COPYWRITER_MODEL = ModelName.CLAUDE_4_OPUS;
 const COPYWRITER_TIMEOUT_MS = Number(process.env.DEAL_COPYWRITER_TIMEOUT_MS ?? "150000");
 
+type CopywriterPromotionMode = "apply" | "omit";
+
+const OMIT_PROMOTION_DIRECTION =
+  "Use only verified sailing, itinerary, audience, and angle facts. Omit promotional, discount, savings, onboard-credit, perk, and fare-inclusion language. Do not mention whether a promotion exists.";
+
+const FACTUAL_BOUNDARY_DIRECTION =
+  "Port names prove only that the itinerary calls there. Do not add port activities, attractions, access, or venue ownership. Do not calculate country or port counts. Do not claim that inventory is open, availability is live, details are verified, or facts are guaranteed. Use plain ASCII punctuation and supplied place-name spellings.";
+
 /** TEST SEAM (see deal-discovery-generator for the rationale). */
 type StructuredObjectFn = typeof generateStructuredObject;
 let structuredObjectFn: StructuredObjectFn = generateStructuredObject;
@@ -134,18 +142,33 @@ const SYSTEM_PROMPT = `You are an elite, direct-response direct-to-consumer (DTC
 3. NO MASS-GROUP OR ISOLATED TRAVELER TRAPS: Pitch this as a self-contained retail vacation for an individual, a couple, or a single household. Do not use terms like "group cruise," "organized meetups," "clubs," or "mass gatherings." Never alienate travelers who may want to bring a spouse or partner, but keep the core focus on the personal passion.
 4. BANNED TRAVEL-AGENT PLATITUDES: You are strictly forbidden from using generic industry buzzwords. Ban these words completely: "paradise", "escape", "unwind", "cruising", "hidden gem", "luxury for less", "magnificent", "breathtaking".
 5. INTEGRATE THE PROMO LEGALLY & LIFESTYLE-WISE:
-   - If promotionBriefs contains an applicable promotion, the primary variant MUST use it. "none" is forbidden for the primary variant in that case.
+   - Read promotionMode before writing. It is an internal control, never customer-facing copy.
+   - If promotionMode is "apply", promotionBriefs contains an applicable promotion and the primary variant MUST use it. "none" is forbidden for the primary variant in that case.
+   - If promotionMode is "omit", the absence of an attached promotion is unknown public information. Omit all promotion, discount, savings, onboard-credit, perk, and fare-inclusion language. Never tell the customer that no promotion or offer exists.
    - Use the supplied public claims and qualifiers. Never claim that no promotion or onboard credit applies when a promotion brief is present.
    - Translate generic incentives into the subculture's lifestyle (e.g., reframe Onboard Credit as a specific lifestyle subsidy matching their props/hobbies).
    - Append mandatory, clear-cut discretionary disclaimers at the bottom of the body copy regarding select sailings, stateroom dependencies, and live lookup availability to protect the platform.
+6. FACTS-ONLY CLAIMS:
+   - Treat the supplied JSON as the complete factual boundary. Do not add cruise-line facts, fare inclusions, exclusive-access claims, weather, temperatures, crowd conditions, or onboard policies that are absent from the input.
+   - A port name proves only that the itinerary calls there. Do not add excursions, attractions, scenery, geography, activities, access claims, or venue ownership unless the input explicitly supplies them.
+   - Do not calculate or summarize country counts or port counts. List the supplied itinerary names when the route matters.
+   - Do not claim that inventory is open, availability is live, details are verified, an offer has no exceptions, or customer-facing facts are guaranteed. The CTA may ask the visitor to check live pricing and availability.
+   - Never state or imply that gratuities, service charges, or tips are included unless an attached promotion brief explicitly authorizes that exact public claim.
+   - Never call the cruise all-inclusive or claim that every restaurant or every dinner is included unless an attached promotion brief explicitly authorizes that exact public claim.
+   - Do not invent precise commute temperatures, traveler circumstances, or negative stereotypes about families or children.
+   - When pricing is absent, use a concrete CTA to check live cabin pricing without implying a current fare, savings level, or availability.
+   - Use plain ASCII punctuation only. Do not use arrow symbols, decorative bullets, curly quotes, em dashes, en dashes, or accented rewrites of supplied place names.
 
 ### VARIANTS:
-Produce a primary retail play on the strongest applicable promo, plus an aspirational upsell variant for each additional applicable promo tier when one fits. Tag each variant with the exact promo id it leans on (use "none" only if a variant features no promo). Only reference promo ids present in the inventory manifest's appliedPromos.
+When promotionMode is "apply", produce a primary retail play on the strongest applicable promo, plus an aspirational upsell variant for each additional applicable promo tier when one fits. When promotionMode is "omit", produce angle-preserving, non-promotional variants using different verified facets of the same hook, such as itinerary, season, pacing, or audience fit. Tag non-promotional variants with "none". Only reference promo ids present in the inventory manifest's appliedPromos.
 
 ### OUTPUT FORMAT:
 Return a single valid JSON object: campaignName, targetAudienceTag, primaryPromoApplied, and a variants array. Each variant: promoApplied, variantLabel, headline, bodyCopy, pricingDisclaimers, callToAction, adPlatformTargetingHooks {demographicTargeting, interestKeywords}. No prose outside the JSON.`;
 
-function buildPrompt(unified: DealUnifiedManifest, variantCount: number): string {
+export function buildDealCopywriterPrompt(
+  unified: DealUnifiedManifest,
+  variantCount: number
+): string {
   const brief = {
     isolatedNiche: unified.creativeBrief.isolatedNiche,
     researchRationale: unified.creativeBrief.researchRationale,
@@ -154,6 +177,10 @@ function buildPrompt(unified: DealUnifiedManifest, variantCount: number): string
     ...unified.creativeBrief.angle,
   };
   const inventory = unified.inventoryManifest;
+  const promotionMode: CopywriterPromotionMode =
+    inventory.promotionBriefs.length > 0 ? "apply" : "omit";
+  const promoStrategy =
+    promotionMode === "apply" ? inventory.promoStrategy : OMIT_PROMOTION_DIRECTION;
   return `{{CREATIVE_BRIEF_JSON}}:
 ${JSON.stringify(brief, null, 2)}
 
@@ -164,7 +191,9 @@ ${JSON.stringify(
       lookupQuery: inventory.lookupQuery,
       appliedPromos: inventory.appliedPromos,
       promotionBriefs: inventory.promotionBriefs,
-      promoStrategy: inventory.promoStrategy,
+      promotionMode,
+      promoStrategy,
+      factualBoundary: FACTUAL_BOUNDARY_DIRECTION,
       manifestReasoning: inventory.manifestReasoning,
     },
     null,
@@ -172,6 +201,113 @@ ${JSON.stringify(
   )}
 
 Produce up to ${variantCount} ad variant(s): a primary retail play plus aspirational upsell(s) where an additional applicable promo tier fits. Expand the brief's exact hook — do not change the angle.`;
+}
+
+export function assertSupportedPublicClaims(
+  unified: DealUnifiedManifest,
+  variants: DealAdVariant[]
+): void {
+  const promotionSupport = unified.inventoryManifest.promotionBriefs
+    .flatMap((promo) => [
+      ...promo.publicClaimsAllowed,
+      ...promo.publicClaimsNeedsQualifier,
+      promo.visitorFriendlySummary,
+    ])
+    .join(" ")
+    .toLowerCase();
+  const publicCopy = variants
+    .map((variant) => `${variant.headline} ${variant.bodyCopy} ${variant.pricingDisclaimers}`)
+    .join(" ")
+    .toLowerCase();
+
+  const nonAsciiCharacter = Array.from(publicCopy).find(
+    (character) => (character.codePointAt(0) ?? 0) > 127
+  );
+  if (nonAsciiCharacter) {
+    throw new Error(
+      "The copywriter returned non-ASCII customer-facing punctuation or place-name rewrites. No ad copy was saved."
+    );
+  }
+
+  const unverifiedNoPromoPhrases = [
+    "no promotion",
+    "no promotional",
+    "no special offer",
+    "no special promotion",
+    "no offer is currently",
+    "no promotional offer is currently",
+  ];
+  if (unverifiedNoPromoPhrases.some((phrase) => publicCopy.includes(phrase))) {
+    throw new Error(
+      "The copywriter treated missing attached promo context as proof that no promotion exists. No ad copy was saved."
+    );
+  }
+
+  const unsupportedRules = [
+    {
+      label: "included gratuities or tips",
+      phrases: [
+        "gratuities included",
+        "gratuities are included",
+        "tips included",
+        "tips are included",
+        "tips folded in",
+        "no tipping math",
+      ],
+      supportTerms: ["gratuities included", "tips included"],
+    },
+    {
+      label: "all-inclusive positioning",
+      phrases: ["all-inclusive", "all inclusive"],
+      supportTerms: ["all-inclusive", "all inclusive"],
+    },
+    {
+      label: "absolute dining inclusions",
+      phrases: [
+        "every restaurant included",
+        "all restaurants included",
+        "every dinner included",
+        "all dining included",
+      ],
+      supportTerms: [
+        "every restaurant included",
+        "all restaurants included",
+        "every dinner included",
+        "all dining included",
+      ],
+    },
+    {
+      label: "unverified inventory, access, or certainty claims",
+      phrases: [
+        "private beach club",
+        "inventory is still open",
+        "availability is live",
+        "details are verified",
+        "confirmed details",
+        "every detail here holds up",
+        "every passenger is an adult",
+        "every sailing, every ship",
+        "adults only across every sailing",
+        "every deck, every restaurant, every lounge",
+        "six calls",
+        "no kids' pool",
+        "no watered-down programming",
+        "no exceptions",
+        "no bait-and-switch",
+      ],
+      supportTerms: [],
+    },
+  ];
+
+  for (const rule of unsupportedRules) {
+    const copyMakesClaim = rule.phrases.some((phrase) => publicCopy.includes(phrase));
+    const sourceSupportsClaim = rule.supportTerms.some((term) => promotionSupport.includes(term));
+    if (copyMakesClaim && !sourceSupportsClaim) {
+      throw new Error(
+        `The copywriter added unsupported ${rule.label}. No ad copy was saved.`
+      );
+    }
+  }
 }
 
 export interface GenerateDealAdCopyOptions {
@@ -207,7 +343,7 @@ export async function generateDealAdCopy(
     );
   }
 
-  const prompt = buildPrompt(unifiedManifest, variantCount);
+  const prompt = buildDealCopywriterPrompt(unifiedManifest, variantCount);
   const startedAt = Date.now();
   const result = await structuredObjectFn({
     model: COPYWRITER_MODEL,
@@ -255,6 +391,8 @@ export async function generateDealAdCopy(
     ? result.object.primaryPromoApplied
     : variants[0]?.promoApplied ?? "none";
 
+  assertSupportedPublicClaims(unifiedManifest, variants);
+
   if (
     promotionBriefs.length > 0 &&
     (primaryPromoApplied === "none" || variants[0]?.promoApplied === "none")
@@ -264,13 +402,7 @@ export async function generateDealAdCopy(
     );
   }
 
-  const falseNoPromoPhrases = [
-    "no promotion",
-    "no promotional",
-    "no onboard credit",
-    "no special offer",
-    "no special promotion",
-  ];
+  const falseNoPromoPhrases = ["no onboard credit"];
   if (
     promotionBriefs.length > 0 &&
     variants.some((variant) => {

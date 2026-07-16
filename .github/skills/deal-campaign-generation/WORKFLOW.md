@@ -103,6 +103,15 @@ Reference: `.github/DOCS/Implementation/DEALS_STRATEGY/HOME_PAGE_DEALS/6-10-26/T
 
 All paths continue here. Do not make the operator redo earlier stages when an agent or human has already supplied enough trustworthy inputs to create the shared manifest.
 
+### Shared Cabin-Pricing Handoff Gate
+
+Before Copywriter receives the manifest:
+
+1. Preserve numeric cabin-tier pricing already returned with the resolved package.
+2. If pricing is missing, read the already-acquired booking URL with the shared booking-page pricing extractor and hydrate the Deal and manifest from that result.
+3. If neither source exposes a numeric cabin-tier fare, block the handoff. Do not publish a cabinless page and do not invent, estimate, or borrow a fare from another sailing.
+4. This is initial resolution, not the later pricing-drift workflow. Once public pricing exists, subsequent changes still require operator review before applying.
+
 ### Phase C1: Write Promo-Aware Ad Copy
 
 1. Assemble the unified manifest from the selected creative angle and inventory manifest.

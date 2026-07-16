@@ -7,6 +7,7 @@
  * appends a bounded human-readable slug for operator legibility:
  *
  *   dealId               1543052                      (= Odysseus packageId, verbatim)
+ *   deal brief           brief-1543052-{slug}
  *   trip manifest        manifest-1543052-{slug}
  *   unified manifest     unified-manifest-1543052-{slug}   (unified- + manifest id)
  *   ad copy              adcopy-1543052-{slug}
@@ -58,6 +59,11 @@ function composeId(prefix: string, dealId: string, title: string): string {
 /** Trip manifest id: `manifest-{dealId}-{slug(title)}`. */
 export function buildTripManifestId(dealId: string, sailingAngleTitle: string): string {
   return composeId("manifest", dealId, sailingAngleTitle);
+}
+
+/** Deal brief id: `brief-{dealId}-{slug(title)}`. */
+export function buildDealBriefId(dealId: string, title: string): string {
+  return composeId("brief", dealId, title);
 }
 
 /** Unified manifest id: `unified-{tripManifestId}`. */

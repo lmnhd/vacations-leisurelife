@@ -61,6 +61,8 @@ import type {
   DealsSystemCuratedDealSummary,
   DealsSystemStageReviewSummary,
 } from "@/lib/cb/deals-system/dashboard-data";
+import { buildDealBriefId } from "@/lib/cb/deals-system/deal-ids";
+import type { DealItineraryDay } from "@/lib/cb/deals-system/deal-trip-manifest-types";
 import {
   assessPromoHandoff,
   type PromoHandoffAssessment,
@@ -361,14 +363,14 @@ function labelMatches(label: string, options: string[]): boolean {
 }
 
 function buildSuggestedDealId(cruiseLine: string, title: string, packageId: string): string {
+  if (packageId.trim()) return packageId.trim();
   const lineSlug = slugifyText(cruiseLine);
   const titleSlug = slugifyText(title);
-  const parts = ["deal", lineSlug || "cruise", titleSlug || "sailing"];
-  if (packageId) parts.push(packageId);
-  return parts.filter(Boolean).join("-");
+  return ["deal", lineSlug || "cruise", titleSlug || "sailing"].filter(Boolean).join("-");
 }
 
-function buildSuggestedBriefId(title: string, shipName: string): string {
+function buildSuggestedBriefId(packageId: string, title: string, shipName: string): string {
+  if (packageId.trim()) return buildDealBriefId(packageId, title || shipName);
   const titleSlug = slugifyText(title);
   const shipSlug = slugifyText(shipName);
   return ["brief", titleSlug || shipSlug || "curated-cruise"].filter(Boolean).join("-");
@@ -521,6 +523,7 @@ export function DealCampaignWorkbench({
     currencyCode: string;
     leadFare?: number;
   }>({ currencyCode: "USD" });
+  const [dayByDayItinerary, setDayByDayItinerary] = useState<DealItineraryDay[]>([]);
   const [bookingUrl, setBookingUrl] = useState("");
   const [assemblySelectedPromos, setAssemblySelectedPromos] = useState<string[]>([]);
   const [selectedDealPromos, setSelectedDealPromos] = useState<string[]>(
@@ -794,6 +797,7 @@ export function DealCampaignWorkbench({
           sailDateIso: sailDate,
           departurePort,
           portsOfCall: ports.split(",").map((p) => p.trim()).filter(Boolean),
+          dayByDayItinerary,
           cabinPrices,
         },
       },
@@ -850,13 +854,14 @@ export function DealCampaignWorkbench({
     if (parsed.departurePort) setDeparturePort(parsed.departurePort);
     if (parsed.ports) setPorts(parsed.ports);
     if (parsed.bookingUrl) setBookingUrl(parsed.bookingUrl);
+    setDayByDayItinerary([]);
 
     const nextCruiseLine = parsed.cruiseLine || cruiseLine;
     const nextTitle = parsed.title || title;
     const nextShipName = parsed.shipName || shipName;
     const nextPackageId = parsed.packageId || packageId;
     setDealId(buildSuggestedDealId(nextCruiseLine, nextTitle, nextPackageId));
-    setBriefId(buildSuggestedBriefId(nextTitle, nextShipName));
+    setBriefId(buildSuggestedBriefId(nextPackageId, nextTitle, nextShipName));
 
     const promoMatches = findPromoMatches(
       promoOptions,
@@ -923,6 +928,7 @@ export function DealCampaignWorkbench({
             currencyCode: string;
             leadFare?: number;
           };
+          dayByDayItinerary?: DealItineraryDay[];
           confidence: number;
         } | null;
       };
@@ -941,6 +947,7 @@ export function DealCampaignWorkbench({
       if (f.departurePort) setDeparturePort(f.departurePort);
       if (f.ports) setPorts(f.ports);
       setCabinPrices(f.cabinPricing ?? { currencyCode: "USD" });
+      setDayByDayItinerary(f.dayByDayItinerary ?? []);
       setDealId(
         buildSuggestedDealId(
           f.cruiseLine || findLine.trim(),
@@ -948,7 +955,7 @@ export function DealCampaignWorkbench({
           f.packageId
         )
       );
-      setBriefId(buildSuggestedBriefId(f.title, f.shipName || findShip.trim()));
+      setBriefId(buildSuggestedBriefId(f.packageId, f.title, f.shipName || findShip.trim()));
 
       const autoPromos = findPromoMatches(
         promoOptions,

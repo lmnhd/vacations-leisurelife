@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T23:50:22.996Z",
+  "generatedAtIso": "2026-07-16T16:48:50.765Z",
   "adCopies": [
     {
       "id": "adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manifest-seve",
@@ -445,6 +445,66 @@
         "generatedAtIso": "2026-07-03T23:35:45.163Z"
       },
       "selectedVariantIndex": 0
+    },
+    {
+      "id": "adcopy-1640418-your-8-night-january-reset",
+      "generatedAtIso": "2026-07-16T16:48:47.027Z",
+      "generator": "operator_curated",
+      "sourceUnifiedManifestId": "unified-manifest-1640418-your-8-night-january-reset",
+      "campaignName": "Your 8-Night January Reset - Resilient Lady - 2027-01-16",
+      "targetAudienceTag": "US adults and couples seeking a meaningful post-holiday winter reset",
+      "primaryPromoApplied": "none",
+      "variants": [
+        {
+          "promoApplied": "none",
+          "variantLabel": "Primary - Your January Reset",
+          "headline": "Your 8-Night January Reset",
+          "bodyCopy": "Winter has been going on long enough. Trade one cold week for eight adults-only nights aboard Resilient Lady, sailing roundtrip from Miami on January 16, 2027.\n\nThe reset has a real shape: Costa Maya, Roatan, Belize City, Cozumel and Bimini, with two sea days to stop watching the clock and start feeling like the year belongs to you again.\n\nThis is not a rushed weekend away. It is eight nights for couples and friends who want a genuine break after the holidays - long enough to change the rhythm, specific enough to plan with confidence.\n\nSee the full itinerary and decide whether this is the January reset you have been waiting for.",
+          "pricingDisclaimers": "Itinerary and sailing details are subject to change. Review current stateroom options, pricing, taxes, fees and availability before booking.",
+          "callToAction": "View the January 16 sailing",
+          "adPlatformTargetingHooks": {
+            "demographicTargeting": "US adults ages 30-55, couples and friend groups planning a meaningful post-holiday winter trip",
+            "interestKeywords": [
+              "January winter reset",
+              "adults-only Caribbean cruise",
+              "January 2027 cruise from Miami",
+              "winter cruise for couples",
+              "Virgin Voyages",
+              "Resilient Lady",
+              "eight-night Caribbean cruise",
+              "Western Caribbean cruise"
+            ]
+          },
+          "voiceWarnings": []
+        },
+        {
+          "promoApplied": "none",
+          "variantLabel": "Variant B - The Grown-Up Winter Break",
+          "headline": "Take the Grown-Up Winter Break",
+          "bodyCopy": "By mid-January, the holidays are over, routine is back and winter still has a long way to go. That is exactly when eight adults-only nights from Miami start to feel less like another vacation idea and more like a reset button.\n\nResilient Lady sails January 16, 2027, on a route through Costa Maya, Roatan, Belize City, Cozumel and Bimini, with two sea days built into the eight-night itinerary.\n\nBring your partner or your favorite people. Let the week become something bigger than another quick getaway: new places ahead, room to slow down and a real date on the calendar to look forward to.\n\nWinter break can be for grown-ups too.",
+          "pricingDisclaimers": "Itinerary and sailing details are subject to change. Review current stateroom options, pricing, taxes, fees and availability before booking.",
+          "callToAction": "See the full itinerary",
+          "adPlatformTargetingHooks": {
+            "demographicTargeting": "US adults ages 30-55, couples, close friends and adult travelers seeking a longer winter break",
+            "interestKeywords": [
+              "grown-up winter break",
+              "adults-only cruise",
+              "couples Caribbean cruise",
+              "Virgin Voyages Resilient Lady",
+              "January cruise from Miami",
+              "post-holiday vacation",
+              "Bimini cruise",
+              "Western Caribbean itinerary"
+            ]
+          },
+          "voiceWarnings": []
+        }
+      ],
+      "selectedVariantIndex": 1,
+      "editorialNote": "Directly curated from the approved sentiment dossier after model output flattened the emotional January Reset angle and added unsupported claims.",
+      "sourceResearchPaths": [
+        ".github/DOCS/Implementation/DEALS_STRATEGY/LIVE_DEAL_DATA_WORK_DIRECTORY/WINTER_CRUISE_SENTIMENT_DOSSIER_DEC_2026_JAN_2027.md"
+      ]
     }
   ]
 }

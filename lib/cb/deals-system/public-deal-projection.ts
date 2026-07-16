@@ -464,7 +464,10 @@ function buildAdCardsShowcase(
       : validateLandingBroadAppeal(lead.headline).length === 0
         ? lead.headline
         : AD_CARDS_FALLBACK_HEADING;
-  const eyebrow = hasRealPromo ? AD_CARDS_DEFAULT_EYEBROW : "From the ad";
+  // Keep internal channel provenance out of the guest experience. When there
+  // is no attached promotion, these cards support the trip story rather than
+  // being presented as advertising artifacts.
+  const eyebrow = hasRealPromo ? AD_CARDS_DEFAULT_EYEBROW : "Why this trip";
 
   return { layout: pickAdCardsLayout(dealId), eyebrow, heading, cards: readyCards };
 }

@@ -97,3 +97,21 @@ Record operator-driven workflow corrections, recurring friction, temporary rules
 - Trigger: Step 9/10 Google Ads drafts carried corrupted punctuation such as `â‰ˆ` and `â€”` into Responsive Display Ad text fields, while repeated live dispatch attempts failed with opaque Google policy errors.
 - Operating rule: Sanitize Google Ads text fields at save and dispatch boundaries. Prefer plain ASCII punctuation and conservative, non-price-comparison copy for Google drafts. Do not blame the model by default; mojibake usually means real Unicode passed through a bad encoding boundary and then got persisted in cache.
 - Refactor implication: Google Ads Step 9 should show and store clean ad text before Step 10 dispatch. If a Google policy failure interrupts the flow, keep the active thread pinned: for deal `1576786`, gallery images were selected and the next test is clean conservative copy plus the same gallery images.
+
+## 2026-07-15 - Exact-package Workbench intake must preserve canonical ids and itinerary truth
+
+- Trigger: Package `1640418` was ready for Workbench assembly, but the handoff route still built a legacy `manifest-workbench-*` id and exact-package intake dropped the supplier day-by-day itinerary.
+- Operating rule: Normalize the Deal id to the Odysseus package id, build brief and manifest ids through `deal-ids.ts`, and carry the exact package-page itinerary through Workbench form state into `cruiseFacts.dayByDayItinerary`.
+- Refactor implication: Exact-package campaigns must reach Copywriter with package-led ids and the real port calendar; do not reconstruct either from marketing slugs or a comma-split display string.
+
+## 2026-07-15 - Empty promo selection does not authorize public no-promo claims
+
+- Trigger: The copywriter correctly received no attached Virgin Voyages promo but turned that absence into the public claim that no special promotional offer existed.
+- Operating rule: No attached promo means the copy must omit promotion and savings claims. It must not tell visitors that no promotion exists. Fare inclusions, tips, gratuities, all-inclusive language, and absolute dining claims require explicit source support in the unified manifest.
+- Refactor implication: Copywriter guardrails should distinguish `no attached promo context` from `verified no promotion`, and unsupported inclusion claims must fail before persistence.
+
+## 2026-07-16 - Booking-link pricing is a required pipeline handoff
+
+- Trigger: Exact-package intake for Virgin Voyages package `1640418` resolved the sailing and booking URL, but both the stored Deal and trip manifest carried only a currency code. The public page consequently rendered no cabin rows.
+- Operating rule: After the booking URL is acquired, the pipeline must preserve supplier cabin pricing when it already exists or attempt initial hydration from that exact booking URL. If neither source exposes a numeric cabin-tier fare, block the pipeline handoff and approval instead of publishing a cabinless Deal page.
+- Refactor implication: Initial booking-link hydration belongs in the shared package-resolution and Workbench handoff paths. Later fare-drift corrections remain operator-reviewed and must never be silently applied.

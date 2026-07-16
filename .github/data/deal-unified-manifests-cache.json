@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T23:44:38.238Z",
+  "generatedAtIso": "2026-07-16T16:48:47.027Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -1182,6 +1182,119 @@
         ],
         "promoStrategy": "Lead with the Cruise Brothers Royal Caribbean bonus dining eligibility deadline for balcony or suite bookings. Keep all offer language specific and qualified; avoid vague agent-conversation CTAs.",
         "manifestReasoning": "This package gives the campaign a strong family ship, two private-destination style beach days, a February winter-escape date, and a real July booking urgency mechanism through the Royal Caribbean bonus dining promo."
+      }
+    },
+    {
+      "id": "unified-manifest-1640418-your-8-night-january-reset",
+      "generatedAtIso": "2026-07-16T15:41:10.813Z",
+      "expiresOnIso": "2026-10-14",
+      "sourceAngleId": "angle-workbench-western-caribbean-bimini-beach-club-resilient-lady-1640418",
+      "sourceManifestId": "manifest-1640418-your-8-night-january-reset",
+      "sailingAngleTitle": "Your 8-Night January Reset",
+      "creativeBrief": {
+        "isolatedNiche": "US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking.",
+        "researchRationale": "Workbench-selected real sailing chosen for the angle \"Your 8-Night January Reset\". Grounding facts: Resilient Lady | 2027-01-16 | Miami, FL | Miami, Florida, United States, Costa Maya, Mexico, Roatan, Honduras.",
+        "successLogic": "US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking. can convert because this is a real Resilient Lady sailing on 2027-01-16, not a generic cruise sale. The exact package facts give the audience a specific sailing to compare and price-check.",
+        "audienceSignals": [
+          "Real sailing selected in the Campaign Workbench: Resilient Lady on Virgin Voyages, 8 nights, sailing 2027-01-16.",
+          "Concrete itinerary signal: Miami, FL roundtrip, Miami, Florida, United States, Costa Maya, Mexico, Roatan, Honduras, Belize City, Belize.",
+          "Operator-selected audience angle: US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking..",
+          "Targeting seeds chosen for this sailing: adults-only Caribbean cruise, January 2027 cruise from Miami, winter cruise for couples, Virgin Voyages, Resilient Lady, eight-night Caribbean cruise."
+        ],
+        "angle": {
+          "sailingAngleTitle": "Your 8-Night January Reset",
+          "theCorePitch": "Your 8-Night January Reset: Resilient Lady on Western Caribbean & Bimini Beach Club gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+          "visualAnchor": "A cold gray winter morning transitioning into Resilient Lady, a clean Western Caribbean route map, grown-up dining, open-deck relaxation, and bright destination moments without weather guarantees.",
+          "targetAudienceDescriptor": "US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking.",
+          "relevantKeywords": [
+            "adults-only Caribbean cruise",
+            "January 2027 cruise from Miami",
+            "winter cruise for couples",
+            "Virgin Voyages",
+            "Resilient Lady",
+            "eight-night Caribbean cruise",
+            "Western Caribbean cruise",
+            "Bimini cruise"
+          ],
+          "destinationAndTimeOfYearHints": "Western Caribbean & Bimini Beach Club departing 2027-01-16.",
+          "onboardAssetRequirements": "Resilient Lady ship assets, destination imagery, itinerary map, and booking-link proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "Virgin Voyages",
+          "departurePortHint": "Miami, FL",
+          "nights": 8,
+          "itineraryName": "Western Caribbean & Bimini Beach Club",
+          "portsOfCall": [
+            "Miami, Florida, United States",
+            "Costa Maya, Mexico",
+            "Roatan, Honduras",
+            "Belize City, Belize",
+            "Cozumel, Mexico",
+            "The Beach Club At Bimini, Bahamas"
+          ],
+          "destination": "Miami, Florida, United States",
+          "sailWindow": {
+            "latestIso": "2027-01-16",
+            "rationale": "Exact sail date selected in the campaign workbench.",
+            "earliestIso": "2027-01-16"
+          },
+          "suggestedBriefId": "brief-1640418-your-8-night-january-reset",
+          "suggestedDealId": "1640418"
+        },
+        "lookupQuery": {
+          "date": "2027-01-16",
+          "port": "Miami, FL",
+          "line": "Virgin Voyages",
+          "nights": 8,
+          "destination": "Miami, Florida, United States",
+          "ship": "Resilient Lady",
+          "windowDays": 0
+        },
+        "targetingSeeds": {
+          "geoFocus": [
+            "Miami, FL",
+            "Western Caribbean & Bimini Beach Club",
+            "Miami, Florida, United States",
+            "Costa Maya, Mexico",
+            "Roatan, Honduras",
+            "Belize City, Belize",
+            "Caribbean travel"
+          ],
+          "metaInterestSeeds": [
+            "adults-only Caribbean cruise",
+            "January 2027 cruise from Miami",
+            "winter cruise for couples",
+            "Virgin Voyages",
+            "Resilient Lady",
+            "eight-night Caribbean cruise",
+            "Western Caribbean cruise",
+            "Bimini cruise"
+          ],
+          "inferredMarket": "US",
+          "personaSignals": [
+            "US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking.",
+            "Virgin Voyages travelers",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "Virgin Voyages",
+            "Resilient Lady"
+          ],
+          "excludedAudienceSignals": [
+            "free cruise",
+            "cruise job",
+            "Avoid broad cruise-interest targeting as the only audience."
+          ],
+          "metaBehaviorSignals": [
+            "engages with Resilient Lady ship-specific content"
+          ]
+        },
+        "appliedPromos": [],
+        "promotionBriefs": [],
+        "promoStrategy": "Lead with \"Your 8-Night January Reset\" through the verified itinerary and audience fit.",
+        "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: Your 8-Night January Reset. Targeting angle: US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking.. Workbench-selected real sailing chosen for the angle \"Your 8-Night January Reset\". Grounding facts: Resilient Lady | 2027-01-16 | Miami, FL | Miami, Florida, United States, Costa Maya, Mexico, Roatan, Honduras."
       }
     }
   ]

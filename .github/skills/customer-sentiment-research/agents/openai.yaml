@@ -1,0 +1,4 @@
+interface:
+  display_name: "Customer Sentiment Research"
+  short_description: "Turn customer language into Deal intelligence"
+  default_prompt: "Use $customer-sentiment-research to build a source-grounded cruise Deal intelligence dossier."

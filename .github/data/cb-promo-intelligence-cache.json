@@ -1,302 +1,28 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T22:02:14.656Z",
+  "generatedAtIso": "2026-07-16T00:49:02.489Z",
   "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
   "records": [
     {
-      "id": "cbpromo-2883",
+      "id": "cbpromo-2876",
       "source": "cb_agent_tools_todays_view",
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
-      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2883/",
-      "capturedAtIso": "2026-07-03T22:01:17.828Z",
-      "title": "Delta Vacations - Skymiles and Medallion Members Save",
-      "vendor": "Delta Vacations/MLT",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2876/",
+      "capturedAtIso": "2026-07-16T00:48:08.985Z",
+      "title": "Princess Cruises is delighted to unveil our most comprehensive Europe program ever, featuring an extraordinary collection of voyages across Northern Europe, the Mediterranean, and Transatlantic for Summer 2028 — including our extraordinary Pole‑to‑Pole Odyssey, one of the most epic Grand Adventures in our deployment. The full program spans 291 departures on 150 unique itineraries to 118 destinations in 36 countries, and 13 departure ports, making it one of our most diverse and globally appealing European offerings to date.",
+      "vendor": "Princess Cruises",
       "bookingWindow": {
-        "startsOn": "2026-06-01",
-        "endsOn": "2026-07-31",
-        "rawText": "Must be booked between 06/01/2026 and 07/31/2026"
+        "startsOn": "2026-06-02",
+        "endsOn": "2026-10-12",
+        "rawText": "Must be booked between 06/02/2026 and 10/12/2026"
       },
       "sailingWindow": {
-        "startsOn": "2026-06-01",
-        "endsOn": "2026-11-30",
-        "rawText": "For sailings on or between 06/01/2026 and 11/30/2026"
+        "startsOn": "2028-04-01",
+        "endsOn": "2028-11-01",
+        "rawText": "For sailings on or between 04/01/2028 and 11/01/2028"
       },
-      "promotionDetailsRaw": "DELTA VACATIONS ON SALE - MEDALLION MEMBERS SAVE UP TO $250 DOLLARS OFF\n\nThis summer save when you book getaways to select destinations all in one place with Delta Vacations.  Your Cruise Brothers Travel Specialitst will help you plan your next vacation to the Caribbean, Mexico, Hawaii, South Pacific, Europe and more!\n\nWhen you use a travel agent Medallion® Members save up to $250 per flight and hotel package using promo code SMMED26, and SkyMiles® Members save up to $200 per flight and hotel package using promo code SMSUMMER26.\n\nBook by July 31, 2026\n\nTravel between June 1 – November 30, 2026.\n\nEXCEPTIONAL INFLIGHT EXPERIENCE\n\nFor an elevated cabin experience, book your client in Delta One®, Delta Premium Select or Delta Comfort.\n\t\n \nEARN MILES & EARN MORE TOWARD MEDALLION STATUS\n\nSkyMiles Members earn bonus miles on top of flight miles. Plus, they earn Medallion Qualification Dollars (MQDs) toward Status.\n\t\n \nTRAVEL PROTECTION PREMIUM\n\nProtect their travel investment and your commission with flexible change policies and Travel Protection Plans for cancellations, medical emergencies and more.",
-      "agentInstructionsRaw": "Medallion® Members Offer Terms and Conditions   \n\nPurchase any Delta Vacations package that includes a flight and hotel, from any Delta Vacations origin in the U.S. to any Delta Vacations destination within the U.S. (including Alaska and Hawai’i), Canada, Mexico, the Caribbean or Central America, between June 1 – July 31, 2026, for travel between June 1 – November 30, 2026. \nAt time of reservation, you must refer to promotional code SMMED26. \nOffer only valid if the Primary Passenger is a Medallion Member. \nMinimum 4-night stay required. \nFor air-inclusive packages, offer is valid on reservations that include a minimum of one flight on Delta Air Lines®. Service may be operated by Delta Air Lines and one of our Flight Partners. Learn more: Partner Airlines | Delta Air Lines.  \nReservations that include only flights on other airlines do not qualify. \nNo minimum purchase price required. Package must include flight and hotel, plus any optional car rentals, transfers, excursions and/or activities. \nDiscount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more. \nMaximum discount is $250 per booking; discount is a percentage of each eligible land component. \nAdditional baggage charges for checked luggage may apply, as well as any applicable hotel/resort fees or departure taxes collected by hotel/resort/airport at destination. \nOffer is not applicable to airfare; for groups of 10 or more people; and is not retroactive. \nMust be purchased through Delta Vacations.",
-      "keyFeaturesRaw": "",
-      "applicableSailingsRaw": "",
-      "applicableProductsRaw": "",
-      "applicableMarketsRaw": "",
-      "supportingFiles": [],
-      "extracted": {
-        "offerTypes": [
-          "dollars_off",
-          "other"
-        ],
-        "percentDiscounts": [],
-        "dollarSavings": [
-          {
-            "amountUsd": 250,
-            "appliesTo": "Medallion Members per booking on eligible Delta Vacations flight and hotel packages of $7,000 or more",
-            "voyageLength": "Minimum 4-night stay required",
-            "cabinCategory": "",
-            "bookingDayWindow": "Must be booked between 06/01/2026 and 07/31/2026",
-            "rawText": "Discount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more."
-          },
-          {
-            "amountUsd": 150,
-            "appliesTo": "Medallion Members per booking on eligible Delta Vacations flight and hotel packages of $4,000 – $6,999",
-            "voyageLength": "Minimum 4-night stay required",
-            "cabinCategory": "",
-            "bookingDayWindow": "Must be booked between 06/01/2026 and 07/31/2026",
-            "rawText": "Discount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more."
-          },
-          {
-            "amountUsd": 100,
-            "appliesTo": "Medallion Members per booking on eligible Delta Vacations flight and hotel packages of $1,500 – $3,999",
-            "voyageLength": "Minimum 4-night stay required",
-            "cabinCategory": "",
-            "bookingDayWindow": "Must be booked between 06/01/2026 and 07/31/2026",
-            "rawText": "Discount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more."
-          },
-          {
-            "amountUsd": 50,
-            "appliesTo": "Medallion Members per booking on eligible Delta Vacations flight and hotel packages of up to $1,499",
-            "voyageLength": "Minimum 4-night stay required",
-            "cabinCategory": "",
-            "bookingDayWindow": "Must be booked between 06/01/2026 and 07/31/2026",
-            "rawText": "Discount is $50 off bookings of up to $1,499; $100 off bookings of $1,500 – $3,999; $150 off bookings of $4,000 – $6,999 and $250 off bookings of $7,000 or more."
-          },
-          {
-            "amountUsd": 250,
-            "appliesTo": "Medallion Members per flight and hotel package using promo code SMMED26",
-            "voyageLength": "",
-            "cabinCategory": "",
-            "bookingDayWindow": "Book by July 31, 2026",
-            "rawText": "When you use a travel agent Medallion® Members save up to $250 per flight and hotel package using promo code SMMED26"
-          },
-          {
-            "amountUsd": 200,
-            "appliesTo": "SkyMiles Members per flight and hotel package using promo code SMSUMMER26",
-            "voyageLength": "",
-            "cabinCategory": "",
-            "bookingDayWindow": "Book by July 31, 2026",
-            "rawText": "and SkyMiles® Members save up to $200 per flight and hotel package using promo code SMSUMMER26."
-          }
-        ],
-        "onboardCredits": [],
-        "freeGuestOffers": [],
-        "combinability": {
-          "groupRates": false,
-          "rawRules": [
-            "Offer is not applicable to airfare; for groups of 10 or more people; and is not retroactive."
-          ]
-        },
-        "exclusions": [
-          "Reservations that include only flights on other airlines do not qualify.",
-          "Offer is not applicable to airfare; for groups of 10 or more people; and is not retroactive."
-        ],
-        "applicableProducts": [
-          "Delta Vacations package that includes a flight and hotel",
-          "For air-inclusive packages, offer is valid on reservations that include a minimum of one flight on Delta Air Lines®.",
-          "Package must include flight and hotel, plus any optional car rentals, transfers, excursions and/or activities."
-        ],
-        "applicableMarkets": [
-          "from any Delta Vacations origin in the U.S. to any Delta Vacations destination within the U.S. (including Alaska and Hawai’i), Canada, Mexico, the Caribbean or Central America"
-        ]
-      },
-      "marketingUse": {
-        "publicClaimsAllowed": [
-          "Select Delta Vacations flight-and-hotel packages may qualify for member savings when booked by the stated deadline.",
-          "Eligible Medallion Members may qualify for up to $250 off select Delta Vacations packages.",
-          "Eligible SkyMiles Members may qualify for up to $200 off select Delta Vacations packages.",
-          "Select summer and fall travel dates may qualify for member package savings."
-        ],
-        "publicClaimsNeedsQualifier": [
-          "Medallion Member savings require promo code SMMED26 and the Primary Passenger must be a Medallion Member.",
-          "SkyMiles Member savings require promo code SMSUMMER26.",
-          "Medallion Member savings are tiered by booking value, with discounts ranging from $50 to $250 per booking.",
-          "Eligible packages must include flight and hotel, with a minimum 4-night stay.",
-          "For air-inclusive packages, reservations must include at least one flight on Delta Air Lines®.",
-          "Offer applies to travel between June 1 – November 30, 2026 and must be booked between June 1 – July 31, 2026.",
-          "Only select origins and destinations qualify, including U.S. origins and destinations within the U.S., Canada, Mexico, the Caribbean or Central America."
-        ],
-        "agentOnlyNotes": [
-          "At time of reservation, you must refer to promotional code SMMED26.",
-          "Offer only valid if the Primary Passenger is a Medallion Member.",
-          "No minimum purchase price required.",
-          "Maximum discount is $250 per booking; discount is a percentage of each eligible land component.",
-          "Must be purchased through Delta Vacations."
-        ],
-        "suggestedAngles": [
-          "Member-value vacation packages",
-          "Summer booking window savings",
-          "Flight-and-hotel package offers",
-          "Medallion and SkyMiles member travel deals"
-        ],
-        "cautionFlags": [
-          "The headline references 'up to' savings, so broad ads should not imply every booking gets the maximum amount.",
-          "The Medallion offer has tiered discount bands tied to booking value.",
-          "The SkyMiles $200 claim appears in promotion text, but detailed terms provided are for the Medallion offer only.",
-          "Offer is not applicable to airfare alone.",
-          "Bookings with only flights on other airlines do not qualify.",
-          "Groups of 10 or more do not qualify.",
-          "Minimum 4-night stay required for the Medallion offer.",
-          "Primary Passenger membership status matters for the Medallion offer."
-        ],
-        "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": "Eligible Delta Vacations flight-and-hotel packages may qualify for member savings for travel on select dates when booked by the promotion deadline. Final pricing, eligibility, promo code application, and any package-specific perks are confirmed in the booking portal."
-      },
-      "diagnostics": {
-        "status": "succeeded",
-        "model": "gpt-5.4",
-        "notes": [
-          "Offers: dollars_off, other.",
-          "Public claims: 4, needs-qualifier: 7, caution flags: 8."
-        ],
-        "warnings": []
-      }
-    },
-    {
-      "id": "cbpromo-2793",
-      "source": "cb_agent_tools_todays_view",
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
-      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2793/",
-      "capturedAtIso": "2026-07-03T22:01:17.828Z",
-      "title": "Margaritaville at Sea - 50% Off, Kids Free - July 4th Flash Sale",
-      "vendor": "Margaritaville at Sea",
-      "bookingWindow": {
-        "startsOn": "2026-04-01",
-        "endsOn": "2026-08-31",
-        "rawText": "Must be booked between 04/01/2026 and 08/31/2026"
-      },
-      "sailingWindow": {
-        "startsOn": "2026-04-01",
-        "endsOn": "2027-05-31",
-        "rawText": "For sailings on or between 04/01/2026 and 05/31/2027"
-      },
-      "promotionDetailsRaw": "4th of July Flash Sale - Book June 22 - July 7th! Bring the Family!\n\n50% off cruise fares\n3rd & 4th Guests Sail Free\nUp To 50% Off Drink Packages\nMargaritaville at Sea Summer Savings Sale!\nKids Sail Free - Complimentary Stateroom Upgrades - Half Off Fares\n\nFrom easy-breezy Bahamas getaways to adventurous Caribbean voyages, Margaritaville at Sea is the only cruise where world-class dining, famous boat drinks, vibrant entertainment, and ahhh-worthy spas come together with iconic Margaritaville experiences. Whether you’re planning a family-friendly escape or a quick weekend cruise for two, this offer makes “yes” the easiest decision you’ll make all year.Set sail with our award-winning crew and discover a journey as unforgettable as the stunning destinations.\n\nKids Sail Free on select dates\nLet them live their adventure — without the extra cost.\n\nComplimentary Stateroom Upgrade\nBecause your 5 o’Clock state-of-mind deserves a little extra room to stretch out.\n\n50% off Cruise Fares on select dates.\n\nAward-Winning Experiences\nCruise with confidence. Named #1 Best Ocean Cruise Line by Cruise Critic two years running, Margaritaville at Sea delivers laid-back luxury, nonstop fun, and memories that stick long after the tan fades.\n\nSummer Cruises\nYou can sail to The Bahamas, Mexico, Key West, and beyond for about the same? More sunsets. More sea breeze. Way better story to tell.\n\nKids Sail Free now on Beachcomber: $0 fare for 3rd and 4th guests when they are between 3 and 12 years old at the time of departure, traveling in a stateroom with a minimum of two paying guests.\n\nNew 2027 Destinations on Paradise\nNow sail from Palm Beach to Grand Turk and Bimini with new 2027 departures.\n\n*offers are subject to select dates and availability",
-      "agentInstructionsRaw": "Offer does not include taxes, fees, port expenses, or any onboard charges. Reduced and discounted fares are reflected in the advertised pricing and do not require a coupon code. Offer is combinable with other current promotions, unless otherwise stated. All offers are subject to availability and may change at any time. Complimentary stateroom upgrades may be offered within the same category or eligible on the stateroom category upgrade, by ship, as listed below. For Paradise: eligible for upgrade from Interior to Ocean View. For Islander: eligible for upgrade from Interior to Ocean View, or from Ocean View to Balcony. For Beachcomber: eligible for upgrade from Interior to Ocean View.",
-      "keyFeaturesRaw": "",
-      "applicableSailingsRaw": "",
-      "applicableProductsRaw": "",
-      "applicableMarketsRaw": "",
-      "supportingFiles": [],
-      "extracted": {
-        "offerTypes": [
-          "second_guest_discount",
-          "free_extra_guests",
-          "other"
-        ],
-        "percentDiscounts": [
-          {
-            "appliesTo": "cruise fares on select dates",
-            "percentOff": 50,
-            "rawText": "50% off Cruise Fares on select dates."
-          },
-          {
-            "appliesTo": "drink packages",
-            "percentOff": 50,
-            "rawText": "Up To 50% Off Drink Packages"
-          }
-        ],
-        "dollarSavings": [],
-        "onboardCredits": [],
-        "freeGuestOffers": [
-          {
-            "guestNumbers": "3rd & 4th guests",
-            "rawText": "3rd & 4th Guests Sail Free"
-          },
-          {
-            "guestNumbers": "3rd and 4th guests",
-            "excludedCabins": [],
-            "rawText": "Kids Sail Free now on Beachcomber: $0 fare for 3rd and 4th guests when they are between 3 and 12 years old at the time of departure, traveling in a stateroom with a minimum of two paying guests."
-          }
-        ],
-        "combinability": {
-          "rawRules": [
-            "Offer is combinable with other current promotions, unless otherwise stated."
-          ]
-        },
-        "exclusions": [
-          "Offer does not include taxes, fees, port expenses, or any onboard charges.",
-          "*offers are subject to select dates and availability"
-        ],
-        "applicableProducts": [],
-        "applicableMarkets": []
-      },
-      "marketingUse": {
-        "publicClaimsAllowed": [
-          "Select sailings may qualify for reduced cruise fares.",
-          "Select sailings may qualify for free 3rd and 4th guest fares.",
-          "Select dates may include kids sail free offers.",
-          "Some bookings may qualify for complimentary stateroom upgrades.",
-          "Select sailings may include discounts on drink packages."
-        ],
-        "publicClaimsNeedsQualifier": [
-          "50% off cruise fares on select dates.",
-          "Up to 50% off drink packages.",
-          "Kids Sail Free on select dates.",
-          "Beachcomber kids sail free applies to 3rd and 4th guests who are between 3 and 12 years old at departure and traveling in a stateroom with a minimum of two paying guests.",
-          "Complimentary stateroom upgrades are limited by ship and eligible category pairings.",
-          "Offers are subject to select dates and availability.",
-          "Advertised fares do not include taxes, fees, port expenses, or onboard charges."
-        ],
-        "agentOnlyNotes": [
-          "Offer is combinable with other current promotions, unless otherwise stated.",
-          "Reduced and discounted fares are reflected in the advertised pricing and do not require a coupon code.",
-          "Complimentary stateroom upgrades may be offered within the same category or eligible on the stateroom category upgrade, by ship, as listed below.",
-          "For Paradise: eligible for upgrade from Interior to Ocean View.",
-          "For Islander: eligible for upgrade from Interior to Ocean View, or from Ocean View to Balcony.",
-          "For Beachcomber: eligible for upgrade from Interior to Ocean View."
-        ],
-        "suggestedAngles": [
-          "Family cruise sale",
-          "Kids may sail free on select dates",
-          "Possible free 3rd and 4th guest value",
-          "Select-date fare savings",
-          "Potential stateroom upgrade offer"
-        ],
-        "cautionFlags": [
-          "The headline says '50% Off, Kids Free - July 4th Flash Sale,' but the booking window shown separately is 04/01/2026 to 08/31/2026; date messaging should be verified before advertising.",
-          "'Kids Sail Free' is narrowed in the details to Beachcomber, 3rd and 4th guests, ages 3 to 12, with two paying guests in the stateroom.",
-          "Drink package savings are stated as 'Up To 50% Off,' so the maximum discount should not be presented as guaranteed.",
-          "Complimentary stateroom upgrades are not universal and depend on ship and eligible category pairing.",
-          "Taxes, fees, port expenses, and onboard charges are excluded from the offer."
-        ],
-        "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": "Select Margaritaville at Sea sailings may qualify for reduced fares, free 3rd and 4th guest fares, and possible stateroom upgrade offers, with some kids sail free opportunities on qualifying dates. Availability, ship, guest age, and cabin rules apply, and final pricing and perks are confirmed in the booking portal."
-      },
-      "diagnostics": {
-        "status": "succeeded",
-        "model": "gpt-5.4",
-        "notes": [
-          "Offers: second_guest_discount, free_extra_guests, other.",
-          "Public claims: 5, needs-qualifier: 7, caution flags: 5."
-        ],
-        "warnings": []
-      }
-    },
-    {
-      "id": "cbpromo-2901",
-      "source": "cb_agent_tools_todays_view",
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
-      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2901/",
-      "capturedAtIso": "2026-07-03T22:01:17.828Z",
-      "title": "Viking Cruises - Spirit of Independence Sale - Dollars Off, Onboard Credit + more!",
-      "vendor": "Viking Cruises",
-      "bookingWindow": {
-        "startsOn": "2026-07-01",
-        "endsOn": "2026-07-31",
-        "rawText": "Must be booked between 07/01/2026 and 07/31/2026"
-      },
-      "sailingWindow": {
-        "startsOn": "2026-10-01",
-        "endsOn": "2029-04-30",
-        "rawText": "For sailings on or between 10/01/2026 and 04/30/2029"
-      },
-      "promotionDetailsRaw": "VIKING CRUISES - Savings, Free Air, Free Beverage Package and more! \n\nTo celebrate America’s 250th anniversary, we are reminded of the enduring spirit of independence and the power of travel to inspire. At Viking, we design experiences For The Thinking Person, with unforgettable journeys spanning all seven continents. In honor of America’s milestone anniversary, this month enjoy our offer Spirit of Independence Sale.\n\nSpirit of Independence Sale\n\nSave up to $4,000 per couple\nFREE International Airfare*  | $250 Shipboard Credit per person\nFREE Beverage Package  | $25 Deposit\nOffer code: A250\n\n***********************************************************************************\n\nABOUT VIKING CRUISES\n\nAdults-Only Environment: Viking ships do not permit passengers under the age of 18.\nCultural Enrichment: Instead of casinos or Broadway-style shows, entertainment includes port lectures, live regional music, and destination-focused dining.\nInclusive Fares: Fares generally cover shore excursions in every port, complimentary Wi-Fi, beer and wine with lunch and dinner, and access to onboard wellness areas.\nDesign & Comfort: Ships feature elegant Scandinavian designs, extensive al fresco dining spaces (like the Aquavit Terrace), and spacious staterooms. \n \nTypes of Cruises Offered\nRiver Cruises: Sailing Europe’s waterways (e.g., Rhine, Danube, and Seine), the Nile, and the Mekong. They also sail the Mississippi River in the United States.\nOcean Cruises: Operating a fleet of identical, mid-sized ships (typically holding 930 guests) that sail the Mediterranean, Northern Europe, Alaska, and the Americas.\nExpedition Cruises: Specialized, Polar-class vessels designed for exploring remote regions like Antarctica and the Great Lakes.\n\n**********************************************************************************\n\nSummer Sale - FREE INTERNATIONAL AIRFARE* - ALL INCLUSIVE VOYAGES FROM $2,399\n$25 DEPOSIT - mention code: EBD\n\n*******************************************************************************************\n\n*FREE International Airfare valid for select 2026/2027/2028 departures. *FREE Airfare offer is subject to change. $25 deposit available on all 2026/2027/2028/2029 river voyages. Based on inventory availability at time of purchase and may be withdrawn at any time. Air does not have to be purchased to get cruise/cruisetour offer. All prices are in US dollars and for US residents only. Book and by deposit July 31, 2026; 2026: Pay in full by August 5, 2026, or at 120 days prior to departure; 2027: Pay in full by Sep 17, 2026; 2028: Pay in full by Mar 15, 2027; 2029: Pay in Full by Jan 13, 2028.\n\nPromotions Booking Window: July 1 through July ‌31‌, 2026. New bookings only",
-      "agentInstructionsRaw": "EBD AIR AND EARLY SAVINGS: Summer Sale Offer EBD Rivers: †FREE International Airfare valid for select 2026/2027/2028 departures. *FREE Airfare offer is subject to change. $25 deposit available on all 2026/2027/2028/2029 river voyages. Based on inventory availability at time of purchase and may be withdrawn at any time. Air does not have to be purchased to get cruise/cruisetour offer. All prices are in US dollars and for US residents only. Book and by deposit July 31, 2026; 2026: Pay in full by August 5, 2026, or at 120 days prior to departure; 2027: Pay in full by Sep 17, 2026; 2028: Pay in full by Mar 15, 2027; 2029: Pay in Full by Jan 13, 2028. Summer Sale Offer EBD Ocean/Expeditions: A limited-time $25 per person deposit is due at time of booking for all featured itineraries; remaining deposit is due with final payment (excludes World Cruise itineraries). Expeditions: FREE roundtrip international airfare based on select departures of Antarctic Explorer. FREE Airfare offer available from most gateways and is subject to change: Based on inventory availability at time of purchase and may be withdrawn at any time. Additional restrictions may apply. All prices are in US dollars and for US residents only. Book and deposit by July 31, 2026; 2026: Pay in full by August 5, 2026, or at 120 days prior to departure (whichever comes first); 2027: Pay in full by September 17, 2026. 2028: Pay in full by March 15, 2027\n\nSpirit of Independence Sale (Offer A250): Save up to $4,000 per couple ($2,000 per person) based on select departures and categories of Grand European Tour, Lyon & Provence, Paris to the Swiss Alps, Iconic Western Mediterranean and Journey to Antiquities; other itineraries, dates and categories may vary. Shipboard credit of $250 per person ($500 per couple) applicable to all featured itineraries. FREE Beverage Package applicable to most featured itineraries (excludes Egypt ships). Additional restrictions may apply. A limited-time $25 per person deposit is due at time of booking for all featured itineraries; remaining deposit is due with final payment",
+      "promotionDetailsRaw": "PRINCESS CRUISES 2028 EUROPE  EARLY BOOKING BONUS SAVINGS AND SHIPBOARD CREDIT!\n\nPrincess Cruises is delighted to unveil our most comprehensive Europe program ever, featuring an extraordinary collection of voyages across Northern Europe, the Mediterranean, and Transatlantic for Summer 2028 — including our extraordinary Pole‑to‑Pole Odyssey, one of the most epic Grand Adventures in our deployment. The full program spans 291 departures on 150 unique itineraries to 118 destinations in 36 countries, and 13 departure ports, making it one of our most diverse and globally appealing European offerings to date.\n\nOffer Details: Up to $500 Instant Savings + Up to $500 Onboard Credit\n\n+ Free Location Upgrade\n\n+ Early Access to Dining Reservations\n\n+ Advanced Access to Embarkation Times\n\n+ $100 Deposits!\n\nPlus! Captain’s Circle members will receive an additional Instant Savings!\n\nGuests 1 & 2 only\nGuests with single occupancy will receive single, per guest Instant Savings amount ($25 - $250)\nGuests with single occupancy will receive single, per guest OBC amount ($25 - $250)\nGuests with single occupancy will receive single, per guest Captain’s Circle Instant Savings amount ($50 - $200)\nFree Location Upgrade up to $400 per stateroom\n\nSailing across six ships — Caribbean Princess, Enchanted Princess, Majestic Princess, Regal Princess, Sky Princess, and Sun Princess — the 2028 season reinforces our leadership across Europe with unmatched variety, iconic marquee ports, and deeper destination access through 32 More Ashore late‑night or overnight stays, including Stockholm, Istanbul, Hamburg, La Spezia (for Florence/Pisa), and Tromsø.\n\nGuests can choose from itineraries ranging from 7 to 53 days, including two maiden calls in Ireland, Galway and Killybegs, along with five land-based cruisetours for even deeper exploration of this remarkable region, plus access to an incredible 101 UNESCO World Heritage Sites.\n\nNew Bookings Only deposited: June 2 - October 12, 2028\n\n2028 Europe voyages",
+      "agentInstructionsRaw": "see terms and conditions/sailing lists in One Source",
       "keyFeaturesRaw": "",
       "applicableSailingsRaw": "",
       "applicableProductsRaw": "",
@@ -306,115 +32,472 @@
         "offerTypes": [
           "dollars_off",
           "onboard_credit",
-          "all_included",
+          "instant_savings",
           "other"
         ],
         "percentDiscounts": [],
         "dollarSavings": [
           {
-            "amountUsd": 4000,
-            "appliesTo": "per couple",
+            "amountUsd": 500,
+            "appliesTo": "instant savings",
             "voyageLength": "",
-            "cabinCategory": "select departures and categories of Grand European Tour, Lyon & Provence, Paris to the Swiss Alps, Iconic Western Mediterranean and Journey to Antiquities; other itineraries, dates and categories may vary",
+            "cabinCategory": "",
             "bookingDayWindow": "",
-            "rawText": "Save up to $4,000 per couple ($2,000 per person) based on select departures and categories of Grand European Tour, Lyon & Provence, Paris to the Swiss Alps, Iconic Western Mediterranean and Journey to Antiquities; other itineraries, dates and categories may vary."
+            "rawText": "Offer Details: Up to $500 Instant Savings + Up to $500 Onboard Credit"
+          },
+          {
+            "amountUsd": 25,
+            "appliesTo": "single occupancy instant savings",
+            "voyageLength": "",
+            "cabinCategory": "",
+            "bookingDayWindow": "",
+            "rawText": "Guests with single occupancy will receive single, per guest Instant Savings amount ($25 - $250)"
+          },
+          {
+            "amountUsd": 250,
+            "appliesTo": "single occupancy instant savings",
+            "voyageLength": "",
+            "cabinCategory": "",
+            "bookingDayWindow": "",
+            "rawText": "Guests with single occupancy will receive single, per guest Instant Savings amount ($25 - $250)"
+          },
+          {
+            "amountUsd": 50,
+            "appliesTo": "single occupancy Captain’s Circle instant savings",
+            "voyageLength": "",
+            "cabinCategory": "",
+            "bookingDayWindow": "",
+            "rawText": "Guests with single occupancy will receive single, per guest Captain’s Circle Instant Savings amount ($50 - $200)"
+          },
+          {
+            "amountUsd": 200,
+            "appliesTo": "single occupancy Captain’s Circle instant savings",
+            "voyageLength": "",
+            "cabinCategory": "",
+            "bookingDayWindow": "",
+            "rawText": "Guests with single occupancy will receive single, per guest Captain’s Circle Instant Savings amount ($50 - $200)"
+          },
+          {
+            "amountUsd": 400,
+            "appliesTo": "free location upgrade",
+            "voyageLength": "",
+            "cabinCategory": "stateroom",
+            "bookingDayWindow": "",
+            "rawText": "Free Location Upgrade up to $400 per stateroom"
           }
         ],
         "onboardCredits": [
           {
-            "amountUsd": 250,
-            "appliesTo": "per person",
+            "amountUsd": 500,
+            "appliesTo": "onboard credit",
             "voyageLength": "",
-            "cabinCategory": "all featured itineraries",
+            "cabinCategory": "",
             "bookingDayWindow": "",
-            "rawText": "Shipboard credit of $250 per person ($500 per couple) applicable to all featured itineraries."
+            "rawText": "Offer Details: Up to $500 Instant Savings + Up to $500 Onboard Credit"
+          },
+          {
+            "amountUsd": 25,
+            "appliesTo": "single occupancy onboard credit",
+            "voyageLength": "",
+            "cabinCategory": "",
+            "bookingDayWindow": "",
+            "rawText": "Guests with single occupancy will receive single, per guest OBC amount ($25 - $250)"
+          },
+          {
+            "amountUsd": 250,
+            "appliesTo": "single occupancy onboard credit",
+            "voyageLength": "",
+            "cabinCategory": "",
+            "bookingDayWindow": "",
+            "rawText": "Guests with single occupancy will receive single, per guest OBC amount ($25 - $250)"
           }
         ],
         "freeGuestOffers": [],
         "combinability": {
           "rawRules": [
-            "Air does not have to be purchased to get cruise/cruisetour offer.",
-            "$25 deposit available on all 2026/2027/2028/2029 river voyages.",
-            "A limited-time $25 per person deposit is due at time of booking for all featured itineraries; remaining deposit is due with final payment"
+            "see terms and conditions/sailing lists in One Source"
           ]
         },
-        "exclusions": [
-          "FREE Beverage Package applicable to most featured itineraries (excludes Egypt ships).",
-          "A limited-time $25 per person deposit is due at time of booking for all featured itineraries; remaining deposit is due with final payment (excludes World Cruise itineraries).",
-          "Adults-Only Environment: Viking ships do not permit passengers under the age of 18."
-        ],
+        "exclusions": [],
         "applicableProducts": [
-          "Grand European Tour",
-          "Lyon & Provence",
-          "Paris to the Swiss Alps",
-          "Iconic Western Mediterranean",
-          "Journey to Antiquities",
-          "2026/2027/2028/2029 river voyages",
-          "featured itineraries",
-          "select departures of Antarctic Explorer"
+          "2028 Europe voyages"
         ],
-        "applicableMarkets": [
-          "US residents only"
-        ]
+        "applicableMarkets": []
       },
       "marketingUse": {
         "publicClaimsAllowed": [
-          "Select Viking sailings may qualify for savings, shipboard credit, and added perks during the Spirit of Independence Sale.",
-          "Select Viking itineraries may qualify for included international airfare offers.",
-          "Some featured Viking itineraries may qualify for a beverage package and reduced deposit promotion."
+          "Select 2028 Europe voyages may qualify for instant savings and onboard credit.",
+          "Select bookings may include a free location upgrade, early access to dining reservations, advanced access to embarkation times, and reduced deposits.",
+          "Captain’s Circle members may qualify for additional instant savings."
         ],
         "publicClaimsNeedsQualifier": [
-          "Save up to $4,000 per couple ($2,000 per person) based on select departures and categories of Grand European Tour, Lyon & Provence, Paris to the Swiss Alps, Iconic Western Mediterranean and Journey to Antiquities; other itineraries, dates and categories may vary.",
-          "Shipboard credit of $250 per person ($500 per couple) applicable to all featured itineraries.",
-          "FREE Beverage Package applicable to most featured itineraries (excludes Egypt ships).",
-          "†FREE International Airfare valid for select 2026/2027/2028 departures.",
-          "$25 deposit available on all 2026/2027/2028/2029 river voyages.",
-          "A limited-time $25 per person deposit is due at time of booking for all featured itineraries; remaining deposit is due with final payment (excludes World Cruise itineraries).",
-          "Expeditions: FREE roundtrip international airfare based on select departures of Antarctic Explorer."
+          "Up to $500 instant savings.",
+          "Up to $500 onboard credit.",
+          "$100 deposits.",
+          "Free Location Upgrade up to $400 per stateroom.",
+          "Guests 1 & 2 only.",
+          "Single-occupancy guests may receive per-guest instant savings, onboard credit, and Captain’s Circle instant savings in stated ranges.",
+          "Captain’s Circle members will receive an additional Instant Savings."
         ],
         "agentOnlyNotes": [
-          "Offer code: A250",
-          "mention code: EBD",
-          "New bookings only",
-          "Air does not have to be purchased to get cruise/cruisetour offer.",
-          "Based on inventory availability at time of purchase and may be withdrawn at any time.",
-          "Additional restrictions may apply.",
-          "Book and deposit by July 31, 2026; 2026: Pay in full by August 5, 2026, or at 120 days prior to departure (whichever comes first); 2027: Pay in full by September 17, 2026. 2028: Pay in full by March 15, 2027",
-          "Book and by deposit July 31, 2026; 2026: Pay in full by August 5, 2026, or at 120 days prior to departure; 2027: Pay in full by Sep 17, 2026; 2028: Pay in full by Mar 15, 2027; 2029: Pay in Full by Jan 13, 2028."
+          "See terms and conditions/sailing lists in One Source.",
+          "New Bookings Only deposited: June 2 - October 12, 2028"
         ],
         "suggestedAngles": [
-          "Celebrate milestone travel with select Viking sale perks.",
-          "Highlight select sailings with possible airfare and onboard credit value.",
-          "Promote adults-only cultural cruising with qualifying sale extras.",
-          "Feature river, ocean, and expedition options with offer-based savings."
+          "Early booking bonus on 2028 Europe sailings",
+          "Potential onboard credit and instant savings on select Princess Europe departures",
+          "Perks for Captain’s Circle members on eligible bookings",
+          "Select Europe voyages may include added convenience perks like dining and embarkation access"
         ],
         "cautionFlags": [
-          "'Up to' savings apply only to select departures and categories; not all itineraries qualify for the maximum.",
-          "Shipboard credit is stated for featured itineraries, so broad claims across all Viking sailings would be misleading.",
-          "Free beverage package excludes Egypt ships and applies only to most featured itineraries.",
-          "Free international airfare is limited to select departures and is subject to change.",
-          "$25 deposit terms differ between river and ocean/expedition products and exclude World Cruise itineraries in one stated case.",
-          "Market is restricted to US residents only.",
-          "Inventory availability and pay-in-full deadlines affect eligibility."
+          "The promotion uses 'up to' language, so savings and onboard credit are not guaranteed at the maximum amount.",
+          "Offer is limited to Guests 1 & 2 only.",
+          "Single-occupancy amounts differ from double-occupancy messaging.",
+          "Deposit amount and perks may depend on specific sailing terms in One Source.",
+          "The text references terms and sailing lists elsewhere, so eligibility is not fully self-contained here."
         ],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": "Select Viking sailings may qualify for limited-time sale perks such as savings, shipboard credit, airfare offers, beverage package inclusion, or reduced deposit terms. Availability and eligibility vary by itinerary, departure, category, and product type, with final pricing and perks confirmed in the booking portal."
+        "visitorFriendlySummary": "Select Princess 2028 Europe voyages may qualify for early booking perks such as instant savings, onboard credit, a possible location upgrade, and other booking benefits. Final pricing, eligibility, and included perks are confirmed in the booking portal and applicable terms."
       },
       "diagnostics": {
         "status": "succeeded",
         "model": "gpt-5.4",
         "notes": [
-          "Offers: dollars_off, onboard_credit, all_included, other.",
-          "Public claims: 3, needs-qualifier: 7, caution flags: 7."
+          "Offers: dollars_off, onboard_credit, instant_savings, other.",
+          "Public claims: 3, needs-qualifier: 7, caution flags: 5."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2904",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2904/",
+      "capturedAtIso": "2026-07-16T00:48:08.985Z",
+      "title": "Norwegian Cruise Line - Semi Annual Sale",
+      "vendor": "Norwegian Cruise Line",
+      "bookingWindow": {
+        "startsOn": "2026-07-07",
+        "endsOn": "2026-07-30",
+        "rawText": "Must be booked between 07/07/2026 and 07/30/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-10-15",
+        "endsOn": "2027-09-02",
+        "rawText": "For sailings on or between 10/15/2026 and 09/02/2027"
+      },
+      "promotionDetailsRaw": "NORWEGIAN CRUISE LINE SEMI-ANNUAL SALE IS GOING ON NOW! If you're looking to save big on your next vacation! NCL's first-ever Semi-Annual Sale is here, featuring 50% off all cruises* and Free Pre-Paid Gratuities on select sailings*.\n\nSail from the Caribbean to Alaska to Europe and beyond, enjoy Black Friday-level savings now, and secure your ideal future getaway. With Free at Sea, NCL's all-inclusive cruising package, you’ll enjoy exceptional value from start to finish. Don’t miss your chance to book a dream cruise at a major discount before this limited-time offer sails away.\n\nReduced Deposit balconies and below only. Applicable for sailings of three days or longer. Does apply to Sail Away rates!\n\nSelect Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids\n\nBooking dates: July 8 - 30, 2026*\n\n****************************************************************\n\nNCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)\n\nNCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)\n\n************************************************************************************************\n\n*Free Pre-Paid Service Charges on Guests 1-2 | Balcony and Above on select voyage dates. Prepaid Gratuities are valued at $20 per person, per day. Latitude members bookings July 8th and 9th, open to others July 10th to 20th.  New Bookings only!\n\n******************************************************************************************\n\nCruiseFirst Offer: $250/$500 | Sailings 90+ Days Out & 6+ Days Duration\n\nJuly 28 - 30, 2026",
+      "agentInstructionsRaw": "Prepaid grats is not combinable with FITOBC. See NCL Central toolkit for more details.",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [
+          "second_guest_discount",
+          "onboard_credit",
+          "free_extra_guests",
+          "other"
+        ],
+        "percentDiscounts": [
+          {
+            "appliesTo": "all cruises",
+            "percentOff": 50,
+            "rawText": "featuring 50% off all cruises*"
+          },
+          {
+            "appliesTo": "voyage fare total",
+            "percentOff": 10,
+            "rawText": "NCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)"
+          },
+          {
+            "appliesTo": "voyage fare total",
+            "percentOff": 5,
+            "rawText": "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)"
+          }
+        ],
+        "dollarSavings": [],
+        "onboardCredits": [
+          {
+            "amountUsd": 50,
+            "appliesTo": "per stateroom",
+            "rawText": "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)"
+          }
+        ],
+        "freeGuestOffers": [
+          {
+            "guestNumbers": "3rd & 4th kids",
+            "rawText": "Select Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids"
+          },
+          {
+            "guestNumbers": "3rd & 4th guests",
+            "rawText": "Select Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids"
+          }
+        ],
+        "combinability": {
+          "groupRates": false,
+          "rawRules": [
+            "NCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)",
+            "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)",
+            "Prepaid grats is not combinable with FITOBC. See NCL Central toolkit for more details."
+          ]
+        },
+        "exclusions": [
+          "Applicable for sailings of three days or longer.",
+          "Balcony and Above on select voyage dates.",
+          "New Bookings only!"
+        ],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [
+          "Select sailings may qualify for up to 50% off cruises.",
+          "Select sailings may qualify for free pre-paid gratuities.",
+          "Some select sailing dates may include kids sail free or extra guest promotions.",
+          "Eligible travelers may qualify for military or teacher discounts on select bookings."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "50% off all cruises is tied to the listed promotion/booking window and sailing window.",
+          "Free pre-paid gratuities apply to Guests 1-2, Balcony and Above, on select voyage dates.",
+          "Reduced deposit applies to balconies and below only.",
+          "Offer is applicable for sailings of three days or longer.",
+          "Select sailing dates may offer 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free, or $99 USD Kids.",
+          "Military Appreciation discount is capacity controlled and not combinable with groups.",
+          "Teacher's discount and onboard credit are capacity controlled and not combinable with groups.",
+          "CruiseFirst offer applies to sailings 90+ days out and 6+ days duration."
+        ],
+        "agentOnlyNotes": [
+          "Prepaid grats is not combinable with FITOBC. See NCL Central toolkit for more details.",
+          "Military and Teacher programs are not combinable with groups.",
+          "Latitude members bookings July 8th and 9th, open to others July 10th to 20th.",
+          "Does apply to Sail Away rates!"
+        ],
+        "suggestedAngles": [
+          "Promote limited-time summer cruise savings across multiple regions.",
+          "Highlight that select sailings may include pre-paid gratuities.",
+          "Target family travelers with select-date extra guest or kids offers.",
+          "Mention educator and military appreciation offers where eligibility applies."
+        ],
+        "cautionFlags": [
+          "Do not broadly promise free pre-paid gratuities without noting select voyage dates, Guests 1-2, and Balcony and Above requirements.",
+          "Do not advertise kids/free guest offers as fleetwide; text limits them to select sailing dates.",
+          "Do not present military or teacher discounts as available to everyone; they are specific eligibility programs and capacity controlled.",
+          "Do not imply onboard credit is included generally; the $50 USD onboard credit is stated only for the Teacher's Discount Program.",
+          "Reduced deposit is limited to balconies and below only.",
+          "Prepaid gratuities are described as free service charges, but the exact availability window in the text differs from the main booking window wording and should be confirmed in portal."
+        ],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": "Select Norwegian Cruise Line sailings booked during this promotion may qualify for major cruise savings, and some bookings may also include extras like pre-paid gratuities or family-friendly guest offers. Final pricing, eligibility, and included perks should always be confirmed in the booking portal."
+      },
+      "diagnostics": {
+        "status": "succeeded",
+        "model": "gpt-5.4",
+        "notes": [
+          "Offers: second_guest_discount, onboard_credit, free_extra_guests, other.",
+          "Public claims: 4, needs-qualifier: 8, caution flags: 6."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2907",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2907/",
+      "capturedAtIso": "2026-07-16T00:48:08.985Z",
+      "title": "MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit",
+      "vendor": "MSC Cruises",
+      "bookingWindow": {
+        "startsOn": "2026-07-08",
+        "endsOn": "2026-08-03",
+        "rawText": "Must be booked between 07/08/2026 and 08/03/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-07-15",
+        "endsOn": "2028-10-01",
+        "rawText": "For sailings on or between 07/15/2026 and 10/01/2028"
+      },
+      "promotionDetailsRaw": "MSC Cruises Bonus Savings, Kids Free and up to $500 Shipboard Credit!\n\nSave $$$ by booking a One Device WIFI and Beverage package at a discounted price when making your new cruise reservation!\n\nTurn on summer mode and save big on your next holiday! From sun-soaked thrills and live shows to flavors that take you on a world tour, our state-of-the-art ships bring you unforgettable moments at sea. Book your holidays to must-see destinations like the Caribbean and The Bahamas, Europe, Alaska, and beyond. Let’s Holiday!\n\nShips: MSC World America, MSC World Asia, MSC Armonia, MSC Bellissima, MSC Divina, MSC Euribia, MSC World Europa, MSC Fantasia, MSC Grandiosa, MSC Lirica, MSC Magnifica, MSC Meraviglia, MSC Musica, MSC Opera, MSC Orchestra, MSC Poesia, MSC Preziosa, MSC Seascape, MSC Seaside, MSC Seashore, MSC Splendida, MSC Seaview, MSC Sinfonia, MSC Virtuosa\n\n\nDestinations: Alaska, Caribbean and North America, Canary Islands, Far East, Mediterranean, Northern Europe, Panama Canal and Grand Voyages\n\n\nSailing Months:  July 2026 to October 2028\n\nBook July 8 - August 3, 2026. New Bookings Only.\n\n*onboard credit varies by type of cabin and length of cruise",
+      "agentInstructionsRaw": "For complete terms and conditions, visit https://www.msccruisesusa.com/cruise-deals/promo-terms-and-conditions.",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [
+          "onboard_credit",
+          "other"
+        ],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [
+          {
+            "amountUsd": 500,
+            "appliesTo": "varies by type of cabin and length of cruise",
+            "voyageLength": "varies by length of cruise",
+            "cabinCategory": "varies by type of cabin",
+            "rawText": "*onboard credit varies by type of cabin and length of cruise"
+          },
+          {
+            "amountUsd": 500,
+            "appliesTo": "unspecified eligible bookings",
+            "rawText": "MSC Cruises Bonus Savings, Kids Free and up to $500 Shipboard Credit!"
+          }
+        ],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [
+          "New Bookings Only."
+        ],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [
+          "Select MSC Cruises sailings may qualify for bonus savings and onboard credit.",
+          "Select new MSC bookings may qualify for discounted pricing on a One Device WIFI and Beverage package when added at the time of reservation."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "Up to $500 shipboard credit, with onboard credit varying by cabin type and cruise length.",
+          "Book between July 8 and August 3, 2026 for sailings between July 15, 2026 and October 1, 2028.",
+          "Kids Free is referenced in the promotion headline/details but no supporting terms are provided in the supplied text."
+        ],
+        "agentOnlyNotes": [
+          "For complete terms and conditions, visit https://www.msccruisesusa.com/cruise-deals/promo-terms-and-conditions.",
+          "New Bookings Only."
+        ],
+        "suggestedAngles": [
+          "Highlight select MSC sailings with possible onboard credit.",
+          "Promote eligible MSC vacations across the Caribbean, Bahamas, Europe, Alaska, and beyond.",
+          "Mention optional discounted WIFI and beverage package pricing at booking."
+        ],
+        "cautionFlags": [
+          "Do not advertise a guaranteed $500 onboard credit; the text says 'up to $500' and notes it varies by cabin type and cruise length.",
+          "Do not advertise Kids Sail Free as a firm consumer offer without additional terms from the booking portal or full promo terms.",
+          "Do not imply all sailings, cabins, or lengths qualify equally.",
+          "Do not present discounted WIFI and beverage package pricing as free or automatically included."
+        ],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": "Select MSC Cruises sailings booked within the promotional window may qualify for bonus savings and possible shipboard credit, with final value depending on factors like cabin type and cruise length. Discounted pricing on a One Device WIFI and Beverage package may also be available at booking, with final pricing and perks confirmed in the booking portal."
+      },
+      "diagnostics": {
+        "status": "succeeded",
+        "model": "gpt-5.4",
+        "notes": [
+          "Offers: onboard_credit, other.",
+          "Public claims: 2, needs-qualifier: 3, caution flags: 4."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2889",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2889/",
+      "capturedAtIso": "2026-07-16T00:48:08.985Z",
+      "title": "Royal Caribbean - 3-5 Night Cruises - FREE Dining",
+      "vendor": "Royal Caribbean International",
+      "bookingWindow": {
+        "startsOn": "2026-07-01",
+        "endsOn": "2026-07-31",
+        "rawText": "Must be booked between 07/01/2026 and 07/31/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-08-17",
+        "endsOn": "2027-02-28",
+        "rawText": "For sailings on or between 08/17/2026 and 02/28/2027"
+      },
+      "promotionDetailsRaw": "Cruise Brothers Exclusive FREE Dining on Royal Caribbean Short 2026 sailings.\n\nBalcony or Suite on 3-5 night Short Caribbean and West Coast/Mexico sailings\ndeparting August 17, 2026 – February 28, 2027\n\nRoyal Caribbean will apply specialty dining to all eligible reservations by August 17, 2026\n\nVoucher will be included within guest documents (eDocs) as early as 49 days prior to sailing \n\nNew bookings only reserved and deposited July 1 - 31, 2026\n\n*Offer includes one complimentary specialty dining experience per stateroom for two guests.\nOffer is valid for lunch for two, one per sailing, at Chops Grille, Giovanni’s Table, Jamie’s Italian or Sabor Modern\nMexican; or dinner for two, one per sailing, at Chops Grille, Giovanni's Table, Samba Grill, Jamie’s Italian, 150 Central\nPark, Wonderland or Hooked Seafood. Offer is not valid at Izumi Hibachi or Izumi Asian Cuisine. Venues vary by ship.\nReservations for specialty dining offers must be made onboard.",
+      "agentInstructionsRaw": "Bookings can be made via the phone by calling Royal Caribbean Reservations at 1-800-\n327-6700, online at www.cruisingpower.com via Espresso.\n\n\n• All redemptions must be submitted via the below form by August 3, 2026:\nhttps://forms.office.com/r/e8c4JhbM1Y\n\n\n• Royal Caribbean will apply specialty dining to all eligible reservations by August 17, 2026\n\n\n• Voucher will be included within guest documents (eDocs) as early as 49 days prior to\nsailing \n\nSpecialty dining experience for two applies to new bookings created 7/1/26 – 7/31/26 on 3-5-night Short Caribbean\nand West Coast/Mexico sailings departing 8/17/26-02/28/2027, in balcony or above stateroom categories. Offer\nincludes one complimentary specialty dining experience per stateroom for two guests. Offer is valid for lunch for\ntwo, one per sailing, at Chops Grille, Giovanni’s Table, Jamie’s Italian or Sabor Modern Mexican; or dinner for two, one\nper sailing, at Chops Grille, Giovanni's Table, Samba Grill, Jamie’s Italian, 150 Central Park, Wonderland or Hooked\nSeafood. Offer is not valid at Izumi Hibachi or Izumi Asian Cuisine. Venues vary by ship. Reservations for specialty\ndining offers must be made onboard. Offer may be used on any day based on venue availability. Revenue items\nshown on specialty dining menus are not included in this offer and are available at an additional cost. Special\ndining events that take place in Specialty restaurants are excluded from the specialty dining offer. Offer cannot be\nused toward the purchase of specialty dining packages. Alcoholic beverages and sodas are not included and are\navailable at an additional cost. Specialty dining gratuities are included. This offer does not give guest(s) any priority\nfor reservations, or if there is a wait to be seated in the restaurant. Offer is not combinable with other specialty\ndining offers or with the following rates, including, but not limited to, Incentive Groups, Standard Groups, Affinity Groups, Interline,\nTravel Agent, Travel Agent Friends & Family, Net rates, or Casino rates, and does not change with Royal Up\nUpgrades.",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [
+          "other",
+          "agency_special"
+        ],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": [
+            "Offer is not combinable with other specialty dining offers or with the following rates, including, but not limited to, Incentive Groups, Standard Groups, Affinity Groups, Interline, Travel Agent, Travel Agent Friends & Family, Net rates, or Casino rates, and does not change with Royal Up Upgrades."
+          ]
+        },
+        "exclusions": [
+          "Offer is not valid at Izumi Hibachi or Izumi Asian Cuisine.",
+          "Revenue items shown on specialty dining menus are not included in this offer and are available at an additional cost.",
+          "Special dining events that take place in Specialty restaurants are excluded from the specialty dining offer.",
+          "Offer cannot be used toward the purchase of specialty dining packages.",
+          "Alcoholic beverages and sodas are not included and are available at an additional cost.",
+          "Offer is not combinable with other specialty dining offers or with the following rates, including, but not limited to, Incentive Groups, Standard Groups, Affinity Groups, Interline, Travel Agent, Travel Agent Friends & Family, Net rates, or Casino rates.",
+          "does not change with Royal Up Upgrades."
+        ],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [
+          "Select Royal Caribbean short sailings may qualify for a complimentary specialty dining experience for two per stateroom on eligible new bookings.",
+          "Eligible balcony or suite bookings on select 3-5 night Caribbean and West Coast/Mexico sailings may qualify for a dining perk."
+        ],
+        "publicClaimsNeedsQualifier": [
+          "Offer applies to new bookings reserved and deposited July 1 - 31, 2026.",
+          "Applies to 3-5-night Short Caribbean and West Coast/Mexico sailings departing 8/17/26-02/28/2027.",
+          "Applies to balcony or above stateroom categories.",
+          "Offer includes one complimentary specialty dining experience per stateroom for two guests.",
+          "Dining venue options vary by ship.",
+          "Reservations for specialty dining offers must be made onboard.",
+          "Offer may be used on any day based on venue availability."
+        ],
+        "agentOnlyNotes": [
+          "All redemptions must be submitted via the below form by August 3, 2026: https://forms.office.com/r/e8c4JhbM1Y",
+          "Royal Caribbean will apply specialty dining to all eligible reservations by August 17, 2026",
+          "Voucher will be included within guest documents (eDocs) as early as 49 days prior to sailing",
+          "Offer is not combinable with other specialty dining offers or with the following rates, including, but not limited to, Incentive Groups, Standard Groups, Affinity Groups, Interline, Travel Agent, Travel Agent Friends & Family, Net rates, or Casino rates, and does not change with Royal Up Upgrades."
+        ],
+        "suggestedAngles": [
+          "Short cruise bonus perk on select Royal Caribbean sailings",
+          "Balcony and suite guests may qualify for a specialty dining experience",
+          "Limited-time July booking offer for select 3-5 night getaways"
+        ],
+        "cautionFlags": [
+          "Do not advertise this as free dining for every guest; the text says one complimentary specialty dining experience per stateroom for two guests.",
+          "Do not imply all restaurants are included; specific venues apply and some are excluded.",
+          "Do not imply drinks or menu upcharges are included.",
+          "Do not imply the offer applies to all cabins; it is limited to balcony or above stateroom categories.",
+          "Do not imply the offer is combinable with other specialty dining offers or certain rate types.",
+          "Do not imply specialty dining packages are included or covered."
+        ],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": "Select Royal Caribbean 3-5 night sailings may qualify for a complimentary specialty dining experience for two per stateroom when booked in an eligible balcony or suite category during the promotional window. Final eligibility, pricing, and included perks are confirmed in the booking portal."
+      },
+      "diagnostics": {
+        "status": "succeeded",
+        "model": "gpt-5.4",
+        "notes": [
+          "Offers: other, agency_special.",
+          "Public claims: 2, needs-qualifier: 7, caution flags: 6."
         ],
         "warnings": []
       }
     }
   ],
   "diagnostics": {
-    "promotionLinksFound": 3,
-    "detailPagesScraped": 3,
-    "extractionSucceeded": 3,
+    "promotionLinksFound": 4,
+    "detailPagesScraped": 4,
+    "extractionSucceeded": 4,
     "extractionNeedsReview": 0,
     "supportingFilesFound": 0,
     "errors": []

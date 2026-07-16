@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-03T23:44:38.234Z",
+  "generatedAtIso": "2026-07-16T15:41:08.151Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -378,6 +378,53 @@
         "nights": 14,
         "departurePortCode": "Miami",
         "portsOfCall": "Miami | George Town | Falmouth | Oranjestad | Willemstad | St. George's | Bridgetown | Castries | Basseterre | Miami",
+        "confidence": 1,
+        "reasons": [
+          "Created from operator-selected workbench sailing."
+        ]
+      }
+    },
+    {
+      "id": "angle-workbench-western-caribbean-bimini-beach-club-resilient-lady-1640418",
+      "generatedAtIso": "2026-07-16T15:41:08.143Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "workbench",
+      "isolatedNiche": "US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking.",
+      "researchRationale": "Workbench-selected real sailing chosen for the angle \"Your 8-Night January Reset\". Grounding facts: Resilient Lady | 2027-01-16 | Miami, FL | Miami, Florida, United States, Costa Maya, Mexico, Roatan, Honduras.",
+      "successLogic": "US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking. can convert because this is a real Resilient Lady sailing on 2027-01-16, not a generic cruise sale. The exact package facts give the audience a specific sailing to compare and price-check.",
+      "audienceSignals": [
+        "Real sailing selected in the Campaign Workbench: Resilient Lady on Virgin Voyages, 8 nights, sailing 2027-01-16.",
+        "Concrete itinerary signal: Miami, FL roundtrip, Miami, Florida, United States, Costa Maya, Mexico, Roatan, Honduras, Belize City, Belize.",
+        "Operator-selected audience angle: US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking..",
+        "Targeting seeds chosen for this sailing: adults-only Caribbean cruise, January 2027 cruise from Miami, winter cruise for couples, Virgin Voyages, Resilient Lady, eight-night Caribbean cruise."
+      ],
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "Your 8-Night January Reset",
+        "theCorePitch": "Your 8-Night January Reset: Resilient Lady on Western Caribbean & Bimini Beach Club gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+        "visualAnchor": "A cold gray winter morning transitioning into Resilient Lady, a clean Western Caribbean route map, grown-up dining, open-deck relaxation, and bright destination moments without weather guarantees.",
+        "targetAudienceDescriptor": "US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking.",
+        "relevantKeywords": [
+          "adults-only Caribbean cruise",
+          "January 2027 cruise from Miami",
+          "winter cruise for couples",
+          "Virgin Voyages",
+          "Resilient Lady",
+          "eight-night Caribbean cruise",
+          "Western Caribbean cruise",
+          "Bimini cruise"
+        ],
+        "destinationAndTimeOfYearHints": "Western Caribbean & Bimini Beach Club departing 2027-01-16.",
+        "onboardAssetRequirements": "Resilient Lady ship assets, destination imagery, itinerary map, and booking-link proof."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-07-16T15:41:08.143Z",
+        "packageId": "1640418",
+        "cruiseName": "Western Caribbean & Bimini Beach Club",
+        "cruiseLine": "Virgin Voyages",
+        "sailDateIso": "2027-01-16",
+        "nights": 8,
+        "departurePortCode": "Miami, FL",
+        "portsOfCall": "Miami, Florida, United States | Costa Maya, Mexico | Roatan, Honduras | Belize City, Belize | Cozumel, Mexico | The Beach Club At Bimini, Bahamas",
         "confidence": 1,
         "reasons": [
           "Created from operator-selected workbench sailing."

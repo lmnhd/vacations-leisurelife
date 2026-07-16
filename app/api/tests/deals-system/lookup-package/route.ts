@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { resolvePortCode } from "@/lib/campaigns/landing/port-codes";
 import { runOdysseusLookup } from "@/lib/cb/deals-system/deal-package-resolution";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
+import { capturePackagePageTruth } from "@/lib/cb/link-broker/odysseus-lookup";
 import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";
 import {
   getOdysseusSession,
@@ -121,11 +122,12 @@ export async function POST(request: Request) {
     const startedAtIso = new Date().toISOString();
     const startedAt = Date.now();
     try {
-      const engine = await getOdysseusSession();
-      const summary = await engine.fetchPackagePageSummary(
+      await getOdysseusSession();
+      const truth = await capturePackagePageTruth(
         packageId,
         process.env.CB_AGENT_SIID ?? "1049337"
       );
+      const summary = truth?.summary;
       if (!summary?.title || !summary.sailDateIso) {
         return NextResponse.json({
           ok: false,
@@ -156,11 +158,15 @@ export async function POST(request: Request) {
           departurePort,
           ports: summary.portsOfCall?.split("|").map((port) => port.trim()).filter(Boolean).join(", ") ?? "",
           cabinPricing: summary.cabinPricing,
+          dayByDayItinerary: truth?.dayByDay?.days,
           confidence: 1,
           reasons: ["Exact package number match"],
         },
         candidates: [],
-        diagnostics: [`Loaded exact Odysseus package ${packageId}.`],
+        diagnostics: [
+          `Loaded exact Odysseus package ${packageId}.`,
+          ...(truth?.diagnostics ?? []),
+        ],
       });
     } catch (error) {
       return NextResponse.json({

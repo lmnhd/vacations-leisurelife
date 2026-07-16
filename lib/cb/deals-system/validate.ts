@@ -410,7 +410,9 @@ function validateDealAdCopy(adCopy: unknown, i: number, errors: string[]): void 
   }
   const a = adCopy as Partial<DealAdCopy>;
   if (typeof a.id !== "string" || !a.id) errors.push(`adCopies[${i}].id missing`);
-  if (a.generator !== "gpt") errors.push(`adCopies[${i}].generator must be "gpt"`);
+  if (a.generator !== "gpt" && a.generator !== "operator_curated") {
+    errors.push(`adCopies[${i}].generator must be "gpt" or "operator_curated"`);
+  }
   if (!isIsoDate(a.generatedAtIso)) errors.push(`adCopies[${i}].generatedAtIso must be an ISO date`);
   if (typeof a.sourceUnifiedManifestId !== "string") errors.push(`adCopies[${i}].sourceUnifiedManifestId missing`);
   if (!Array.isArray(a.variants) || a.variants.length === 0) {

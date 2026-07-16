@@ -25,6 +25,9 @@
  * browser operations remain operator-controlled.
  */
 
+import * as fs from "node:fs";
+import * as path from "node:path";
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -60,13 +63,20 @@ import {
   type DealDiscoveryIdea,
   type DealTripManifest,
   type PromoApplicabilityResult,
+  buildTripManifestId,
   buildOfferLines,
+  resolveInitialCabinPricing,
 } from "@/lib/cb/deals-system";
+import { scrapeLiveBookingPagePricing } from "@/lib/cb/link-broker/browser-validate";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 import { assessPromoHandoff } from "@/lib/cb/deals-system/promo-handoff-assessment";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 300;
+
+const PLAYWRIGHT_STATE_FILE = path.join(process.cwd(), ".playwright-state.json");
+const REAL_CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 
 interface Body {
   action?: unknown;
@@ -134,6 +144,23 @@ function parseCruiseFacts(value: unknown): CuratedDealCruiseFacts | undefined {
     portsOfCall: Array.isArray(v.portsOfCall)
       ? v.portsOfCall.map((p) => String(p)).filter(Boolean)
       : [],
+    dayByDayItinerary: Array.isArray(v.dayByDayItinerary)
+      ? v.dayByDayItinerary.flatMap((rawDay) => {
+          if (typeof rawDay !== "object" || rawDay === null) return [];
+          const day = rawDay as Record<string, unknown>;
+          const dayNumber = Number(day.day);
+          const portName = str(day.portName);
+          if (!Number.isInteger(dayNumber) || dayNumber <= 0 || !portName) return [];
+          return [{
+            day: dayNumber,
+            portName,
+            portCode: str(day.portCode),
+            atSea: day.atSea === true,
+            arrivalTime: str(day.arrivalTime),
+            departureTime: str(day.departureTime),
+          }];
+        })
+      : undefined,
     cabinPrices: {
       inside: cabinAmount("inside"),
       outside: cabinAmount("outside"),
@@ -512,7 +539,7 @@ function buildPipelineArtifacts(
         ].filter(Boolean);
   const baseSlug = slugifyText(`${facts.title}-${facts.shipName}-${deal.packageId}`) || deal.packageId;
   const angleId = `angle-workbench-${baseSlug}`;
-  const manifestId = `manifest-workbench-${baseSlug}`;
+  const manifestId = buildTripManifestId(deal.packageId, angleTitle);
   const bookingUrl = deal.bookingUrl || buildPackageUrl(deal.packageId, deal.siid);
   const ports = facts.portsOfCall.length > 0 ? facts.portsOfCall.join(" | ") : facts.itineraryName;
   const audienceSignals = buildWorkbenchAudienceSignals(deal, promoRecords, strategy);
@@ -561,7 +588,7 @@ function buildPipelineArtifacts(
     isolatedNiche: idea.isolatedNiche,
     sailingAngleTitle: angleTitle,
     assembleDraft: {
-      suggestedDealId: deal.id,
+      suggestedDealId: deal.packageId,
       suggestedBriefId: deal.briefId,
       cruiseLine: facts.cruiseLine,
       itineraryName: facts.itineraryName || facts.title,
@@ -579,7 +606,7 @@ function buildPipelineArtifacts(
     promoStrategy:
       promoApplicability.length > 0
         ? `Use selected promo intelligence to support "${angleTitle}" with qualified, public-safe language.`
-        : `No promo was selected during the workbench handoff; copywriting should sell "${angleTitle}" without perk or savings claims.`,
+        : `Lead with "${angleTitle}" through the verified itinerary and audience fit.`,
     manifestReasoning: `Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: ${angleTitle}. Targeting angle: ${targetAudience}. ${researchRationale}`,
     lookupQuery: {
       line: facts.cruiseLine,
@@ -1232,13 +1259,14 @@ export async function POST(request: Request) {
 
   try {
     if (action === "assemble") {
-      const dealId = str(body.dealId);
+      const submittedDealId = str(body.dealId);
       const briefId = str(body.briefId);
       const packageId = str(body.packageId);
       const cruiseFacts = parseCruiseFacts(body.cruiseFacts);
-      if (!dealId || !briefId || !packageId || !cruiseFacts) {
+      if (!submittedDealId || !briefId || !packageId || !cruiseFacts) {
         return bad("assemble requires dealId, briefId, packageId, and cruiseFacts.");
       }
+      const dealId = packageId;
       const input: AssembleCuratedDealInput = {
         dealId,
         briefId,
@@ -1255,6 +1283,12 @@ export async function POST(request: Request) {
         promoRecords: promoRecordIds.length > 0 ? await getPromoRecordsByIds(promoRecordIds) : [],
       };
       const deal = assembleWorkbenchDeal(input);
+      if (submittedDealId !== packageId) {
+        deal.agentOnlyNotes = [
+          ...(deal.agentOnlyNotes ?? []),
+          `Submitted Deal ID "${submittedDealId}" normalized to canonical package ID "${packageId}".`,
+        ];
+      }
       await upsertCuratedDealRecord(deal);
       const existingBrief = await getDealBrief(deal.briefId);
       if (!existingBrief) {
@@ -1352,8 +1386,38 @@ export async function POST(request: Request) {
       if (handoffAssessment.blockingIssues.length > 0) {
         return bad(`Promo handoff blocked. ${handoffAssessment.blockingIssues.join(" ")}`);
       }
-      const updated = strategy ? { ...existing, campaignStrategy: strategy } : existing;
-      if (strategy) {
+      const strategyUpdated = strategy ? { ...existing, campaignStrategy: strategy } : existing;
+      const pricingHydration = await resolveInitialCabinPricing(
+        strategyUpdated.cruiseFacts.cabinPrices,
+        strategyUpdated.bookingUrl,
+        (url) =>
+          scrapeLiveBookingPagePricing(url, {
+            storageStatePath: fs.existsSync(PLAYWRIGHT_STATE_FILE) ? PLAYWRIGHT_STATE_FILE : undefined,
+            executablePath: fs.existsSync(REAL_CHROME_PATH) ? REAL_CHROME_PATH : undefined,
+          })
+      );
+      if (pricingHydration.status === "unavailable" || !pricingHydration.pricing) {
+        return bad(
+          `Cabin-pricing handoff blocked. ${pricingHydration.note} Capture or refresh a pricing-ready booking link, then retry.`
+        );
+      }
+      const updated: CuratedOdysseusDeal =
+        pricingHydration.status === "hydrated"
+          ? {
+              ...strategyUpdated,
+              cruiseFacts: {
+                ...strategyUpdated.cruiseFacts,
+                cabinPrices: {
+                  inside: pricingHydration.pricing.inside,
+                  outside: pricingHydration.pricing.outside,
+                  balcony: pricingHydration.pricing.balcony,
+                  suite: pricingHydration.pricing.suite,
+                  currencyCode: pricingHydration.pricing.currencyCode,
+                },
+              },
+            }
+          : strategyUpdated;
+      if (strategy || pricingHydration.status === "hydrated") {
         await upsertCuratedDealRecord(updated);
       }
       const existingPromoApplicability = existing.promoApplicability ?? [];
@@ -1384,6 +1448,10 @@ export async function POST(request: Request) {
         angleId: pipeline.idea.id,
         manifestId: pipeline.manifest.id,
         handoffAssessment,
+        pricingHydration: {
+          status: pricingHydration.status,
+          note: pricingHydration.note,
+        },
         nextUrl: pipeline.nextUrl,
       });
     }

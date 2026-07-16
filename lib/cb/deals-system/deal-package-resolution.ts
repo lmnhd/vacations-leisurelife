@@ -17,9 +17,11 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 
 import { resolveBestBookingLink } from "@/lib/cb/link-broker";
+import { scrapeLiveBookingPagePricing } from "@/lib/cb/link-broker/browser-validate";
 import type { PackageLookupResult, RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";
 
 import { applyResolvedPackage, DEFAULT_DEAL_AGENT_SIID, parseRankedCandidate } from "./deal-package-resolver";
+import { resolveInitialCabinPricing } from "./deal-pricing-hydration";
 import type { DealManifestLookupQuery, DealTripManifest } from "./deal-trip-manifest-types";
 import type { LinkHealthStatus } from "./link-broker-types";
 
@@ -372,6 +374,16 @@ export async function resolveCandidateOntoManifest(
         await releaseSession().catch(() => undefined);
       }
     }
+  }
+
+  const pricingHydration = await resolveInitialCabinPricing(
+    candidate.cabinPricing,
+    bookingUrl,
+    (url) => scrapeLiveBookingPagePricing(url)
+  );
+  diagnostics.push(pricingHydration.note);
+  if (pricingHydration.status === "hydrated" && pricingHydration.pricing) {
+    candidate.cabinPricing = pricingHydration.pricing;
   }
 
   const updatedManifest = applyResolvedPackage(manifest, {

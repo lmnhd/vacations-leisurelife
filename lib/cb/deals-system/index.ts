@@ -37,6 +37,8 @@ export * from "./angle-inventory-seed";
 export * from "./promo-prefilter";
 export * from "./deal-trip-manifest-cache";
 export * from "./deal-trip-manifest-generator";
+export * from "./deal-ids";
+export * from "./deal-pricing-hydration";
 export * from "./deal-unified-manifest-cache";
 export * from "./deal-ad-copy-cache";
 export * from "./deal-copywriter-generator";

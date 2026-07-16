@@ -55,6 +55,7 @@ exist, create or update the manifest and send the operator to Copywriter.
 12. Never start, stop, or restart the dev server unless the user explicitly asks.
 13. Never modify Deals pipeline code merely to force one campaign through a failed validation. Report the failure and ask before changing system behavior.
 14. Use plain ASCII punctuation in skill files, prompts, comments, and operator copy unless Unicode has been verified after writing.
+15. For every new Deal or Deal ad, create or use a dedicated, descriptively named subdirectory inside `.github/DOCS/Implementation/DEALS_STRATEGY/LIVE_DEAL_DATA_WORK_DIRECTORY/` (prefer the Deal or campaign slug). Store the related research, package and promotion evidence, angle, copy, targeting, media notes, validation results, and approval documentation there so the Deal record has a transparent document trail.
 
 ## 4. Quality Bar
 
@@ -62,6 +63,7 @@ A campaign is ready to advance only when:
 
 - the sailing is a real Odysseus package
 - the package facts match the intended campaign
+- at least one numeric cabin-tier fare survived package resolution or was hydrated from the acquired booking URL
 - the selected promotion is applicable or the operator intentionally chose no promo
 - audience market and promo market are compatible
 - the campaign angle is specific to the sailing

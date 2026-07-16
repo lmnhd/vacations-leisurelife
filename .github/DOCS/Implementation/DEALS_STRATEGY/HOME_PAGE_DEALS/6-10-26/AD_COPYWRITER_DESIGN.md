@@ -101,6 +101,12 @@ tier. The operator reviews them in the Step 3 lab and clicks **"Use this as the 
 ad"** on one. That records `selectedVariantIndex` on the persisted ad copy (action
 `select`; pure helper `selectDealAdCopyVariant`).
 
+When no promotion brief is attached, Step 3 derives the internal
+`promotionMode: "omit"`. It removes raw promo-absence prose before calling the
+copywriter and requests angle-preserving variants based only on verified itinerary,
+season, pacing, and audience-fit facts. Customer-facing copy must not state that no
+promotion or offer exists; absence of attached context is not proof of market absence.
+
 **Why an index, not a rewrite.** All variants are kept (they remain valuable as Meta
 A/B ad sets in Step 6). The selection is a pointer. At assembly time
 `withSelectedVariantPrimary(adCopy)` reorders so the chosen variant sits at index 0 —
