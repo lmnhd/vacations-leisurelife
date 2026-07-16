@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   computeDealActivitySummary,
+  computeDealDailyActivity,
   listDealEvents,
 } from "@/lib/cb/deals-system/deal-events-store";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
@@ -20,7 +21,7 @@ import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const RECENT_EVENT_LIMIT = 50;
+const RECENT_EVENT_LIMIT = 150;
 
 export async function GET(request: NextRequest) {
   const blocked = blockInProduction();
@@ -33,9 +34,10 @@ export async function GET(request: NextRequest) {
 
   const events = await listDealEvents(dealId);
   const summary = computeDealActivitySummary(dealId, events);
+  const daily = computeDealDailyActivity(events);
 
   // Most-recent-first, capped — the timeline is a glance, not an export.
   const recent = [...events].reverse().slice(0, RECENT_EVENT_LIMIT);
 
-  return NextResponse.json({ ok: true, summary, events: recent });
+  return NextResponse.json({ ok: true, summary, daily, events: recent });
 }

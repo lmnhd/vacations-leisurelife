@@ -23,7 +23,13 @@ import { getSavedDiscoveryResearchStatus } from "./discovery-research-source";
 import { loadDealDiscoveryIdeasCache } from "./deal-discovery-cache";
 import { loadDealAdCopyCache } from "./deal-ad-copy-cache";
 import { listCuratedDeals, listDealTripManifests, listPromoRecords } from "./deals-dynamo-store";
-import { computeDealActivitySummary, listDealEvents } from "./deal-events-store";
+import {
+  computeDealActivitySummary,
+  computeDealDailyActivity,
+  lastNDailyBuckets,
+  listDealEvents,
+  type DealDailyActivityBucket,
+} from "./deal-events-store";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 
 type CacheKey = keyof typeof DEALS_CACHE_PATHS;
@@ -143,6 +149,8 @@ export interface DealsSystemDealActivity {
   callbackRequests: number;
   totalActions: number;
   lastActivityAtIso?: string;
+  /** Last 14 UTC days (today inclusive, zero-filled) for the card sparkline. */
+  daily14: DealDailyActivityBucket[];
 }
 
 export interface DealsSystemLinkBrokerSummary {
@@ -439,6 +447,7 @@ function stageReviewSummaries(deal: CuratedOdysseusDeal): DealsSystemCuratedDeal
 }
 
 const EMPTY_DEAL_ACTIVITY: DealsSystemDealActivity = {
+  daily14: [],
   totalViews: 0,
   uniqueSessions: 0,
   engagedViews: 0,
@@ -624,6 +633,7 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
       const events = await listDealEvents(deal.id);
       const s = computeDealActivitySummary(deal.id, events);
       dealActivityById.set(deal.id, {
+        daily14: lastNDailyBuckets(computeDealDailyActivity(events), 14),
         totalViews: s.totalViews,
         uniqueSessions: s.uniqueSessions,
         engagedViews: s.engagedViews,

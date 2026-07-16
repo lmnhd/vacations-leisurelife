@@ -7,7 +7,7 @@ import { type DealsSystemDashboardData } from "@/lib/cb/deals-system/dashboard-d
 import { DEALS_SYSTEM_OPERATOR_ACTIONS } from "@/lib/cb/deals-system/operator-actions";
 
 import { CallbackRequestsPanel } from "./callback-requests-panel";
-import { DealActivityPanel } from "./deal-activity-panel";
+import { CuratedDealsInventory } from "./curated-deals-inventory";
 import { DealCampaignWorkbench } from "./campaign-workbench";
 import { DealPricingCheckPanel } from "./deal-pricing-check-panel";
 import { DealsSystemControls } from "./controls";
@@ -594,144 +594,54 @@ function ToolsTab({ data }: { data: DealsSystemDashboardData }) {
   );
 }
 
-function CuratedDealCard({ deal }: { deal: CuratedDealSummary }) {
-  const [showActivity, setShowActivity] = useState(false);
-  const a = deal.activity;
-
-  return (
-    <article className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-white">{deal.title}</h3>
-          <p className="mt-1 text-xs text-slate-400">
-            {deal.cruiseLine} | {deal.shipName} | {deal.sailDateIso} | package {deal.packageId}
-          </p>
-        </div>
-        <Badge tone={deal.publishable ? "ok" : "blocked"}>
-          {deal.publishable ? "publishable" : "not public"}
-        </Badge>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Badge>{deal.status}</Badge>
-        <Badge tone={deal.linkHealth === "valid" ? "ok" : "pending"}>{deal.linkHealth}</Badge>
-        <Badge tone={deal.hasAngleResearch ? "ok" : "pending"}>
-          research {deal.hasAngleResearch ? "yes" : "missing"}
-        </Badge>
-        <Badge tone={deal.hasTargetingDemographic ? "ok" : "pending"}>
-          targeting {deal.hasTargetingDemographic ? "yes" : "missing"}
-        </Badge>
-        <Badge tone={deal.hasCampaignStrategy ? "ok" : "pending"}>
-          hook {deal.hasCampaignStrategy ? "saved" : "missing"}
-        </Badge>
-        {deal.pinned && <Badge tone="ok">pinned</Badge>}
-        {deal.hidden && <Badge tone="error">hidden</Badge>}
-      </div>
-      {deal.hasCampaignStrategy && (
-        <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-3 text-xs text-slate-300">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-300">
-            Locked campaign hook
-          </p>
-          <p className="mt-1 font-semibold text-white">{deal.campaignAngle}</p>
-          {deal.targetAudience && <p className="mt-1 text-slate-400">{deal.targetAudience}</p>}
-          {deal.visualAngle && <p className="mt-1 text-slate-500">Visual: {deal.visualAngle}</p>}
-          {deal.targetingKeywords.length > 0 && (
-            <p className="mt-1 text-slate-500">
-              Keywords: {deal.targetingKeywords.join(", ")}
-            </p>
-          )}
-          {deal.campaignStrategySavedAtIso && (
-            <p className="mt-1 text-[11px] text-slate-500">
-              Saved {formatDateTime(deal.campaignStrategySavedAtIso)}
-            </p>
-          )}
-        </div>
-      )}
-      {deal.warnings.length > 0 && (
-        <ul className="mt-3 space-y-1 text-xs leading-5 text-amber-100">
-          {deal.warnings.map((warning) => (
-            <li key={warning}>{warning}</li>
-          ))}
-        </ul>
-      )}
-
-      {/* Compact reach/action roll-up — server-rendered, no fetch. */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/10 pt-3 text-xs text-slate-300">
-        <span>
-          <span className="font-semibold text-white">{a.totalViews}</span> views
-        </span>
-        <span>
-          <span className="font-semibold text-white">{a.uniqueSessions}</span> unique
-        </span>
-        <span>
-          <span className="font-semibold text-white">{a.bookNowClicks}</span> book clicks
-        </span>
-        <span>
-          <span className="font-semibold text-white">{a.totalActions}</span> actions
-        </span>
-        <button
-          type="button"
-          onClick={() => setShowActivity((value) => !value)}
-          className="ml-auto rounded-lg border border-cyan-300/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
-        >
-          {showActivity ? "Hide activity" : "View activity"}
-        </button>
-      </div>
-
-      {showActivity && <DealActivityPanel dealId={deal.id} />}
-    </article>
-  );
-}
-
 function InventoryTab({ data }: { data: DealsSystemDashboardData }) {
   return (
     <div className="space-y-4">
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Panel title="Curated Deals" eyebrow="Homepage publishing gate · reach + actions">
-          {data.curatedDeals.length === 0 ? (
-            <EmptyState>No Curated Deals have been assembled yet.</EmptyState>
-          ) : (
-            <div className="space-y-3">
-              {data.curatedDeals.map((deal) => (
-                <CuratedDealCard key={deal.id} deal={deal} />
-              ))}
-            </div>
-          )}
-        </Panel>
+      <Panel
+        title="Curated Deals"
+        eyebrow="Homepage publishing gate · reach + actions"
+        defaultOpen
+      >
+        {data.curatedDeals.length === 0 ? (
+          <EmptyState>No Curated Deals have been assembled yet.</EmptyState>
+        ) : (
+          <CuratedDealsInventory deals={data.curatedDeals} readAtIso={data.readAtIso} />
+        )}
+      </Panel>
 
-        <Panel title="Link Broker Records" eyebrow="Internal link generator cache">
-          {data.linkBrokerRecords.length === 0 ? (
-            <EmptyState>No Link Broker records are currently cached.</EmptyState>
-          ) : (
-            <div className="space-y-3">
-              {data.linkBrokerRecords.map((record) => (
-                <article key={record.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold text-white">
-                        Package {record.packageId} / SIID {record.siid}
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-400">{record.cruiseLabel}</p>
-                    </div>
-                    <Badge tone={record.health === "valid" ? "ok" : "pending"}>
-                      {record.health}
-                    </Badge>
+      <Panel title="Link Broker Records" eyebrow="Internal link generator cache">
+        {data.linkBrokerRecords.length === 0 ? (
+          <EmptyState>No Link Broker records are currently cached.</EmptyState>
+        ) : (
+          <div className="grid gap-3 xl:grid-cols-2">
+            {data.linkBrokerRecords.map((record) => (
+              <article key={record.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">
+                      Package {record.packageId} / SIID {record.siid}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-400">{record.cruiseLabel}</p>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Badge>{record.linkClass}</Badge>
-                    <Badge>{record.source}</Badge>
-                    {record.parameterSummary.map((item) => (
-                      <Badge key={item}>{item}</Badge>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-xs text-slate-500">
-                    Updated {formatDateTime(record.updatedAtIso)}
-                  </p>
-                </article>
-              ))}
-            </div>
-          )}
-        </Panel>
-      </div>
+                  <Badge tone={record.health === "valid" ? "ok" : "pending"}>
+                    {record.health}
+                  </Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Badge>{record.linkClass}</Badge>
+                  <Badge>{record.source}</Badge>
+                  {record.parameterSummary.map((item) => (
+                    <Badge key={item}>{item}</Badge>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-slate-500">
+                  Updated {formatDateTime(record.updatedAtIso)}
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+      </Panel>
 
       <Panel title="CB Promo Intelligence" eyebrow="Agent promo rules, not sellable alone">
         {data.promoRecords.length === 0 ? (
