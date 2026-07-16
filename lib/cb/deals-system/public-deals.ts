@@ -19,12 +19,11 @@ import type { DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import {
-  getCuratedDeal,
-  getDealFunnelSynthesis,
-  getDealMetaAdSynthesis,
-  getDealTripManifest,
-  getPromoRecordsByIds,
   listCuratedDeals,
+  listDealFunnelSyntheses,
+  listDealMetaAdSyntheses,
+  listDealTripManifests,
+  listPromoRecords,
 } from "./deals-dynamo-store";
 import {
   projectPublicDealPage,
@@ -59,15 +58,19 @@ async function loadEligibleDeals(): Promise<CuratedOdysseusDeal[]> {
 export async function getPublicDealTiles(): Promise<PublicDealTile[]> {
   const deals = await loadEligibleDeals();
 
-  // Pull only each deal's likely synthesis records by key. The old implementation
-  // scanned every synthesis row on every homepage render; this keeps the homepage
-  // to one necessary deal-list scan plus cheap point reads for visible tiles.
-  const tiles = await Promise.all(
-    deals.map(async (deal) =>
-      projectPublicDealTile(deal, await loadFunnelSynthesisForDeal(deal))
-    )
+  // Pull the funnel syntheses so each tile can show the operator-selected hero
+  // image (matching the /deals/[id] page), not just the stock fallback. Resilient:
+  // a missing/malformed synthesis cache yields no images and the fallback applies.
+  let syntheses: DealFunnelSynthesis[] = [];
+  try {
+    syntheses = await listDealFunnelSyntheses();
+  } catch {
+    syntheses = [];
+  }
+
+  return deals.map((deal) =>
+    projectPublicDealTile(deal, findDealFunnelSynthesisForDeal(deal, syntheses))
   );
-  return tiles;
 }
 
 export function dealFunnelSynthesisLookupKeys(deal: CuratedOdysseusDeal): string[] {
@@ -163,24 +166,18 @@ function hydrateDealFromManifest(
 }
 
 async function loadTripManifestForDeal(deal: CuratedOdysseusDeal): Promise<DealTripManifest | undefined> {
-  for (const key of dealFunnelSynthesisLookupKeys(deal)) {
-    try {
-      const manifest = await getDealTripManifest(key);
-      if (manifest) return manifest;
-    } catch {
-      return undefined;
-    }
+  let manifests: DealTripManifest[];
+  try {
+    manifests = await listDealTripManifests();
+  } catch {
+    return undefined;
   }
-  return undefined;
+  return findDealTripManifestForDeal(deal, manifests);
 }
 
-async function loadPromoRecordsForDeal(deal: CuratedOdysseusDeal): Promise<CbPromoIntelligenceRecord[]> {
-  const ids = (deal.promoApplicability ?? [])
-    .map((promo) => promo.promoRecordId)
-    .filter(Boolean);
-  if (ids.length === 0) return [];
+async function loadPromoRecords(): Promise<CbPromoIntelligenceRecord[]> {
   try {
-    return await getPromoRecordsByIds(ids);
+    return await listPromoRecords();
   } catch {
     return [];
   }
@@ -194,18 +191,13 @@ async function loadPromoRecordsForDeal(deal: CuratedOdysseusDeal): Promise<CbPro
  * notes instead of only the public deal id.
  */
 async function loadFunnelSynthesisForDeal(deal: CuratedOdysseusDeal): Promise<DealFunnelSynthesis | undefined> {
-  const keys = dealFunnelSynthesisLookupKeys(deal);
-  for (const key of keys) {
-    try {
-      const synthesis = await getDealFunnelSynthesis(key);
-      if (synthesis && findDealFunnelSynthesisForDeal(deal, [synthesis])) {
-        return synthesis;
-      }
-    } catch {
-      return undefined;
-    }
+  let syntheses: DealFunnelSynthesis[];
+  try {
+    syntheses = await listDealFunnelSyntheses();
+  } catch {
+    return undefined;
   }
-  return undefined;
+  return findDealFunnelSynthesisForDeal(deal, syntheses);
 }
 
 /**
@@ -217,18 +209,13 @@ async function loadFunnelSynthesisForDeal(deal: CuratedOdysseusDeal): Promise<De
 async function loadMetaAdSynthesisForDeal(
   deal: CuratedOdysseusDeal
 ): Promise<DealMetaAdSynthesis | undefined> {
-  const keys = dealFunnelSynthesisLookupKeys(deal);
-  for (const key of keys) {
-    try {
-      const synthesis = await getDealMetaAdSynthesis(key);
-      if (synthesis && findDealMetaAdSynthesisForDeal(deal, [synthesis])) {
-        return synthesis;
-      }
-    } catch {
-      return undefined;
-    }
+  let syntheses: DealMetaAdSynthesis[];
+  try {
+    syntheses = await listDealMetaAdSyntheses();
+  } catch {
+    return undefined;
   }
-  return undefined;
+  return findDealMetaAdSynthesisForDeal(deal, syntheses);
 }
 
 /**
@@ -239,28 +226,13 @@ async function loadMetaAdSynthesisForDeal(
  * back to the legacy curated rendering.
  */
 export async function getPublicDealPageById(id: string): Promise<PublicDealPage | null> {
-  let deal: CuratedOdysseusDeal | null;
-  try {
-    deal = await getCuratedDeal(id);
-  } catch {
-    return null;
-  }
-  if (!deal || !isDealHomepageEligible(deal)) return null;
+  const deals = await loadEligibleDeals();
+  const deal = deals.find((candidate) => candidate.id === id);
+  if (!deal) return null;
   const manifest = await loadTripManifestForDeal(deal);
   const hydratedDeal = hydrateDealFromManifest(deal, manifest);
   const synthesis = await loadFunnelSynthesisForDeal(hydratedDeal);
   const metaAdSynthesis = await loadMetaAdSynthesisForDeal(hydratedDeal);
-  const promoRecords = await loadPromoRecordsForDeal(hydratedDeal);
+  const promoRecords = await loadPromoRecords();
   return projectPublicDealPage(hydratedDeal, synthesis, promoRecords, metaAdSynthesis);
-}
-
-/** Cheap public-eligibility check for telemetry routes that do not need the
- * hydrated page payload. */
-export async function isPublicDealAvailableById(id: string): Promise<boolean> {
-  try {
-    const deal = await getCuratedDeal(id);
-    return Boolean(deal && isDealHomepageEligible(deal));
-  } catch {
-    return false;
-  }
 }
