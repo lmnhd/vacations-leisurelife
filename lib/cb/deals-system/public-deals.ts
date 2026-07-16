@@ -19,6 +19,7 @@ import type { DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import {
+  getCuratedDeal,
   listCuratedDeals,
   listDealFunnelSyntheses,
   listDealMetaAdSyntheses,
@@ -235,4 +236,19 @@ export async function getPublicDealPageById(id: string): Promise<PublicDealPage 
   const metaAdSynthesis = await loadMetaAdSynthesisForDeal(hydratedDeal);
   const promoRecords = await loadPromoRecords();
   return projectPublicDealPage(hydratedDeal, synthesis, promoRecords, metaAdSynthesis);
+}
+
+/**
+ * Cheap public-eligibility check for telemetry routes that do not need the
+ * hydrated page payload. One point-read of the deal record (deals ARE keyed by
+ * their id) — this deliberately avoids the synthesis/manifest loads above,
+ * which the tracking beacon never uses.
+ */
+export async function isPublicDealAvailableById(id: string): Promise<boolean> {
+  try {
+    const deal = await getCuratedDeal(id);
+    return Boolean(deal && isDealHomepageEligible(deal));
+  } catch {
+    return false;
+  }
 }
