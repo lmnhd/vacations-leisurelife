@@ -44,6 +44,9 @@ export default async function DealDetailPage({
     if (curated.designPage) {
       return (
         <>
+          {/* Machine-readable rendering marker for the public-deals smoke test
+              (npm run smoke-public-deals): "design" = synthesis layout. */}
+          <span data-deal-rendering="design" hidden />
           <DealViewBeacon dealId={curated.id} />
           <DealLandingPage dealId={curated.id} page={curated.designPage} />
         </>
@@ -51,6 +54,10 @@ export default async function DealDetailPage({
     }
     return (
       <>
+        {/* "legacy" = no funnel synthesis resolved for this deal. Expected only
+            for deals that never had a synthesis; on a synthesized deal this
+            means the lookup degraded — the smoke test flags it. */}
+        <span data-deal-rendering="legacy" hidden />
         <DealViewBeacon dealId={curated.id} />
         <CuratedDealPage deal={curated} />
       </>

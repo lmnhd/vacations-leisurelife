@@ -22,6 +22,8 @@
     "extract-cb-promo-intelligence": "npx tsx --env-file=.env.local scripts/extract-cb-promo-intelligence.ts",
     "lookup-odysseus-package": "npx tsx --env-file=.env.local scripts/lookup-odysseus-package.ts",
     "backfill-deal-itinerary": "npx tsx --env-file=.env.local scripts/backfill-deal-itinerary.ts",
+    "backfill-public-content-refs": "npx tsx --env-file=.env.local scripts/backfill-public-content-refs.ts",
+    "smoke-public-deals": "node scripts/smoke-public-deals.mjs",
     "check-deal-pricing": "npx tsx --env-file=.env.local scripts/check-deal-pricing.ts",
     "backfill-deal-ship-identity": "npx tsx --env-file=.env.local scripts/backfill-deal-ship-identity.ts --",
     "backfill-deal-meta-ad-synthesis-dynamo": "npx tsx --env-file=.env.local scripts/backfill-deal-meta-ad-synthesis-dynamo.ts",

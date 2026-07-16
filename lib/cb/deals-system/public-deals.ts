@@ -20,11 +20,14 @@ import type { DealTripManifest } from "./deal-trip-manifest-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
 import {
   getCuratedDeal,
+  getDealFunnelSynthesis,
+  getDealMetaAdSynthesis,
+  getDealTripManifest,
+  getPromoRecordsByIds,
   listCuratedDeals,
   listDealFunnelSyntheses,
   listDealMetaAdSyntheses,
   listDealTripManifests,
-  listPromoRecords,
 } from "./deals-dynamo-store";
 import {
   projectPublicDealPage,
@@ -59,18 +62,14 @@ async function loadEligibleDeals(): Promise<CuratedOdysseusDeal[]> {
 export async function getPublicDealTiles(): Promise<PublicDealTile[]> {
   const deals = await loadEligibleDeals();
 
-  // Pull the funnel syntheses so each tile can show the operator-selected hero
-  // image (matching the /deals/[id] page), not just the stock fallback. Resilient:
-  // a missing/malformed synthesis cache yields no images and the fallback applies.
-  let syntheses: DealFunnelSynthesis[] = [];
-  try {
-    syntheses = await listDealFunnelSyntheses();
-  } catch {
-    syntheses = [];
-  }
-
-  return deals.map((deal) =>
-    projectPublicDealTile(deal, findDealFunnelSynthesisForDeal(deal, syntheses))
+  // Each tile needs the deal's funnel synthesis for the operator-selected hero
+  // image (matching the /deals/[id] page). loadFunnelSynthesisForDeal point-reads
+  // the stamped ref and only falls back to the (cached) full scan when a ref is
+  // missing or stale, so a bad ref costs the old scan — never a wrong image.
+  return Promise.all(
+    deals.map(async (deal) =>
+      projectPublicDealTile(deal, await loadFunnelSynthesisForDeal(deal))
+    )
   );
 }
 
@@ -166,7 +165,31 @@ function hydrateDealFromManifest(
   };
 }
 
+function warnRefFallback(kind: string, dealId: string, refId: string): void {
+  console.warn(
+    `[public-deals] publicContentRefs.${kind} "${refId}" on deal ${dealId} missed or no longer matches; ` +
+      "falling back to scan+match. Re-run: npm run backfill-public-content-refs"
+  );
+}
+
+/**
+ * Trip manifest for a deal: point-read the stamped ref and verify it still
+ * matches the deal's lookup keys; otherwise fall back to the legacy full
+ * scan+match (cached, correct, just costlier). Never returns a record that
+ * doesn't match — a stale ref degrades to the old cost profile, not to wrong
+ * content.
+ */
 async function loadTripManifestForDeal(deal: CuratedOdysseusDeal): Promise<DealTripManifest | undefined> {
+  const refId = deal.publicContentRefs?.tripManifestId;
+  if (refId) {
+    try {
+      const manifest = await getDealTripManifest(refId);
+      if (manifest && findDealTripManifestForDeal(deal, [manifest])) return manifest;
+    } catch {
+      // fall through to the scan
+    }
+    warnRefFallback("tripManifestId", deal.id, refId);
+  }
   let manifests: DealTripManifest[];
   try {
     manifests = await listDealTripManifests();
@@ -176,9 +199,18 @@ async function loadTripManifestForDeal(deal: CuratedOdysseusDeal): Promise<DealT
   return findDealTripManifestForDeal(deal, manifests);
 }
 
-async function loadPromoRecords(): Promise<CbPromoIntelligenceRecord[]> {
+/**
+ * Promo records for a deal. The projection only ever consumes promos matched to
+ * `deal.promoApplicability` by id, so point-reading exactly those ids is
+ * behavior-identical to listing every promo — minus the full-table scan.
+ */
+async function loadPromoRecordsForDeal(deal: CuratedOdysseusDeal): Promise<CbPromoIntelligenceRecord[]> {
+  const ids = (deal.promoApplicability ?? [])
+    .map((promo) => promo.promoRecordId)
+    .filter(Boolean);
+  if (ids.length === 0) return [];
   try {
-    return await listPromoRecords();
+    return await getPromoRecordsByIds(ids);
   } catch {
     return [];
   }
@@ -189,9 +221,20 @@ async function loadPromoRecords(): Promise<CbPromoIntelligenceRecord[]> {
  * (returns undefined so the page falls back to the legacy rendering rather than
  * crashing). Published deals use live package ids, while synthesis records are
  * keyed to the source manifest/ad-copy ids, so we match across the carried trace
- * notes instead of only the public deal id.
+ * notes instead of only the public deal id. The stamped ref short-circuits the
+ * scan; a missing/stale ref falls back to the legacy scan+match.
  */
 async function loadFunnelSynthesisForDeal(deal: CuratedOdysseusDeal): Promise<DealFunnelSynthesis | undefined> {
+  const refId = deal.publicContentRefs?.funnelSynthesisId;
+  if (refId) {
+    try {
+      const synthesis = await getDealFunnelSynthesis(refId);
+      if (synthesis && findDealFunnelSynthesisForDeal(deal, [synthesis])) return synthesis;
+    } catch {
+      // fall through to the scan
+    }
+    warnRefFallback("funnelSynthesisId", deal.id, refId);
+  }
   let syntheses: DealFunnelSynthesis[];
   try {
     syntheses = await listDealFunnelSyntheses();
@@ -205,11 +248,21 @@ async function loadFunnelSynthesisForDeal(deal: CuratedOdysseusDeal): Promise<De
  * Load the Meta ad synthesis (Step 8) for a deal, resilient to a missing/malformed
  * store (returns undefined so the page simply omits the ad-cards showcase rather
  * than crashing). Matched the same way as the funnel synthesis, since both are
- * keyed to the same manifest/ad-copy trace.
+ * keyed to the same manifest/ad-copy trace. Stamped ref first, scan fallback.
  */
 async function loadMetaAdSynthesisForDeal(
   deal: CuratedOdysseusDeal
 ): Promise<DealMetaAdSynthesis | undefined> {
+  const refId = deal.publicContentRefs?.metaAdSynthesisId;
+  if (refId) {
+    try {
+      const synthesis = await getDealMetaAdSynthesis(refId);
+      if (synthesis && findDealMetaAdSynthesisForDeal(deal, [synthesis])) return synthesis;
+    } catch {
+      // fall through to the scan
+    }
+    warnRefFallback("metaAdSynthesisId", deal.id, refId);
+  }
   let syntheses: DealMetaAdSynthesis[];
   try {
     syntheses = await listDealMetaAdSyntheses();
@@ -227,14 +280,20 @@ async function loadMetaAdSynthesisForDeal(
  * back to the legacy curated rendering.
  */
 export async function getPublicDealPageById(id: string): Promise<PublicDealPage | null> {
-  const deals = await loadEligibleDeals();
-  const deal = deals.find((candidate) => candidate.id === id);
-  if (!deal) return null;
+  // Deals ARE keyed by their id, so this point-read is exact — unlike the
+  // synthesis/manifest records, which need the ref/scan machinery above.
+  let deal: CuratedOdysseusDeal | null;
+  try {
+    deal = await getCuratedDeal(id);
+  } catch {
+    return null;
+  }
+  if (!deal || !isDealHomepageEligible(deal)) return null;
   const manifest = await loadTripManifestForDeal(deal);
   const hydratedDeal = hydrateDealFromManifest(deal, manifest);
   const synthesis = await loadFunnelSynthesisForDeal(hydratedDeal);
   const metaAdSynthesis = await loadMetaAdSynthesisForDeal(hydratedDeal);
-  const promoRecords = await loadPromoRecords();
+  const promoRecords = await loadPromoRecordsForDeal(hydratedDeal);
   return projectPublicDealPage(hydratedDeal, synthesis, promoRecords, metaAdSynthesis);
 }
 

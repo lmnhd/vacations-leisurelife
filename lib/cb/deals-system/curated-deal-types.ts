@@ -141,6 +141,21 @@ export interface CuratedOdysseusDeal {
     pinned?: boolean;
     hidden?: boolean;
   };
+  /**
+   * Exact record ids of this deal's public-page content, stamped by
+   * `npm run backfill-public-content-refs` (and safe to re-run any time).
+   * The public read path point-reads these instead of scanning every
+   * SYNTHESIS#/MANIFEST#/METAADSYNTH# row; when absent or stale it falls
+   * back to the legacy scan+match, so a missing ref degrades to the old
+   * cost profile — never to a broken page.
+   */
+  publicContentRefs?: {
+    tripManifestId?: string;
+    funnelSynthesisId?: string;
+    metaAdSynthesisId?: string;
+    /** ISO timestamp of the last backfill/stamp, for operator debugging. */
+    stampedAtIso?: string;
+  };
 }
 
 export interface OdysseusDealBrief {
