@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-16T16:59:19.195Z",
+  "generatedAtIso": "2026-07-18T00:07:36.233Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
@@ -325,6 +325,60 @@
       "sailingAngleTitle": "Your 8-Night January Reset",
       "id": "funnel-1640418-your-8-night-january-reset-resilient-lady-2027-01-16",
       "dealId": "1640418"
+    },
+    {
+      "generatedAtIso": "2026-07-18T00:06:35.272Z",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "sourceFunnelSynthesisId": "funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc",
+      "cards": [
+        {
+          "primaryText": "Copenhagen → Warnemünde → Gdynia → Klaipeda → Riga → Tallinn → Helsinki → Stockholm overnight. This is itinerary depth.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1553111/meta-ad-synthesis/funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc/card0-1784333253178.png",
+          "generatedAtIso": "2026-07-18T00:07:33.178Z",
+          "generator": "gpt_image_2",
+          "headline": "8 Ports. 10 Nights. Zero Filler.",
+          "previousImages": [],
+          "cardIndex": 0,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n8 Ports. 10 Nights. Zero Filler.\nCopenhagen → Warnemünde → Gdynia → Klaipeda → Riga → Tallinn → Helsinki → Stockholm overnight. This is itinerary depth.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        },
+        {
+          "headline": "Stockholm Overnight in Port",
+          "cardIndex": 1,
+          "primaryText": "A real overnight — not a 6-hour turnaround. Explore Gamla Stan after dark. 10-night Baltic sailing, Sep 12, 2026.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1553111/meta-ad-synthesis/funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc/card1-1784333255357.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nStockholm Overnight in Port\nA real overnight — not a 6-hour turnaround. Explore Gamla Stan after dark. 10-night Baltic sailing, Sep 12, 2026.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-07-18T00:07:35.357Z",
+          "previousImages": []
+        },
+        {
+          "primaryText": "Select bookings Jul 8–Aug 3 may qualify for OBC + discounted WIFI & drink pkg. New reservations only. Confirm at booking.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1553111/meta-ad-synthesis/funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc/card2-1784333250846.png",
+          "generatedAtIso": "2026-07-18T00:07:30.845Z",
+          "generator": "gpt_image_2",
+          "headline": "Up to $500 Onboard Credit",
+          "previousImages": [],
+          "cardIndex": 2,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nUp to $500 Onboard Credit\nSelect bookings Jul 8–Aug 3 may qualify for OBC + discounted WIFI & drink pkg. New reservations only. Confirm at booking.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        },
+        {
+          "primaryText": "Friend-group pricing across multiple cabins. Stack PTO around ports that matter. Check live pricing before Aug 3 cutoff.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1553111/meta-ad-synthesis/funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc/card3-1784333253287.png",
+          "generatedAtIso": "2026-07-18T00:07:33.287Z",
+          "generator": "gpt_image_2",
+          "headline": "2–4 Cabins? Split & Save.",
+          "previousImages": [],
+          "cardIndex": 3,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n2–4 Cabins? Split & Save.\nFriend-group pricing across multiple cabins. Stack PTO around ports that matter. Check live pricing before Aug 3 cutoff.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        }
+      ],
+      "sailingAngleTitle": "The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings",
+      "id": "funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc",
+      "dealId": "1553111"
     }
   ]
 }

@@ -91,9 +91,13 @@ https://bookings.cbagenttools.com/swift/cruise/package/{PACKAGE_ID}?siid={AGENT_
 
 **Agent credentials:** Stored in `.env.local` as `CB_EMAIL` / `CB_PASSWORD`. Never hardcode.
 
-**Playwright automation:** The `OdysseusEngine` drives CBAT headlessly for automated booking and inventory work. Agents may run CBAT / Playwright inventory checks, scrapes, link validation, and non-booking research autonomously when credentials/session state are available. The only hard approval boundary is any action that would create a hold, reservation, payment step, or real booking. See `.github/DOCS/PROCESSES/odysseus-playwright-automation.md`.
+**Playwright automation:** The `OdysseusEngine` drives CBAT headlessly for automated booking and inventory work. Agents may run CBAT / Playwright inventory checks, scrapes, link validation, non-booking research, and the short-lived Odysseus session-lock activity defined below autonomously when credentials/session state are available. See `.github/DOCS/PROCESSES/odysseus-playwright-automation.md`.
 
-**CRITICAL:** Always confirm with the user before running any script that executes a "Hold" or reservation action. Raising flags with Cruise Brothers is a real operational risk.
+**Temporary Odysseus session lock:** Creating one normal `brn` booking session for careful testing or an active booking flow is allowed. Operator-observed behavior indicates that this may temporarily lock the sailing/booking path for about 15 minutes and automatically releases when the session expires. Reuse one session per active test or booking draft, do not create repeated or parallel locks unnecessarily, and stop before entering payment information or submitting the final reservation/payment action.
+
+**Hard approval boundary:** Ask before an explicit or durable hold, named reservation, payment entry, final booking submit, or any action whose effect appears to extend beyond the normal short-lived `brn` session lock.
+
+**CRITICAL:** Temporary session locks are allowed but must be used sparingly. If the system produces a booking reference, named hold, durable reservation, or unclear inventory effect, stop and ask before continuing.
 
 ---
 
@@ -144,7 +148,7 @@ This skill is still a work in progress but contains the authoritative workflow, 
 
 ### Hard Rules (always active)
 1. Never call `read_url_content` on localhost.
-2. Agents may run Playwright scripts autonomously for inventory, pricing, validation, and non-booking research. Ask the user before any hold, reservation, payment, or booking action.
+2. Agents may run Playwright scripts autonomously for inventory, pricing, validation, non-booking research, and one rate-limited short-lived `brn` session lock per active test/draft. Ask before an explicit or durable hold, named reservation, payment entry, final submit, real booking, or unclear inventory effect.
 3. Never assume the dev server is running — ask before making `fetch()` calls to localhost.
 4. One repair pass per layer — if a warning persists after one fix, escalate to the user.
 5. Never modify `lib/campaigns/**` pipeline code to force a fix — report failures and wait for instructions.

@@ -21,6 +21,7 @@ import { chatDynamoDocumentClient } from "@/lib/chat/dynamo-client";
 
 import type { CuratedOdysseusDeal, OdysseusDealBrief } from "./curated-deal-types";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
+import { manifestsBelongToSameDealCampaign } from "./deal-trip-manifest-identity";
 import type { DealFunnelSynthesis } from "./deal-page-design-types";
 import type { DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
 import type { CbPromoIntelligenceRecord } from "./promo-intelligence-types";
@@ -207,7 +208,21 @@ export async function listDealTripManifests(): Promise<DealTripManifest[]> {
 }
 
 export async function upsertDealTripManifestRecord(manifest: DealTripManifest): Promise<void> {
-  return putItem(`MANIFEST#${manifest.id}`, manifest);
+  const existingManifests = await listDealTripManifests();
+  const supersededIds = existingManifests
+    .filter(
+      (existing) =>
+        existing.id !== manifest.id &&
+        manifestsBelongToSameDealCampaign(existing, manifest)
+    )
+    .map((existing) => existing.id);
+
+  // Write the replacement first so a failed write never removes the currently
+  // active campaign. Cleanup happens only after the new manifest is durable.
+  await putItem(`MANIFEST#${manifest.id}`, manifest);
+  for (const supersededId of supersededIds) {
+    await deleteItem(`MANIFEST#${supersededId}`);
+  }
 }
 
 export async function deleteDealTripManifestRecord(id: string): Promise<void> {

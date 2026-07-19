@@ -4,6 +4,8 @@ Choose the entry path that matches the user's intent, then converge on the same 
 
 The Deals workflow is manifest-centered. Discovery, Trip Manifestation, package-number intake, promo-led intake, and agent-generated campaign briefs are all entry adapters. Once the system has a real sailing plus a usable campaign hook, create or update the `DealTripManifest` and hand the operator to the next appropriate shared stage, usually Copywriter.
 
+Each Odysseus package has one active Deal campaign manifest. Selecting, editing, or replacing the angle updates that package's manifest; it must not create a second campaign row. Ad-copy variants are the supported place for A/B creative alternatives.
+
 ## Path A: Promotion-Led Fast Campaign
 
 Use this when the user names a promotion, cruise line, date window, region, departure constraint, or candidate sailing.

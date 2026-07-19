@@ -1467,8 +1467,10 @@ export function DealCampaignWorkbench({
                     Pipeline entry - normalize into a manifest
                   </p>
                   <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-400">
-                    Generate or edit the campaign angle, lock it to this sailing, then create the
-                    manifest that the copywriter, funnel, publish, and ad steps already use.
+                    Generate, select, or edit the campaign angle, then update the manifest used by
+                    the copywriter, funnel, publish, and ad steps. This package keeps one active
+                    campaign manifest, so changing the angle replaces its prior version rather than
+                    creating a duplicate campaign.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1492,7 +1494,7 @@ export function DealCampaignWorkbench({
                     onClick={() => continueInPipeline(deal)}
                     className="inline-flex h-9 items-center rounded-lg border border-emerald-300/40 bg-emerald-400/10 px-4 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {busy === `${deal.id}:send_to_pipeline` ? "Creating manifest..." : "Create manifest and open copywriter"}
+                    {busy === `${deal.id}:send_to_pipeline` ? "Updating manifest..." : "Update campaign and open copywriter"}
                   </button>
                 </div>
               </div>

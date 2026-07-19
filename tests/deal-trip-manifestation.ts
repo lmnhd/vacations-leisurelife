@@ -186,6 +186,17 @@ async function main(): Promise<void> {
   cache = upsertDealTripManifest(cache, manifest);
   check("upsert is idempotent on id", cache.manifests.length === 1);
 
+  const revisedAngleManifest = {
+    ...manifest,
+    id: `${manifest.id}-revised-angle`,
+    sailingAngleTitle: "Revised campaign angle",
+  };
+  cache = upsertDealTripManifest(cache, revisedAngleManifest);
+  check(
+    "a revised angle replaces the package campaign instead of duplicating it",
+    cache.manifests.length === 1 && cache.manifests[0]?.id === revisedAngleManifest.id
+  );
+
   const validation = validateDealTripManifestsCache(cache);
   check("validator accepts the manifest cache", validation.ok, validation.errors.join("; "));
 

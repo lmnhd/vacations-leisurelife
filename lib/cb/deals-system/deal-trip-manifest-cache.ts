@@ -14,6 +14,7 @@ import type {
   DealTripManifest,
   DealTripManifestsCache,
 } from "./deal-trip-manifest-types";
+import { manifestsBelongToSameDealCampaign } from "./deal-trip-manifest-identity";
 import { validateDealTripManifestsCache } from "./validate";
 
 const CACHE_PATH = DEALS_CACHE_PATHS.dealTripManifests;
@@ -43,12 +44,19 @@ export function saveDealTripManifestsCache(cache: DealTripManifestsCache): void 
   fs.writeFileSync(CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf8");
 }
 
-/** Insert or replace a manifest by id, returning the updated cache (not yet saved). */
+/**
+ * Insert or replace the active manifest for a Deal package. Angle edits can
+ * change the readable manifest id, but they must not create a second campaign.
+ */
 export function upsertDealTripManifest(
   cache: DealTripManifestsCache,
   manifest: DealTripManifest
 ): DealTripManifestsCache {
-  const manifests = cache.manifests.filter((existing) => existing.id !== manifest.id);
+  const manifests = cache.manifests.filter(
+    (existing) =>
+      existing.id !== manifest.id &&
+      !manifestsBelongToSameDealCampaign(existing, manifest)
+  );
   manifests.push(manifest);
   return { ...cache, generatedAtIso: new Date().toISOString(), manifests };
 }

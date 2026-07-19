@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-16T15:41:08.151Z",
+  "generatedAtIso": "2026-07-17T23:11:16.119Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -425,6 +425,51 @@
         "nights": 8,
         "departurePortCode": "Miami, FL",
         "portsOfCall": "Miami, Florida, United States | Costa Maya, Mexico | Roatan, Honduras | Belize City, Belize | Cozumel, Mexico | The Beach Club At Bimini, Bahamas",
+        "confidence": 1,
+        "reasons": [
+          "Created from operator-selected workbench sailing."
+        ]
+      }
+    },
+    {
+      "id": "angle-workbench-northern-europe-10-nights-msc-magnifica-1553111",
+      "generatedAtIso": "2026-07-17T23:11:16.112Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "workbench",
+      "isolatedNiche": "US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value.",
+      "researchRationale": "Workbench-selected real sailing chosen for the angle \"The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings\". Grounding facts: MSC Magnifica | 2026-09-12 | CPH | Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland. Promo context considered: MSC Cruises MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit | Select MSC Cruises sailings may qualify for onboard credit. | Must be booked between 07/08/2026 and 08/03/2026.",
+      "successLogic": "US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value. can convert because this is a real MSC Magnifica sailing on 2026-09-12, not a generic cruise sale. The attached MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit gives the audience a timely reason to act.",
+      "audienceSignals": [
+        "Real sailing selected in the Campaign Workbench: MSC Magnifica on MSC Cruises, 10 nights, sailing 2026-09-12.",
+        "Concrete itinerary signal: CPH roundtrip, Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland, Klaipeda Lithuania.",
+        "Operator-selected audience angle: US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value..",
+        "Targeting seeds chosen for this sailing: Stockholm overnight cruise, MSC Cruises onboard credit, Baltic cruise with overnight port, September Northern Europe cruise, MSC Magnifica 2026, Copenhagen cruise September."
+      ],
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings",
+        "theCorePitch": "The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings: MSC Magnifica on Northern Europe, 10 Nights gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+        "visualAnchor": "MSC Magnifica in late-summer light, a Copenhagen-to-Stockholm route map, a clear Stockholm overnight marker, and warm Northern Europe city imagery without implying specific excursions or weather.",
+        "targetAudienceDescriptor": "US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value.",
+        "relevantKeywords": [
+          "Stockholm overnight cruise",
+          "MSC Cruises onboard credit",
+          "Baltic cruise with overnight port",
+          "September Northern Europe cruise",
+          "MSC Magnifica 2026",
+          "Copenhagen cruise September"
+        ],
+        "destinationAndTimeOfYearHints": "Northern Europe, 10 Nights departing 2026-09-12.",
+        "onboardAssetRequirements": "MSC Magnifica ship assets, destination imagery, itinerary map, and booking-link proof."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-07-17T23:11:16.112Z",
+        "packageId": "1553111",
+        "cruiseName": "Northern Europe, 10 Nights",
+        "cruiseLine": "MSC Cruises",
+        "sailDateIso": "2026-09-12",
+        "nights": 10,
+        "departurePortCode": "CPH",
+        "portsOfCall": "Copenhagen Denmark | Warnemunde (Berlin) Germany | Gdynia (Gdansk-Danzig) Poland | Klaipeda Lithuania | Riga Latvia | Tallin Estonia | Helsinki Finland | Stockholm Sweden",
         "confidence": 1,
         "reasons": [
           "Created from operator-selected workbench sailing."

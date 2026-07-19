@@ -19,6 +19,8 @@ Before running any script, classify it using this table:
 | **Playwright-dependent** | `run-phase-b.ts`, `scrape-cb-deals.ts`, `cb-inventory-scraper.ts`, `lib/campaigns/booking-link-validator.ts`, `test-package-link.ts`, `odysseus-booking-flow.ts`, all `scrape-*.ts` | **Allowed autonomously for non-booking work** â€” agents may use these for CB/Odysseus inventory checks, pricing validation, and link research. Hard stop only if the action would create a hold, reservation, payment step, or real booking. |
 | **HTTP-dependent** | `diagnose-discovery-iteration.ts`, `test-booking-prototype.ts`, any script calling `localhost:3000` | **Conditional** â€” only run after operator confirms dev server is up at `localhost:3000`. |
 | **Pure Node/DynamoDB** | `check-brief-status.ts`, `check-campaign-exists.ts`, `enqueue-and-run-brief.ts`, `check-agent-job.ts` | **Safe to run autonomously** â€” no browser, no HTTP. |
+**Temporary session-lock exception:** One short-lived Odysseus `brn` session per active test/draft is allowed for careful testing through the visible payment boundary. Reuse it, avoid repeated/parallel locks, enter no payment data, and do not submit the final reservation/payment action.
+
 
 **Scripts that write output files (the only two):**
 - `scripts/scrape-cb-deals.ts` â†’ `.github/data/cb-deals-cache.json`
@@ -117,7 +119,7 @@ Write-Host $output
 
 The agent must **stop and ask for approval before attempting** the following:
 
-1. Any step that would create a **hold**, **reservation**, **payment step**, or **real booking**
+1. Any step that would create an **explicit/durable hold**, **named reservation**, **payment entry**, **final submit**, or **real booking** beyond the allowed short-lived `brn` session lock
 2. Any submission of real traveler information into a live supplier checkout flow
 3. Confirming or restarting the dev server when operator awareness is needed
 

@@ -132,7 +132,7 @@ Stop and point to a specific checkpoint when:
 - A Group inventory match conflicts with the requested ship/date.
 - A brief or scene warning survives one repair pass.
 - The operator must choose among materially different angles or images.
-- The next action would approve, publish, dispatch ads, create a hold, reservation, payment step, or booking.
+- The next action would approve, publish, dispatch ads, create an explicit/durable hold, named reservation, payment entry, final submit, or booking. The short-lived Odysseus `brn` session lock allowed by `AI_POLICY.md` is not this hard stop.
 
 At a checkpoint, provide:
 

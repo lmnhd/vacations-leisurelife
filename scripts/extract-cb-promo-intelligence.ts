@@ -19,6 +19,7 @@ import * as fs from "node:fs";
 import path from "node:path";
 
 import { ModelName } from "../lib/ai/llm-gateway";
+import { upsertPromoRecordEntry } from "../lib/cb/deals-system/deals-dynamo-store";
 import { extractPromoIntelligence } from "../lib/cb/deals-system/promo-extraction";
 import { validatePromoIntelligenceCache } from "../lib/cb/deals-system/validate";
 import type { CbPromoIntelligenceCache } from "../lib/cb/deals-system/promo-intelligence-types";
@@ -100,12 +101,22 @@ async function main(): Promise<void> {
 
   fs.writeFileSync(CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf8");
 
+  const storeReadyRecords = cache.records.filter(
+    (record) => record.diagnostics.status === "succeeded"
+  );
+  for (const record of storeReadyRecords) {
+    await upsertPromoRecordEntry(record);
+  }
+
   console.log(
     `\n[extract-cb-promo-intelligence] Done. succeeded=${succeeded} failed=${failed}. ` +
       `Cache totals: succeeded=${cache.diagnostics.extractionSucceeded}, ` +
       `needsReview=${cache.diagnostics.extractionNeedsReview}.`
   );
   console.log(`[extract-cb-promo-intelligence] Wrote ${CACHE_PATH}`);
+  console.log(
+    `[extract-cb-promo-intelligence] Synced ${storeReadyRecords.length} succeeded record(s) to the Deals store.`
+  );
 }
 
 main().catch((err) => {

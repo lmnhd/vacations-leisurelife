@@ -107,6 +107,65 @@ export function validateAdCopyVoice(variant: {
   return Array.from(new Set(warnings));
 }
 
+/**
+ * Convert common model-authored typographic punctuation to the ASCII forms the
+ * customer-facing Deals surfaces require. Unknown non-ASCII characters are
+ * intentionally preserved so the factual guard can still reject rewritten
+ * place names instead of silently transliterating them.
+ */
+export function normalizeCustomerFacingPunctuation(value: string): string {
+  let normalized = "";
+  for (const character of value) {
+    switch (character) {
+      case "\u2018":
+      case "\u2019":
+      case "\u201B":
+        normalized += "'";
+        break;
+      case "\u201C":
+      case "\u201D":
+      case "\u201F":
+        normalized += '"';
+        break;
+      case "\u2010":
+      case "\u2011":
+      case "\u2012":
+      case "\u2013":
+      case "\u2014":
+      case "\u2212":
+      case "\u00B7":
+        normalized += "-";
+        break;
+      case "\u2026":
+        normalized += "...";
+        break;
+      case "\u2190":
+        normalized += "<-";
+        break;
+      case "\u2192":
+        normalized += "->";
+        break;
+      case "\u2022":
+      case "\u2023":
+      case "\u2043":
+      case "\u25E6":
+        normalized += "-";
+        break;
+      case "\u00A0":
+      case "\u202F":
+        normalized += " ";
+        break;
+      case "\u2028":
+      case "\u2029":
+        normalized += "\n";
+        break;
+      default:
+        normalized += character;
+    }
+  }
+  return normalized;
+}
+
 // ── Output schema ─────────────────────────────────────────────────────────────
 
 const variantSchema = z.object({
@@ -375,15 +434,21 @@ export async function generateDealAdCopy(
       rejectedPromoIds.push(promoApplied);
       promoApplied = "none";
     }
+    const normalizedVariant = {
+      headline: normalizeCustomerFacingPunctuation(v.headline),
+      bodyCopy: normalizeCustomerFacingPunctuation(v.bodyCopy),
+      pricingDisclaimers: normalizeCustomerFacingPunctuation(v.pricingDisclaimers),
+      callToAction: normalizeCustomerFacingPunctuation(v.callToAction),
+    };
     return {
       promoApplied,
       variantLabel: v.variantLabel,
-      headline: v.headline,
-      bodyCopy: v.bodyCopy,
-      pricingDisclaimers: v.pricingDisclaimers,
-      callToAction: v.callToAction,
+      headline: normalizedVariant.headline,
+      bodyCopy: normalizedVariant.bodyCopy,
+      pricingDisclaimers: normalizedVariant.pricingDisclaimers,
+      callToAction: normalizedVariant.callToAction,
       adPlatformTargetingHooks: v.adPlatformTargetingHooks,
-      voiceWarnings: validateAdCopyVoice(v),
+      voiceWarnings: validateAdCopyVoice(normalizedVariant),
     };
   });
 
@@ -420,8 +485,8 @@ export async function generateDealAdCopy(
     generatedAtIso,
     generator: "gpt",
     sourceUnifiedManifestId: unifiedManifest.id,
-    campaignName: result.object.campaignName,
-    targetAudienceTag: result.object.targetAudienceTag,
+    campaignName: normalizeCustomerFacingPunctuation(result.object.campaignName),
+    targetAudienceTag: normalizeCustomerFacingPunctuation(result.object.targetAudienceTag),
     primaryPromoApplied,
     variants,
     aiTrace: trace,

@@ -19,6 +19,7 @@ import {
   buildDealCopywriterPrompt,
   emptyDealAdCopyCache,
   generateDealAdCopy,
+  normalizeCustomerFacingPunctuation,
   selectDealAdCopyVariant,
   upsertDealAdCopy,
   validateAdCopyVoice,
@@ -46,6 +47,17 @@ function check(name: string, condition: boolean, detail?: string): void {
 }
 
 const GEN_AT = "2026-06-10T00:00:00.000Z";
+
+check(
+  "typographic punctuation is normalized without rewriting place names",
+  normalizeCustomerFacingPunctuation(
+    "Summer\u2019s final ten nights \u2014 Copenhagen \u2192 Stockholm\u2026"
+  ) === "Summer's final ten nights - Copenhagen -> Stockholm..."
+);
+check(
+  "non-ASCII place-name letters remain visible to the hard-fail validator",
+  normalizeCustomerFacingPunctuation("Klaip\u0117da") === "Klaip\u0117da"
+);
 
 const angle: DealDiscoveryIdea = {
   id: "angle-write-the-wake",

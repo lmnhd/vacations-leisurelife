@@ -6,7 +6,7 @@ Read this before running scripts or local API calls.
 
 | Class | Examples | Rule |
 |---|---|---|
-| Read-only CB/Odysseus automation | `lookup-odysseus-package`, `deep-cruise-search`, promo scrape, link validation, `check-deal-pricing` | Allowed autonomously for research and validation. Stop before any hold, reservation, payment, or booking action. |
+| CB/Odysseus research and temporary session testing | `lookup-odysseus-package`, `deep-cruise-search`, promo scrape, link validation, `check-deal-pricing`, one active `brn` test session | Allowed autonomously for research, validation, and careful testing through the visible payment boundary. Reuse one short-lived session and do not enter payment data or submit the final action. |
 | Pure tests and local validation | `test:deals-system:all`, stage-specific `test:*` scripts, TypeScript checks | Safe to run autonomously. |
 | Local HTTP routes | `/api/tests/deals-system/*` and browser labs | Use only after the user confirms the dev server is running. Do not start it yourself. |
 | Cache-mutating campaign actions | Discovery generation, manifest creation, copy generation, publish assembly, applying a cabin-pricing correction | Allowed when they are the requested campaign workflow. State what record or cache will be created or updated. For a pricing correction specifically, show the operator the stored vs. live numbers for that tier before applying it — never apply silently. |
@@ -50,11 +50,22 @@ Never assume `localhost:3000` is available. Ask the user to confirm the dev serv
 
 Do not use a generic URL reader for localhost. Use the in-app browser when visual verification is requested and the server is confirmed running.
 
+## Temporary Odysseus Session Locks
+
+Creating one short-lived `brn` session that may temporarily lock the sailing/booking path for about 15 minutes is allowed without a separate approval prompt.
+
+Conditions:
+
+- reuse the active session instead of creating replacements;
+- do not create bulk, repeated, or parallel locks;
+- stop before payment data or final reservation/payment submission;
+- allow the session to close/release when the test is finished.
+
 ## Booking Hard Stop
 
 Explicit user approval is required before:
 
-- creating a hold or reservation
+- creating an explicit/durable hold or named reservation beyond the normal short-lived `brn` session lock
 - submitting traveler information
 - entering a payment step
 - confirming a real booking

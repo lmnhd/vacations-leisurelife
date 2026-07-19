@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-16T17:25:59.400Z",
+  "generatedAtIso": "2026-07-18T00:09:42.444Z",
   "distributions": [
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
@@ -1188,6 +1188,184 @@
         "facebook_page_dispatched_at=2026-07-16T17:25:59.398Z"
       ],
       "facebookPagePostId": "1071836329342347_122121512612816807"
+    },
+    {
+      "id": "funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc",
+      "dealId": "1553111",
+      "sourceMetaAdSynthesisId": "funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc",
+      "generatedAtIso": "2026-07-18T00:09:25.374Z",
+      "mode": "organic_page_only",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1553111",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1553111",
+        "caption": "Copenhagen → Warnemünde → Gdynia → Klaipeda → Riga → Tallinn → Helsinki → Stockholm overnight. This is itinerary depth.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "8 Ports. 10 Nights. Zero Filler.",
+            "primaryText": "Copenhagen → Warnemünde → Gdynia → Klaipeda → Riga → Tallinn → Helsinki → Stockholm overnight. This is itinerary depth.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1553111/meta-ad-synthesis/funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc/card0-1784333253178.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "Stockholm Overnight in Port",
+            "primaryText": "A real overnight — not a 6-hour turnaround. Explore Gamla Stan after dark. 10-night Baltic sailing, Sep 12, 2026.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1553111/meta-ad-synthesis/funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc/card1-1784333255357.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "Up to $500 Onboard Credit",
+            "primaryText": "Select bookings Jul 8–Aug 3 may qualify for OBC + discounted WIFI & drink pkg. New reservations only. Confirm at booking.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1553111/meta-ad-synthesis/funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc/card2-1784333250846.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "2–4 Cabins? Split & Save.",
+            "primaryText": "Friend-group pricing across multiple cabins. Stack PTO around ports that matter. Check live pricing before Aug 3 cutoff.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1553111/meta-ad-synthesis/funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc/card3-1784333253287.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "msc magnifica 2026",
+            "msc magnifica",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "All-inclusive resort",
+            "FineDiningLovers",
+            "Travel Agents and Booking",
+            "Adventure travel",
+            "Travel content and inspiration",
+            "Travel attractions and activities",
+            "Cruises"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003491086831",
+              "name": "All-inclusive resort",
+              "sourceQuery": "All-inclusive resort",
+              "audienceSizeLowerBound": 7637202,
+              "audienceSizeUpperBound": 8981350
+            },
+            {
+              "id": "6011956651362",
+              "name": "FineDiningLovers",
+              "sourceQuery": "FineDiningLovers",
+              "audienceSizeLowerBound": 459209,
+              "audienceSizeUpperBound": 540030
+            },
+            {
+              "id": "6777460559594",
+              "name": "Travel Agents and Booking",
+              "sourceQuery": "Travel Agents and Booking",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            },
+            {
+              "id": "6002868021822",
+              "name": "Adventure travel",
+              "sourceQuery": "Adventure travel",
+              "audienceSizeLowerBound": 275203844,
+              "audienceSizeUpperBound": 323639721
+            },
+            {
+              "id": "6790608003312",
+              "name": "Travel content and inspiration",
+              "sourceQuery": "Travel content and inspiration",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            },
+            {
+              "id": "6795812983902",
+              "name": "Travel attractions and activities",
+              "sourceQuery": "Travel attractions and activities",
+              "audienceSizeLowerBound": 850340,
+              "audienceSizeUpperBound": 1000000
+            },
+            {
+              "id": "6003225930699",
+              "name": "Cruises",
+              "sourceQuery": "Cruises",
+              "audienceSizeLowerBound": 172715314,
+              "audienceSizeUpperBound": 203113210
+            }
+          ],
+          "unresolvedQueries": [
+            "msc magnifica 2026",
+            "msc magnifica",
+            "ease",
+            "anticipation",
+            "premium comfort"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "targeting_automation": {
+              "advantage_audience": 1,
+              "individual_setting": {
+                "age": 1
+              }
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003491086831",
+                    "name": "All-inclusive resort"
+                  },
+                  {
+                    "id": "6011956651362",
+                    "name": "FineDiningLovers"
+                  },
+                  {
+                    "id": "6777460559594",
+                    "name": "Travel Agents and Booking"
+                  },
+                  {
+                    "id": "6002868021822",
+                    "name": "Adventure travel"
+                  },
+                  {
+                    "id": "6790608003312",
+                    "name": "Travel content and inspiration"
+                  },
+                  {
+                    "id": "6795812983902",
+                    "name": "Travel attractions and activities"
+                  },
+                  {
+                    "id": "6003225930699",
+                    "name": "Cruises"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (20): All-inclusive resort, FineDiningLovers, Travel Agents and Booking, Adventure travel, Travel content and inspiration, Travel attractions and activities, Cruises, Caribbean, MSC Cruises, MSC Magnifica, Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland, Klaipeda Lithuania, Riga Latvia, Tallin Estonia, Helsinki Finland, Stockholm Sweden, luxury goods, photography"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1553111 — The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings",
+        "adSetName": "[DRAFT] Deal 1553111 Audience",
+        "creativeName": "deal-1553111-funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc-carousel",
+        "adName": "deal-1553111-funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc"
+      },
+      "notes": [
+        "facebook_page_id=1071836329342347",
+        "facebook_page_post_id=1071836329342347_122121718982816807",
+        "facebook_page_published=true",
+        "facebook_page_media_type=multi_image",
+        "facebook_page_card_count=4",
+        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1553111",
+        "facebook_page_dispatched_at=2026-07-18T00:09:42.442Z"
+      ],
+      "facebookPagePostId": "1071836329342347_122121718982816807"
     }
   ]
 }

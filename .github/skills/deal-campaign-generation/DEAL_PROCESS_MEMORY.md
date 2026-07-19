@@ -115,3 +115,21 @@ Record operator-driven workflow corrections, recurring friction, temporary rules
 - Trigger: Exact-package intake for Virgin Voyages package `1640418` resolved the sailing and booking URL, but both the stored Deal and trip manifest carried only a currency code. The public page consequently rendered no cabin rows.
 - Operating rule: After the booking URL is acquired, the pipeline must preserve supplier cabin pricing when it already exists or attempt initial hydration from that exact booking URL. If neither source exposes a numeric cabin-tier fare, block the pipeline handoff and approval instead of publishing a cabinless Deal page.
 - Refactor implication: Initial booking-link hydration belongs in the shared package-resolution and Workbench handoff paths. Later fare-drift corrections remain operator-reviewed and must never be silently applied.
+
+## 2026-07-17 - Normalize typography without hiding place-name rewrites
+
+- Trigger: Step 3 repeatedly rejected otherwise structured copy because the model returned curly punctuation, while the guard reported every non-ASCII character as a possible place-name rewrite.
+- Operating rule: Convert a bounded set of known typographic punctuation to plain ASCII before public-copy validation. Preserve all other non-ASCII characters so accented or rewritten supplier place names still fail closed.
+- Refactor implication: Copywriter validation must distinguish harmless typography from factual spelling changes, and tests must cover both outcomes.
+
+## 2026-07-17 - Angle changes update one package campaign
+
+- Trigger: Editing the MSC campaign angle created a second resolved manifest for package `1553111`, and both appeared as live campaigns in Publish.
+- Operating rule: The Odysseus package id is the stable Deal campaign identity. A new, selected, or edited angle replaces that package's active manifest instead of creating another campaign. Creative alternatives belong in ad-copy variants.
+- Refactor implication: Both local and Dynamo manifest upserts must remove the superseded manifest for the same package after the replacement write succeeds. The Workbench must tell the operator that angle editing updates the campaign.
+
+## 2026-07-17 - Remove the public bonus-offer callback CTA
+
+- Trigger: `Check bonus offer` looked like an automated eligibility check but only created another manual callback task with no defined operator resolution workflow.
+- Operating rule: Deal landing pages expose the verified booking action, email-link action, and one general callback request. Promotion questions can be included in the normal callback notes; do not create a separate bonus-check CTA or queue.
+- Refactor implication: Keep legacy `promo_check` records readable for history, but public Deal components must not create new ones.

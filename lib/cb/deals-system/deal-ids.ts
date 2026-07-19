@@ -56,7 +56,12 @@ function composeId(prefix: string, dealId: string, title: string): string {
   return `${prefix}-${idPart}${slug ? `-${slug}` : ""}`;
 }
 
-/** Trip manifest id: `manifest-{dealId}-{slug(title)}`. */
+/**
+ * Trip manifest id: `manifest-{dealId}-{slug(title)}`. The readable title can
+ * change when the operator revises the angle; the manifest stores enforce one
+ * active record per dealId and remove the superseded title-version after the
+ * replacement is durable.
+ */
 export function buildTripManifestId(dealId: string, sailingAngleTitle: string): string {
   return composeId("manifest", dealId, sailingAngleTitle);
 }

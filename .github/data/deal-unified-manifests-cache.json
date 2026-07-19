@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-16T16:48:47.027Z",
+  "generatedAtIso": "2026-07-17T23:11:18.127Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -1295,6 +1295,382 @@
         "promotionBriefs": [],
         "promoStrategy": "Lead with \"Your 8-Night January Reset\" through the verified itinerary and audience fit.",
         "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: Your 8-Night January Reset. Targeting angle: US adults and couples seeking an adults-only winter escape from Miami with a longer Caribbean itinerary and clear trip details before booking.. Workbench-selected real sailing chosen for the angle \"Your 8-Night January Reset\". Grounding facts: Resilient Lady | 2027-01-16 | Miami, FL | Miami, Florida, United States, Costa Maya, Mexico, Roatan, Honduras."
+      }
+    },
+    {
+      "id": "unified-manifest-1553111-the-last-ten-nights-of-summer",
+      "generatedAtIso": "2026-07-17T23:05:28.258Z",
+      "expiresOnIso": "2026-08-03",
+      "sourceAngleId": "angle-workbench-northern-europe-10-nights-msc-magnifica-1553111",
+      "sourceManifestId": "manifest-1553111-the-last-ten-nights-of-summer",
+      "sailingAngleTitle": "The Last Ten Nights of Summer — An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings",
+      "creativeBrief": {
+        "isolatedNiche": "US friend groups (2–4 cabins) and experience-driven couples who prioritize port depth over port speed. They're drawn to the overnight Stockholm stop as proof this isn't a 'drive-by' itinerary, and they respond to tangible value signals like onboard credit that make a ten-night European sailing feel within reach.",
+        "researchRationale": "Workbench-selected real sailing chosen for the angle \"The Last Ten Nights of Summer — An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings\". Grounding facts: MSC Magnifica | 2026-09-12 | CPH | Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland.",
+        "successLogic": "US friend groups (2–4 cabins) and experience-driven couples who prioritize port depth over port speed. They're drawn to the overnight Stockholm stop as proof this isn't a 'drive-by' itinerary, and they respond to tangible value signals like onboard credit that make a ten-night European sailing feel within reach. can convert because this is a real MSC Magnifica sailing on 2026-09-12, not a generic cruise sale. The exact package facts give the audience a specific sailing to compare and price-check.",
+        "audienceSignals": [
+          "Real sailing selected in the Campaign Workbench: MSC Magnifica on MSC Cruises, 10 nights, sailing 2026-09-12.",
+          "Concrete itinerary signal: CPH roundtrip, Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland, Klaipeda Lithuania.",
+          "Operator-selected audience angle: US friend groups (2–4 cabins) and experience-driven couples who prioritize port depth over port speed. They're drawn to the overnight Stockholm stop as proof this isn't a 'drive-by' itinerary, and they respond to tangible value signals like onboard credit that make a ten-night European sailing feel within reach..",
+          "Targeting seeds chosen for this sailing: Stockholm overnight cruise, MSC Cruises onboard credit, Baltic cruise with overnight port, September Northern Europe cruise deals, MSC Magnifica 2026 sailings, Copenhagen cruise September."
+        ],
+        "angle": {
+          "sailingAngleTitle": "The Last Ten Nights of Summer — An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings",
+          "theCorePitch": "The Last Ten Nights of Summer — An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings: MSC Magnifica on Northern Europe, 10 Nights gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+          "visualAnchor": "Hero image centers on MSC Magnifica docked in Stockholm's Gamla Stan harbor at blue hour, city lights reflecting on still water, conveying the luxury of time — an overnight, not a rushed morning call. Supporting frames show a candlelit dinner scene onboard and a couples' walk along Riga's Art Nouveau district in soft evening light. A subtle badge reads 'Select bookings may qualify for onboard credit' in clean, compliant typography.",
+          "targetAudienceDescriptor": "US friend groups (2–4 cabins) and experience-driven couples who prioritize port depth over port speed. They're drawn to the overnight Stockholm stop as proof this isn't a 'drive-by' itinerary, and they respond to tangible value signals like onboard credit that make a ten-night European sailing feel within reach.",
+          "relevantKeywords": [
+            "Stockholm overnight cruise",
+            "MSC Cruises onboard credit",
+            "Baltic cruise with overnight port",
+            "September Northern Europe cruise deals",
+            "MSC Magnifica 2026 sailings",
+            "Copenhagen cruise September",
+            "Europe cruise for couples 2026",
+            "Riga Tallinn cruise",
+            "friends group cruise Europe"
+          ],
+          "destinationAndTimeOfYearHints": "Northern Europe, 10 Nights departing 2026-09-12.",
+          "onboardAssetRequirements": "MSC Magnifica ship assets, destination imagery, itinerary map, and booking-link proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "MSC Cruises",
+          "departurePortHint": "CPH",
+          "nights": 10,
+          "itineraryName": "Northern Europe, 10 Nights",
+          "portsOfCall": [
+            "Copenhagen Denmark",
+            "Warnemunde (Berlin) Germany",
+            "Gdynia (Gdansk-Danzig) Poland",
+            "Klaipeda Lithuania",
+            "Riga Latvia",
+            "Tallin Estonia",
+            "Helsinki Finland",
+            "Stockholm Sweden"
+          ],
+          "destination": "Copenhagen Denmark",
+          "sailWindow": {
+            "latestIso": "2026-09-12",
+            "rationale": "Exact sail date selected in the campaign workbench.",
+            "earliestIso": "2026-09-12"
+          },
+          "suggestedBriefId": "brief-1553111-the-last-ten-nights-of-summer",
+          "suggestedDealId": "1553111"
+        },
+        "lookupQuery": {
+          "date": "2026-09-12",
+          "port": "CPH",
+          "line": "MSC Cruises",
+          "nights": 10,
+          "destination": "Copenhagen Denmark",
+          "ship": "MSC Magnifica",
+          "windowDays": 0
+        },
+        "targetingSeeds": {
+          "geoFocus": [
+            "CPH",
+            "Northern Europe, 10 Nights",
+            "Copenhagen Denmark",
+            "Warnemunde (Berlin) Germany",
+            "Gdynia (Gdansk-Danzig) Poland",
+            "Klaipeda Lithuania"
+          ],
+          "metaInterestSeeds": [
+            "last summer vacation 2026",
+            "September Europe cruise",
+            "MSC Magnifica",
+            "Northern Europe cruise",
+            "Copenhagen cruise",
+            "Baltic cruise",
+            "Stockholm overnight cruise",
+            "end of summer travel",
+            "MSC Cruises",
+            "MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit",
+            "Select MSC Cruises sailings may qualify for onboard credit.",
+            "Select MSC Cruises bookings may include bonus savings offers.",
+            "Up to $500 shipboard credit, with onboard credit varying by type of cabin and length of cruise.",
+            "Discounted pricing may be available on a One Device WIFI and Beverage package when making a new cruise reservation."
+          ],
+          "inferredMarket": "US",
+          "personaSignals": [
+            "US couples, friend groups, and experienced travelers who feel summer slipping away and want one substantial European trip before fall begins.",
+            "MSC Cruises travelers",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "MSC Cruises",
+            "MSC Magnifica"
+          ],
+          "excludedAudienceSignals": [
+            "free cruise",
+            "cruise job",
+            "Avoid broad cruise-interest targeting as the only audience."
+          ],
+          "metaBehaviorSignals": [
+            "responds to limited-time travel offers",
+            "compares premium vacation value",
+            "engages with MSC Magnifica ship-specific content"
+          ]
+        },
+        "appliedPromos": [
+          {
+            "promoRecordId": "cbpromo-2907",
+            "matchedOn": [
+              "MSC Cruises",
+              "2026-09-12"
+            ],
+            "assumptions": [
+              "Selected by the operator in the Campaign Workbench."
+            ],
+            "status": "possibly_applicable_needs_review",
+            "warnings": [
+              "Confirm promo eligibility before publishing public copy."
+            ]
+          }
+        ],
+        "promotionBriefs": [
+          {
+            "promoRecordId": "cbpromo-2907",
+            "title": "MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit",
+            "vendor": "MSC Cruises",
+            "bookingWindow": "Must be booked between 07/08/2026 and 08/03/2026",
+            "sailingWindow": "For sailings on or between 07/15/2026 and 10/01/2028",
+            "offerTypes": [
+              "onboard_credit",
+              "other"
+            ],
+            "publicClaimsAllowed": [
+              "Select MSC Cruises sailings may qualify for onboard credit.",
+              "Select MSC Cruises bookings may include bonus savings offers."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "Up to $500 shipboard credit, with onboard credit varying by type of cabin and length of cruise.",
+              "Discounted pricing may be available on a One Device WIFI and Beverage package when making a new cruise reservation.",
+              "Offer applies to new bookings only.",
+              "Offer is available only for bookings made July 8 - August 3, 2026, for sailings on or between 07/15/2026 and 10/01/2028."
+            ],
+            "visitorFriendlySummary": "Select MSC Cruises sailings booked during the promotional window may qualify for bonus savings and onboard credit, with final value depending on cabin type and cruise length. Pricing, eligibility, and any included perks are confirmed in the booking portal.",
+            "suggestedAngles": [
+              "Highlight select sailings that may qualify for onboard credit.",
+              "Promote potential extra value on new MSC bookings.",
+              "Feature destination variety including the Caribbean, Bahamas, Europe, and Alaska.",
+              "Mention possible discounted WIFI and beverage package pricing at booking."
+            ],
+            "cautionFlags": [
+              "Title references 'up to 30% off' but no supporting terms appear in the provided text.",
+              "Title references 'Kids Sail Free' but the detailed text only says 'Kids Free' without clear terms or guest-number specifics.",
+              "Do not advertise a guaranteed $500 onboard credit; text says 'up to $500' and it varies by cabin type and cruise length.",
+              "Do not imply all sailings, cabins, or voyages qualify."
+            ],
+            "percentDiscounts": [],
+            "dollarSavings": [],
+            "onboardCredits": [
+              {
+                "appliesTo": "select new bookings",
+                "amountUsd": 500,
+                "voyageLength": "varies by length of cruise",
+                "cabinCategory": "varies by type of cabin",
+                "rawText": "MSC Cruises Bonus Savings, Kids Free and up to $500 Shipboard Credit!\n\n*onboard credit varies by type of cabin and length of cruise"
+              }
+            ],
+            "freeGuestOffers": [],
+            "exclusions": [
+              "New Bookings Only."
+            ],
+            "applicableProducts": [],
+            "applicableMarkets": []
+          }
+        ],
+        "promoStrategy": "Use selected promo intelligence to support \"The Last Ten Nights of Summer\" with qualified, public-safe language.",
+        "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: The Last Ten Nights of Summer. Targeting angle: US couples, friend groups, and experienced travelers who feel summer slipping away and want one substantial European trip before fall begins.. Workbench-selected real sailing chosen for the angle \"The Last Ten Nights of Summer\". Grounding facts: MSC Magnifica | 2026-09-12 | CPH | Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland. Promo context considered: MSC Cruises MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit | Select MSC Cruises sailings may qualify for onboard credit. | Must be booked between 07/08/2026 and 08/03/2026."
+      }
+    },
+    {
+      "id": "unified-manifest-1553111-the-last-ten-nights-of-summer-an-overnight-in-stockholm-and-bonus-onboard-credit",
+      "generatedAtIso": "2026-07-17T23:11:18.124Z",
+      "expiresOnIso": "2026-08-03",
+      "sourceAngleId": "angle-workbench-northern-europe-10-nights-msc-magnifica-1553111",
+      "sourceManifestId": "manifest-1553111-the-last-ten-nights-of-summer-an-overnight-in-stockholm-and-bonus-onboard-credit",
+      "sailingAngleTitle": "The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings",
+      "creativeBrief": {
+        "isolatedNiche": "US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value.",
+        "researchRationale": "Workbench-selected real sailing chosen for the angle \"The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings\". Grounding facts: MSC Magnifica | 2026-09-12 | CPH | Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland. Promo context considered: MSC Cruises MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit | Select MSC Cruises sailings may qualify for onboard credit. | Must be booked between 07/08/2026 and 08/03/2026.",
+        "successLogic": "US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value. can convert because this is a real MSC Magnifica sailing on 2026-09-12, not a generic cruise sale. The attached MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit gives the audience a timely reason to act.",
+        "audienceSignals": [
+          "Real sailing selected in the Campaign Workbench: MSC Magnifica on MSC Cruises, 10 nights, sailing 2026-09-12.",
+          "Concrete itinerary signal: CPH roundtrip, Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland, Klaipeda Lithuania.",
+          "Operator-selected audience angle: US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value..",
+          "Targeting seeds chosen for this sailing: Stockholm overnight cruise, MSC Cruises onboard credit, Baltic cruise with overnight port, September Northern Europe cruise, MSC Magnifica 2026, Copenhagen cruise September."
+        ],
+        "angle": {
+          "sailingAngleTitle": "The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings",
+          "theCorePitch": "The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings: MSC Magnifica on Northern Europe, 10 Nights gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+          "visualAnchor": "MSC Magnifica in late-summer light, a Copenhagen-to-Stockholm route map, a clear Stockholm overnight marker, and warm Northern Europe city imagery without implying specific excursions or weather.",
+          "targetAudienceDescriptor": "US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value.",
+          "relevantKeywords": [
+            "Stockholm overnight cruise",
+            "MSC Cruises onboard credit",
+            "Baltic cruise with overnight port",
+            "September Northern Europe cruise",
+            "MSC Magnifica 2026",
+            "Copenhagen cruise September"
+          ],
+          "destinationAndTimeOfYearHints": "Northern Europe, 10 Nights departing 2026-09-12.",
+          "onboardAssetRequirements": "MSC Magnifica ship assets, destination imagery, itinerary map, and booking-link proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "MSC Cruises",
+          "departurePortHint": "CPH",
+          "nights": 10,
+          "itineraryName": "Northern Europe, 10 Nights",
+          "portsOfCall": [
+            "Copenhagen Denmark",
+            "Warnemunde (Berlin) Germany",
+            "Gdynia (Gdansk-Danzig) Poland",
+            "Klaipeda Lithuania",
+            "Riga Latvia",
+            "Tallin Estonia",
+            "Helsinki Finland",
+            "Stockholm Sweden"
+          ],
+          "destination": "Copenhagen Denmark",
+          "sailWindow": {
+            "latestIso": "2026-09-12",
+            "rationale": "Exact sail date selected in the campaign workbench.",
+            "earliestIso": "2026-09-12"
+          },
+          "suggestedBriefId": "brief-1553111-the-last-ten-nights-of-summer",
+          "suggestedDealId": "1553111"
+        },
+        "lookupQuery": {
+          "date": "2026-09-12",
+          "port": "CPH",
+          "line": "MSC Cruises",
+          "nights": 10,
+          "destination": "Copenhagen Denmark",
+          "ship": "MSC Magnifica",
+          "windowDays": 0
+        },
+        "targetingSeeds": {
+          "geoFocus": [
+            "CPH",
+            "Northern Europe, 10 Nights",
+            "Copenhagen Denmark",
+            "Warnemunde (Berlin) Germany",
+            "Gdynia (Gdansk-Danzig) Poland",
+            "Klaipeda Lithuania"
+          ],
+          "metaInterestSeeds": [
+            "Stockholm overnight cruise",
+            "MSC Cruises onboard credit",
+            "Baltic cruise with overnight port",
+            "September Northern Europe cruise",
+            "MSC Magnifica 2026",
+            "Copenhagen cruise September",
+            "MSC Cruises",
+            "MSC Magnifica",
+            "MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit",
+            "Select MSC Cruises sailings may qualify for onboard credit.",
+            "Select MSC Cruises bookings may include bonus savings offers.",
+            "Up to $500 shipboard credit, with onboard credit varying by type of cabin and length of cruise.",
+            "Discounted pricing may be available on a One Device WIFI and Beverage package when making a new cruise reservation."
+          ],
+          "inferredMarket": "US",
+          "personaSignals": [
+            "US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value.",
+            "MSC Cruises travelers",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "MSC Cruises",
+            "MSC Magnifica"
+          ],
+          "excludedAudienceSignals": [
+            "free cruise",
+            "cruise job",
+            "Avoid broad cruise-interest targeting as the only audience."
+          ],
+          "metaBehaviorSignals": [
+            "responds to limited-time travel offers",
+            "compares premium vacation value",
+            "engages with MSC Magnifica ship-specific content"
+          ]
+        },
+        "appliedPromos": [
+          {
+            "promoRecordId": "cbpromo-2907",
+            "matchedOn": [
+              "MSC Cruises",
+              "2026-09-12"
+            ],
+            "assumptions": [
+              "Selected by the operator in the Campaign Workbench."
+            ],
+            "status": "possibly_applicable_needs_review",
+            "warnings": [
+              "Confirm promo eligibility before publishing public copy."
+            ]
+          }
+        ],
+        "promotionBriefs": [
+          {
+            "promoRecordId": "cbpromo-2907",
+            "title": "MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit",
+            "vendor": "MSC Cruises",
+            "bookingWindow": "Must be booked between 07/08/2026 and 08/03/2026",
+            "sailingWindow": "For sailings on or between 07/15/2026 and 10/01/2028",
+            "offerTypes": [
+              "onboard_credit",
+              "other"
+            ],
+            "publicClaimsAllowed": [
+              "Select MSC Cruises sailings may qualify for onboard credit.",
+              "Select MSC Cruises bookings may include bonus savings offers."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "Up to $500 shipboard credit, with onboard credit varying by type of cabin and length of cruise.",
+              "Discounted pricing may be available on a One Device WIFI and Beverage package when making a new cruise reservation.",
+              "Offer applies to new bookings only.",
+              "Offer is available only for bookings made July 8 - August 3, 2026, for sailings on or between 07/15/2026 and 10/01/2028."
+            ],
+            "visitorFriendlySummary": "Select MSC Cruises sailings booked during the promotional window may qualify for bonus savings and onboard credit, with final value depending on cabin type and cruise length. Pricing, eligibility, and any included perks are confirmed in the booking portal.",
+            "suggestedAngles": [
+              "Highlight select sailings that may qualify for onboard credit.",
+              "Promote potential extra value on new MSC bookings.",
+              "Feature destination variety including the Caribbean, Bahamas, Europe, and Alaska.",
+              "Mention possible discounted WIFI and beverage package pricing at booking."
+            ],
+            "cautionFlags": [
+              "Title references 'up to 30% off' but no supporting terms appear in the provided text.",
+              "Title references 'Kids Sail Free' but the detailed text only says 'Kids Free' without clear terms or guest-number specifics.",
+              "Do not advertise a guaranteed $500 onboard credit; text says 'up to $500' and it varies by cabin type and cruise length.",
+              "Do not imply all sailings, cabins, or voyages qualify."
+            ],
+            "percentDiscounts": [],
+            "dollarSavings": [],
+            "onboardCredits": [
+              {
+                "appliesTo": "select new bookings",
+                "amountUsd": 500,
+                "voyageLength": "varies by length of cruise",
+                "cabinCategory": "varies by type of cabin",
+                "rawText": "MSC Cruises Bonus Savings, Kids Free and up to $500 Shipboard Credit!\n\n*onboard credit varies by type of cabin and length of cruise"
+              }
+            ],
+            "freeGuestOffers": [],
+            "exclusions": [
+              "New Bookings Only."
+            ],
+            "applicableProducts": [],
+            "applicableMarkets": []
+          }
+        ],
+        "promoStrategy": "Use selected promo intelligence to support \"The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings\" with qualified, public-safe language.",
+        "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings. Targeting angle: US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value.. Workbench-selected real sailing chosen for the angle \"The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings\". Grounding facts: MSC Magnifica | 2026-09-12 | CPH | Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland. Promo context considered: MSC Cruises MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit | Select MSC Cruises sailings may qualify for onboard credit. | Must be booked between 07/08/2026 and 08/03/2026."
       }
     }
   ]
