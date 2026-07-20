@@ -25,7 +25,7 @@ import {
   type BookingFlowHandle,
   type BookingFlowSnapshot,
 } from "./booking-flow-experience";
-import type { MockJournalEvent } from "./booking-flow-model";
+import { mockMscSeniorCandidate, serviceRateSummary, type MockJournalEvent } from "./booking-flow-model";
 
 const MODE_KEY = "lll-booking-assistant-lab-mode";
 
@@ -215,6 +215,14 @@ function OperatorPreview({ snapshot }: { snapshot: BookingFlowSnapshot | null })
             : missing.length === 0
               ? "Nothing - review-ready."
               : missing.map((task) => task.id).join(", ")}
+        </p>
+      </div>
+      <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.06] p-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-200">Savings qualification</p>
+        <p className="mt-1 text-[12px] leading-5 text-slate-300">
+          {!draft
+            ? "Waiting for traveler details."
+            : `${mockMscSeniorCandidate(draft) ? "MSC 65+ cabin candidate; live rate needed" : "Age-based live check pending"}. ${serviceRateSummary(draft)}.`}
         </p>
       </div>
       <p className="mt-3 text-[11px] text-slate-500">

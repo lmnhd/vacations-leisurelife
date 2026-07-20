@@ -43,7 +43,9 @@ import {
   isValidDob,
   isValidEmail,
   isValidPhone,
+  mockMscSeniorCandidate,
   nextTaskId,
+  serviceRateSummary,
   type MockDraft,
   type MockJournalEvent,
   type TaskDef,
@@ -126,6 +128,13 @@ function workingForTask(taskId: string, draft: MockDraft): WorkingState {
   }
   if (taskId === "citizenship_residency")
     return { citizenship: draft.citizenship || "United States", residencyState: draft.residencyState };
+  if (taskId === "savings_eligibility")
+    return {
+      interest: draft.serviceRateInterest,
+      travelerIndex: draft.serviceRateTravelerIndex,
+      category: draft.serviceRateCategory,
+      proofReadiness: draft.serviceRateProofReadiness,
+    };
   if (taskId === "address")
     return {
       line1: draft.addressLine1,
@@ -298,8 +307,12 @@ export const BookingFlowExperience = forwardRef<
       next.travelers = next.travelers.slice(0, count);
       // Party-size change invalidates downstream confirmations that depend on it.
       next.confirmedTasks = next.confirmedTasks.filter(
-        (taskId) => !taskId.startsWith("legal_identity_") && taskId !== "ages"
+        (taskId) => !taskId.startsWith("legal_identity_") && taskId !== "ages" && taskId !== "savings_eligibility"
       );
+      next.serviceRateInterest = "";
+      next.serviceRateTravelerIndex = "";
+      next.serviceRateCategory = "";
+      next.serviceRateProofReadiness = "";
       detail = `${count} traveler(s) confirmed`;
     } else if (id === "ages") {
       for (let i = 0; i < next.travelerCount; i += 1) {
@@ -350,6 +363,40 @@ export const BookingFlowExperience = forwardRef<
       next.citizenship = citizenship;
       next.residencyState = state;
       detail = "Citizenship and residency confirmed";
+    } else if (id === "savings_eligibility") {
+      const interest = working.interest ?? "";
+      if (interest !== "yes" && interest !== "no" && interest !== "not_sure") {
+        setTaskError("Choose Yes, No, or Not sure - your agent can verify it.");
+        return false;
+      }
+      next.serviceRateInterest = interest;
+      if (interest === "yes") {
+        const travelerIndex = working.travelerIndex ?? "";
+        const category = (working.category ?? "").trim();
+        const proofReadiness = working.proofReadiness ?? "";
+        const numericIndex = Number(travelerIndex);
+        if (travelerIndex === "" || !Number.isInteger(numericIndex) || numericIndex < 0 || numericIndex >= next.travelerCount) {
+          setTaskError("Choose the traveler who may qualify.");
+          return false;
+        }
+        if (!category) {
+          setTaskError("Choose the closest service category - 'Other or not sure' is fine.");
+          return false;
+        }
+        if (!proofReadiness) {
+          setTaskError("Tell us whether proof is available later - no document is needed here.");
+          return false;
+        }
+        next.serviceRateTravelerIndex = travelerIndex;
+        next.serviceRateCategory = category;
+        next.serviceRateProofReadiness = proofReadiness;
+        detail = "Military/service rate claimed - operator verification required";
+      } else {
+        next.serviceRateTravelerIndex = "";
+        next.serviceRateCategory = "";
+        next.serviceRateProofReadiness = "";
+        detail = interest === "no" ? "No military/service rate claimed" : "Military/service eligibility needs operator review";
+      }
     } else if (id === "address") {
       const line1 = (working.line1 ?? "").trim();
       const city = (working.city ?? "").trim();
@@ -404,6 +451,24 @@ export const BookingFlowExperience = forwardRef<
     setTaskError("");
     emit("guest", "field_confirmed", detail, id);
     emit("system", "task_completed", `Autosaved to durable draft (mock): ${detail}`, id);
+    if (id === "ages") {
+      emit(
+        "system",
+        "rate_qualification_derived",
+        mockMscSeniorCandidate(next)
+          ? "MSC age-based candidate: all cabin occupants are 65+; live rate still required"
+          : "Age-based rates will still be checked live; no MSC 65+ all-occupant candidate in this mock",
+        id
+      );
+    }
+    if (id === "savings_eligibility" && next.serviceRateInterest !== "no") {
+      emit(
+        "guest",
+        next.serviceRateInterest === "yes" ? "rate_qualification_claimed" : "rate_qualification_needs_verification",
+        serviceRateSummary(next),
+        id
+      );
+    }
     flashSaved();
 
     if (id === "email" && !draft.confirmedTasks.includes("email")) {
@@ -469,6 +534,14 @@ export const BookingFlowExperience = forwardRef<
   }
 
   function submitReview() {
+    const missingTask = buildTaskList(draft).find(
+      (task) => task.id !== "review" && !draft.confirmedTasks.includes(task.id)
+    );
+    if (missingTask) {
+      goToTask(missingTask.id);
+      setTaskError("Please complete this quick step before the final review.");
+      return;
+    }
     if (!draft.accuracyAcknowledged) {
       setTaskError("Please confirm the accuracy acknowledgement first.");
       return;
@@ -637,9 +710,19 @@ export const BookingFlowExperience = forwardRef<
       { label: "View progress", hint: "What's done and what's left", run: () => setSheet("progress") },
       { label: "Privacy & data use", hint: "What we save and why", run: () => setSheet("privacy") },
     ];
+    if (draft.confirmedTasks.includes("savings_eligibility") && screen === "task") {
+      always.unshift({
+        label: "Review savings eligibility",
+        hint: "Update who may qualify; age-based rates are checked automatically",
+        run: () => {
+          setSheet("none");
+          goToTask("savings_eligibility", { fromReview: currentTaskId === "review" });
+        },
+      });
+    }
     return { contextual: contextual.slice(0, 4), always };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emailConfirmed, phoneConfirmed, screen, voiceMode, draft.email, emit]);
+  }, [emailConfirmed, phoneConfirmed, screen, voiceMode, draft.email, draft.confirmedTasks, currentTaskId, emit, goToTask]);
 
   if (!hydrated) {
     return (
@@ -1122,6 +1205,63 @@ function TaskInputs({
       </div>
     );
   }
+  if (taskId === "savings_eligibility") {
+    const ageCandidate = mockMscSeniorCandidate(draft);
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="rounded-xl bg-white p-3 text-[13px] leading-5" style={{ border: `1px solid ${BORDER}`, color: NAVY }}>
+          <p className="font-bold">Age-based savings: checked automatically</p>
+          <p className="mt-1" style={{ color: MUTED }}>
+            {ageCandidate
+              ? "This MSC mock flags the cabin as a 65+ candidate. Your agent still has to find and compare the live rate."
+              : "We will check the live sailing using every traveler's age. No extra senior question is needed."}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <Chip label="Yes" active={working.interest === "yes"} onClick={() => setValue("interest", "yes")} />
+          <Chip label="No" active={working.interest === "no"} onClick={() => setValue("interest", "no")} />
+          <Chip label="Not sure - ask my agent" active={working.interest === "not_sure"} onClick={() => setValue("interest", "not_sure")} />
+        </div>
+        {working.interest === "yes" && (
+          <div className="flex flex-col gap-3 rounded-xl bg-white p-3" style={{ border: `1px solid ${BORDER}` }}>
+            <Field label="Who may qualify?">
+              <select style={guestInput} value={working.travelerIndex ?? ""} onChange={set("travelerIndex")}>
+                <option value="">Select traveler...</option>
+                {draft.travelers.slice(0, draft.travelerCount).map((traveler, i) => (
+                  <option key={i} value={String(i)}>{traveler.firstName || `Traveler ${i + 1}`}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Closest category">
+              <select style={guestInput} value={working.category ?? ""} onChange={set("category")}>
+                <option value="">Select...</option>
+                <option value="Active duty">Active duty</option>
+                <option value="Retired military">Retired military</option>
+                <option value="Veteran or honorably discharged">Veteran or honorably discharged</option>
+                <option value="Reserve or National Guard">Reserve or National Guard</option>
+                <option value="Canadian Armed Forces">Canadian Armed Forces</option>
+                <option value="Government, civil service, or Department of Defense">Government, civil service, or Department of Defense</option>
+                <option value="First responder - police, fire, or EMS">First responder - police, fire, or EMS</option>
+                <option value="Airline or interline personnel">Airline or interline personnel</option>
+                <option value="Eligible family member">Eligible family member</option>
+                <option value="Other or not sure">Other or not sure</option>
+              </select>
+            </Field>
+            <Field label="Could you provide proof later if the cruise line asks?">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Chip label="Yes, later" active={working.proofReadiness === "available_later"} onClick={() => setValue("proofReadiness", "available_later")} />
+                <Chip label="I need help" active={working.proofReadiness === "need_help"} onClick={() => setValue("proofReadiness", "need_help")} />
+                <Chip label="Not sure" active={working.proofReadiness === "not_sure"} onClick={() => setValue("proofReadiness", "not_sure")} />
+              </div>
+            </Field>
+            <p className="text-[12px] leading-5" style={{ color: MUTED }}>
+              Do not upload or type a military ID, service number, or discharge document here. Your agent will explain the exact cruise-line requirement only if a live rate is available.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
   if (taskId === "address") {
     return (
       <div className="flex flex-col gap-3">
@@ -1205,6 +1345,7 @@ function ReviewCard({
   onEdit: (taskId: string) => void;
   setDraft: React.Dispatch<React.SetStateAction<MockDraft>>;
 }) {
+  const savingsSummary = `${mockMscSeniorCandidate(draft) ? "MSC 65+ cabin candidate - live rate required" : "Age-based rates checked live"}; ${serviceRateSummary(draft)}`;
   const row = (label: string, value: string, taskId: string) => (
     <div className="flex items-start justify-between gap-3 border-b py-2.5 last:border-b-0" style={{ borderColor: BORDER }}>
       <div className="min-w-0">
@@ -1233,6 +1374,7 @@ function ReviewCard({
           )
         )}
         {row("Citizenship / state", `${draft.citizenship} / ${draft.residencyState}`, "citizenship_residency")}
+        {row("Savings check", savingsSummary, "savings_eligibility")}
         {row("Address", [draft.addressLine1, draft.addressCity, draft.addressState, draft.addressZip].filter(Boolean).join(", "), "address")}
         {row("Accessibility", draft.accessibility === "none" ? "No special requests" : draft.accessibility, "accessibility")}
         {row("Cabin preference", draft.cabinPreference, "cabin_preference")}
@@ -1333,7 +1475,7 @@ function HandoffScreen({ draft, onSimulateClaim }: { draft: MockDraft; onSimulat
         <div className="mt-5 rounded-xl bg-white p-4 text-[13px] leading-6" style={{ border: `1px solid ${BORDER}`, color: MUTED }}>
           <p className="font-bold" style={{ color: NAVY }}>What happens next:</p>
           <ol className="mt-2 list-decimal space-y-1.5 pl-5">
-            <li>A booking agent reviews your details and checks live price and cabins.</li>
+            <li>A booking agent reviews your details and checks live prices, cabins, and every plausible qualifying rate.</li>
             <li>They confirm the exact cabin and total with you - nothing is charged without your OK.</li>
             <li>Payment happens with your agent through the cruise line's official system. We never see your card.</li>
           </ol>

@@ -4,7 +4,7 @@ Status: Working implementation baseline
 
 Date: July 19, 2026
 
-Current pilot flow: `operator_assisted_v1`
+Current pilot flow: `call_agent_to_finalize_v1`
 
 Primary source: `IDEAS_START.txt`
 
@@ -31,11 +31,11 @@ The assistant will:
 5. Let the guest ask unrelated questions without losing the current booking task.
 6. Let the guest pause, return by secure email link, or request human help at any time.
 7. Give the operator a live booking queue inside the Deals workbench.
-8. Recreate short-lived Odysseus state from the durable draft only when the guest is ready.
-9. Fill and verify the safe, currently rendered Odysseus contract, then stop automation at the documented manual-completion boundary.
-10. Let the authenticated operator complete supplier choices, payment, terms, and final submission manually inside the Cruise Brothers-controlled surface.
-11. Reconcile the resulting booking from Odysseus success state and the CBAT Trip record.
-12. Record every meaningful guest, assistant, email, operator, system, and Odysseus action in one privacy-safe Booking Activity Journal that drives the operator timeline and analytics.
+8. After the guest reviews the complete packet, store it and issue a short three-letter fallback call key.
+9. Clearly explain that finalization happens by phone: tapping the call button first pins the packet in the protected operator dashboard; the agent verifies the caller, starts a fresh live supplier session, rechecks price/cabin/discounts, enters the information, takes payment, and completes the booking. The key is needed only if automatic matching fails.
+10. Present one explicit primary action: **Call agent to finalize**. Do not imply that the booking, price, cabin, or payment is already complete.
+11. Let the authenticated operator verify and claim the pinned draft, or find it by fallback key, manually complete the new Odysseus session with the caller, and reconcile the resulting booking from the official success state and CBAT Trip record.
+12. Record every meaningful guest, assistant, email, operator, system, call-handoff, and Odysseus action in one privacy-safe Booking Activity Journal that drives the operator timeline and analytics.
 
 This is a booking completion layer, not a replacement booking engine and not a general-purpose cruise shopping chatbot.
 
@@ -51,7 +51,7 @@ The pilot succeeds when a technically uncomfortable, iPhone-only guest can provi
 - exposing payment data to Leisure Life systems; or
 - becoming stranded when the Odysseus `brn` expires.
 
-The longer-term product may move the final payment step back to the guest when Cruise Brothers provides a verified official payment-request or transferable checkout capability. That future change must not require rebuilding the intake, durable draft, review, operator queue, or confirmation-reconciliation stages.
+The launch product deliberately ends in a phone call. A future verified official payment-request or transferable checkout capability may add another completion adapter, but it must not require rebuilding intake, durable drafts, call-intent signaling, fallback keys, review, operator lookup, or reconciliation. `call_agent_to_finalize_v1` remains the fallback.
 
 The initial target user is an older, low-technical-confidence guest arriving from a paid social ad, using an iPhone, ready to purchase, and likely to abandon after confusion or interruption.
 
@@ -61,7 +61,7 @@ The initial target user is an older, low-technical-confidence guest arriving fro
 | --- | --- |
 | One landing-page CTA | `DealCtaActions` routes every booking intent into the assistant. Email, callback, AI, voice, and human completion become actions inside the flow. |
 | Contact first | First name, email, and phone are the first three tasks before the longer booking flow. |
-| Separate guest and booking-agent contact | The guest supplies their own contact details. The Odysseus `Booking Contact Information` step uses an approved Leisure Life/Cruise Brothers agent profile and is filled by the worker, never by asking the guest to know the agent's email. |
+| Separate guest and booking-agent contact | The guest supplies their own contact details. During the call, the Odysseus `Booking Contact Information` step uses an approved Leisure Life/Cruise Brothers agent profile and is filled by the operator (or a future approved worker), never by asking the guest to know the agent's email. |
 | Save after every confirmed answer | The server, not browser memory, is the durable source of truth. |
 | Tell us once | Reuse confirmed values. Ask for review again only when data is stale, legally sensitive, changed, or must be explicitly reconfirmed. |
 | One primary task at a time | Never show the guest a large Odysseus-style multi-section form. |
@@ -70,6 +70,7 @@ The initial target user is an older, low-technical-confidence guest arriving fro
 | Complete observable journey | Every meaningful action, message, state transition, validation outcome, delivery result, and operator/supplier interaction writes a versioned journal event. Do not record raw keystrokes, payment data, or uncontrolled sensitive screen/audio capture. |
 | Deterministic progression | Code and live Odysseus field contracts decide what is required. The LLM may not invent required fields or skip gates. |
 | Explicit guest decisions | Legal identity, accessibility, insurance, add-ons, cabin, fare, price changes, payment amount/schedule, and required consent require explicit confirmation. |
+| Always screen for qualifying rates | Derive age-based candidates from confirmed dates of birth and ask one optional military/service qualification question. Compare every live eligible rate against the best ordinary promotion; never promise eligibility, assume stackability, or force a nominal discount that produces a worse total or value. |
 | No local payment collection | Never collect, proxy, log, transcribe, or store card number, CVV, or payment form values. |
 | Human help is always available | The action becomes visible as soon as phone contact exists and includes the complete draft context. |
 | No automatic reservation mutation | Holds, reservations, payment, and final booking execution remain operator/guest approved actions. |
@@ -77,7 +78,7 @@ The initial target user is an older, low-technical-confidence guest arriving fro
 
 Recommended public promise:
 
-> Tell us once. We save your answers, keep your place, and only ask you to review something if it changes or needs your confirmation.
+> Tell us once. We save your answers and progress, and only ask you to review something if it changes or needs your confirmation.
 
 Do not promise literally that a question can never reappear. Legal-name confirmation, expired data, supplier changes, and price changes sometimes require review.
 
@@ -88,11 +89,11 @@ Do not promise literally that a question can never reappear. Legal-name confirma
 - Deal-specific booking flow launched from `/deals/[id]`.
 - Public booking route at `/deals/[id]/book`.
 - Secure resume route that exchanges a one-time token for an HTTP-only session cookie.
-- Contact bootstrap, passenger roster, booking-required fields, review, operator takeover, and completion-mode routing.
+- Contact bootstrap, passenger roster, booking-required fields, review, fallback-key issuance, call-intent handoff, and operator processing.
 - Text entry, browser voice, large guided forms, and side-question chat.
 - Durable DynamoDB state, autosave, recovery, the complete Booking Activity Journal, and capped reminders.
 - A protected Booking Queue in the Deals operator workbench.
-- A controlled Odysseus browser worker that reads the live page, fills mapped fields, verifies results, and stops at payment.
+- A manual operator call checklist for launch, with a future controlled Odysseus browser worker that may read/fill/verify safe mapped fields and must stop before payment.
 - Deal attribution, journey diagnostics, conversation insights, and funnel analytics derived from privacy-safe journal projections rather than raw PII.
 
 ### 4.2 Explicitly out of scope for the first production release
@@ -120,12 +121,13 @@ Do not promise literally that a question can never reappear. Legal-name confirma
 | `useHybridVoiceChat` and browser voice infrastructure | Reuse WebRTC/STT/TTS plumbing and common-pipeline model. | Queue turns instead of dropping speech while another turn is processing. Keep one transcript/state across voice and text. |
 | `lll-chat-*` tables | Reuse storage conventions only. | Booking drafts contain higher-risk PII and a different lifecycle. Use a dedicated single-table Booking Assistant design. |
 | `GUEST_INFO.json` | Reuse traveler/cabin identity concepts. | It is not a complete checkout contract. Add title, supplier-required gender, address, residency, booking contact, service/add-on decisions, consent, provenance, and field status. |
+| Legacy `app/Booking/BookingInfo.js` qualifiers | Treat `military`, police, fire-department, and senior labels as discovery evidence only. | A Boolean `military` flag and generic `senior` category cannot represent supplier thresholds, cabin-occupant rules, veteran/family categories, proof deadlines, live availability, or competing promotional value. Do not reuse them as the new contract. |
 | `OdysseusEngine` | Reuse package navigation, authenticated native Chrome, XHR knowledge, and selectors as research. | It is local Windows Chrome, stores shared auth state, uses dummy guest data, selects the first category/cabin, and does not provide a production task/lease boundary. Do not expose it directly to public requests. |
 | HTTP-flow capture tool | Reuse as the contract discovery and regression fixture source. | Complete the MSC capture and add supplier variants before automation is trusted. |
 
 ## 6. Phase 0 completion-path proof
 
-The decisive Phase 0 question was whether a prepared payment session could be handed from an operator-controlled browser to the guest's iPhone. The answer for the tested raw checkout URL is no, so the pilot uses the verified operator-assisted path.
+The decisive Phase 0 question was whether a prepared payment session could be handed from an operator-controlled browser to the guest's iPhone. The answer for the tested raw checkout URL is no, so the pilot uses the verified call-agent-to-finalize path.
 
 The July 18, 2026 experiments proved that the raw `checkout.aspx?brn=...` URL is not transferable. It reopened the prepared checkout in a new tab in the originating browser profile, but returned `Session Expired` in both Chrome Incognito and iPhone Safari. The `brn` plus compatible Odysseus session cookies can rehydrate the checkout; the prior page's DOM/hidden fields are not required for that GET. Hidden fields remain part of later stateful ASP.NET submissions.
 
@@ -149,11 +151,11 @@ The guest creates the live Odysseus session in their own browser, and the assist
 
 Status: Secondary self-service candidate. A fresh Share link opened a guest-owned cabin-selection flow in both a clean desktop browser and iPhone Safari. It carried sailing/category navigation context but not the selected cabin, red-badge/timer state, passenger/contact data, optional decisions, or payment state. After the deeper Share-link state expired, the same link fell back to Guest Information. The guest-owned flow also cannot inherit the operator-owned Booking Contact profile, so it is not the seamless prefilled launch path.
 
-### Option D - operator-assisted completion
+### Option D - call agent to finalize
 
-The operator completes all safe pre-payment work and stays with the guest by phone. Payment information is handled only through the approved Cruise Brothers procedure and entered directly into the official Odysseus form; the operator then performs the terms and final-submit steps manually. This is the launch procedure until A, B, or C is proven and enabled.
+The assistant collects and stores the complete reviewed booking packet, issues a three-letter fallback call key, and tells the guest exactly what the final phone call will involve. The call button first pins the packet in the operator dashboard. The operator verifies/claims the pinned draft, or uses the caller's fallback key, then starts a fresh Odysseus session, revalidates and manually enters the information, confirms live choices, takes payment through the approved Cruise Brothers procedure, and performs the final submit.
 
-Status: Selected pilot model. The Booking Assistant prepares a verified operator packet, then the operator owns the live Odysseus session from just-in-time cabin selection through supplier-specific review, payment, terms, and final submission. Card data remains entirely inside the Cruise Brothers-controlled surface and approved operator procedure.
+Status: Selected and only enabled pilot model: `call_agent_to_finalize_v1`. No `brn`, cabin timer, live hold, or prepared checkout is created before the call. Card data remains entirely inside the live phone conversation and Cruise Brothers-controlled surface under the approved operator procedure; Leisure Life does not collect, transcribe, record, or store it.
 
 Do not build a remote browser stream that carries card data through Leisure Life infrastructure. That would materially expand security and PCI scope.
 
@@ -179,20 +181,18 @@ Verified July 18, 2026 results:
 - After its deeper state expires, the Share link can fall back to Guest Information. Its exact TTL is not documented.
 - No dedicated official guest payment-request action was found in the tested flow.
 - Successful booking detection will initially use read-only CBAT Trip reconciliation and the `Imported From Odysseus` evidence; a sent/opened handoff is never confirmation.
-- Experiment 8 is complete for the tested flow: Booking Contact requires Email and Phone, with no visible agent/agency-name field. The operator-assisted pilot uses an approved `BookingContactProfile`; new required supplier fields stop the flow for operator review.
-- Phase 0 passes for the operator-assisted pilot. Option C remains a secondary guest-owned path and must not be described as a prepared or resumable payment handoff.
+- Experiment 8 is complete for the tested flow: Booking Contact requires Email and Phone, with no visible agent/agency-name field. During the final call, the operator uses the approved server-side `BookingContactProfile`; new required supplier fields stop manual processing for operator review.
+- Phase 0 passes for the call-agent pilot. Option C remains research-only and must not be shown as a launch alternative or described as a prepared/resumable payment handoff.
 
-For a self-service Option C launch, Phase 0 requires the entry handoff to work twice from clean guest contexts. For the selected operator-assisted Option D pilot, Phase 0 requires a verified operator flow to visible payment, the mutation boundary, the manual takeover boundary, and the no-card-data automation boundary to be documented.
+For any future self-service Option C launch, Phase 0 requires the entry handoff to work twice from clean guest contexts. The selected Option D launch requires the call-intent signal/pin, fallback-key lookup, caller disclosure, authenticated operator workflow, manual fresh-session procedure, and no-card-data boundary to be tested. The earlier visible-payment trace remains contract research, not the guest-facing launch sequence.
 
 ## 6A. Authoritative pilot Booking Flow
 
-This section is the single source of truth for the pilot order of operations. If another section describes a transferable payment link, automated final submit, or a different pilot order, this section wins.
+This section is the single source of truth for launch. If another section describes a prepared checkout, transferable payment link, automated pre-call Odysseus session, or different pilot end goal, this section wins.
 
-Current flow definition: `deal_booking_completion/operator_assisted_v1`
+Current flow definition: `deal_booking_completion/call_agent_to_finalize_v1`
 
-Summary:
-
-`Start booking -> save contact -> collect and confirm the draft -> operator claim -> live Odysseus revalidation -> exact fare/cabin approval -> timed cabin selection -> safe fill -> operator payment and submit -> CBAT reconciliation`
+`Start booking -> save contact -> collect and confirm complete packet -> final review -> store packet and fallback call key -> explain phone finalization -> Call agent to finalize -> atomically signal/pin calling draft -> launch phone call -> agent verifies caller and claims pinned draft (or uses fallback key) -> fresh Odysseus session and manual booking/payment with caller -> authoritative reconciliation`
 
 ### 6A.1 Required order of operations
 
@@ -200,11 +200,11 @@ Summary:
 
 Owner: Booking Assistant
 
-1. The guest taps `Start booking` on `/deals/[id]`.
-2. The server validates that the Deal, package ID, source booking URL, and basic link health are still eligible.
-3. The server creates an anonymous draft with Deal attribution and `flowDefinitionVersion` but no Odysseus `brn`.
-4. The guest sees the verified sailing summary, the price basis/captured time, and the warning that final price and availability will be rechecked.
-5. If the Deal is no longer eligible, do not enter Odysseus. Preserve the lead and route the guest to operator help.
+1. Guest taps `Start booking` on `/deals/[id]`.
+2. Server validates Deal, package ID, source URL, and basic link health.
+3. Server creates a durable draft with Deal attribution and `flowDefinitionVersion`; it does not create an Odysseus `brn`.
+4. Guest sees the sailing summary, captured price basis/time, and notice that the agent will recheck live price and availability during the final call.
+5. If the Deal is no longer eligible, preserve the lead and route to agent help without opening Odysseus.
 
 Resulting status: `started`.
 
@@ -213,10 +213,9 @@ Resulting status: `started`.
 Owner: Guest and Booking Assistant
 
 1. Collect first/preferred name.
-2. Collect email.
-3. Create or attach the durable DynamoDB draft and send a secure Leisure Life resume link.
-4. Collect mobile phone.
-5. Record callback/SMS permissions separately; phone capture alone is not consent.
+2. Collect email, attach the durable draft, and send a secure Leisure Life resume link.
+3. Collect mobile phone.
+4. Record callback/SMS permissions separately; phone capture alone is not consent.
 
 Resulting status: `collecting`.
 
@@ -228,157 +227,160 @@ Collect and confirm, in dependency order:
 
 1. traveler count, age-at-sailing classification, cabin count, and residency;
 2. legal title, supplier-required gender, legal name, and date of birth for each traveler;
-3. nationality/citizenship and the primary traveler's complete mailing address;
-4. supplier-required per-traveler email/phone and optional loyalty numbers;
-5. accessibility, mobility, dietary, bed, and hard cabin constraints;
-6. cabin/fare preferences and acceptable tradeoffs, without claiming a live cabin;
-7. known celebration, linked-reservation, tour/transfer, add-on, and insurance preferences;
-8. any requested human help and the preferred contact method.
+3. nationality/citizenship and primary traveler's complete mailing address;
+4. optional military, veteran, first-responder, government/civil-service, interline, or related rate claim for the relevant traveler; derive age-based candidates automatically;
+5. supplier-required per-traveler email/phone and optional loyalty numbers;
+6. accessibility, mobility, dietary, bed, and hard cabin constraints;
+7. cabin/fare preferences and acceptable tradeoffs, without claiming a live cabin;
+8. celebration, linked-reservation, tour/transfer, add-on, and insurance preferences; and
+9. requested human help and preferred contact method.
 
 Rules:
 
 - Save after every confirmed answer.
-- Do not create a live Odysseus session during ordinary intake.
-- Defaults may copy previously confirmed factual data, such as country/state. Defaults may not invent legal identity, insurance, add-on, fare, cabin, payment, or consent decisions.
-- Supplier-only choices that do not exist yet remain `pending_live_contract`; they are not guessed.
-- After the guest confirms a valid email address, `Continue later` saves all confirmed values and the exact next-task pointer. It never silently accepts an unconfirmed value currently being edited.
+- Do not create a live Odysseus session during intake, review, call-key issuance, dashboard signaling, or the pre-call screen.
+- Defaults may copy confirmed factual data; they may not invent legal identity, insurance, add-on, fare, cabin, payment, or consent decisions.
+- Age/service qualification remains a candidate or claim until the agent checks live supplier rules during the call.
+- Do not request/store military proof, payment data, or agent-profile fields in the ordinary assistant.
+- Supplier-only choices remain `pending_live_contract`; the agent resolves them with the caller in the fresh session.
+- `Continue later` saves only confirmed values and the exact next-task pointer.
 
-#### Stage 4 - Guest review and preparation authorization
+#### Stage 4 - Final guest review and phone-finalization acknowledgement
 
 Owner: Guest
 
-1. Show the passenger, contact, address, preferences, and missing-field summary.
-2. Require correction of all currently known required fields.
-3. Require an accuracy acknowledgement for information supplied for other travelers.
-4. Obtain explicit permission to let an operator prepare the live Odysseus booking.
-5. Explain that price, exact cabin, supplier services, insurance, payment schedule, and terms may still require confirmation.
+1. Show passenger, contact, address, savings-qualification, preferences, and missing-field summaries.
+2. Require correction of every known required field and accuracy acknowledgement for other travelers.
+3. Explain that the packet will be stored for an agent to retrieve and manually enter into the cruise booking system.
+4. Explain that nothing is booked, held, or charged yet; live price, cabin, discounts, optional products, payment schedule, and terms will be confirmed during the call.
+5. Obtain explicit permission to store the reviewed packet and make it available to an authenticated booking agent when the guest initiates the call or supplies the fallback call key.
 
 Resulting status: `review_ready`.
 
-#### Stage 5 - Operator claim and preflight
+#### Stage 5 - Store the final packet and issue a fallback call key
 
-Owner: Authenticated operator
+Owner: Booking Assistant
 
-1. The draft enters the protected Booking Queue.
-2. One operator claims it with a lease.
-3. The operator verifies Deal/package identity, current source-link health, passenger mix, residency, hard constraints, and the approved `BookingContactProfile`.
-4. The operator resolves missing or contradictory data before opening Odysseus.
-5. If the package is unavailable or materially different, set `needs_guest`; do not substitute another sailing silently.
+1. Transactionally persist the reviewed packet, field revisions, `packetVersion`, acknowledgement, and journal result.
+2. Generate one active three-letter fallback call key from the approved pronounceable/safe-word registry. It contains no PII or embedded draft/database identifier.
+3. Collision-check against all active keys before commit. Store a normalized deterministic lookup HMAC/digest and display metadata; never use a sequential order number.
+4. Bind the key to draft, version, issued time, lifecycle, and state `active`.
+5. Revoke a prior key only when deliberately replaced. Refresh/repeated taps return the same active key.
+6. Send a transactional `Ready to call` receipt containing the fallback key, agency phone number, pre-call explanation, secure resume link, and reminder controls. Do not place the key in a URL, email subject, analytics, or push notification.
+7. Do not create a `brn`, select a cabin, start a timer, or claim inventory.
 
-Resulting status: `agent_claimed`.
+Resulting status: `ready_to_call_agent`.
 
-#### Stage 6 - Create one live Odysseus decision session
+#### Stage 6 - Present the final call handoff
 
-Owner: Controlled worker and operator
+Owner: Booking Assistant and guest
 
-1. Create one fresh `brn` only when the operator is ready to continue promptly.
-2. Revalidate live price, tax/fee basis, fare/category rules, cabin inventory, and payment schedule.
-3. Normalize the rendered options and compare them with the durable draft.
-4. Present any material difference and the exact fare/category/cabin choice to the guest; the operator records the guest's explicit approval.
-5. Apply category/rate state only after approval.
-6. Apply the cabin selection only after exact cabin approval. This is the first strong reservation-like mutation and starts the visible timed state.
-7. Reuse this session; do not create parallel locks.
+Lead with:
 
-Resulting status: `preparing_checkout` or `blocked_change`.
+> Your information is saved. Call your booking agent to finalize.
 
-#### Stage 7 - Fill and verify the safe checkout sections
+Show a de-emphasized fallback card: `If your information does not appear automatically, tell your agent your three-letter call key: MAP.` Include **Copy key** and **Read key aloud**. State that it only locates saved information; it is not identity proof or booking confirmation.
 
-Owner: Controlled worker, supervised by the operator
+Immediately above the primary button, state:
 
-1. Fill only confirmed passenger fields that exist in the live contract.
-2. Fill Booking Contact Email and Phone from the versioned approved operator profile.
-3. Re-read validation after every section.
-4. Revalidate the total and payment schedule after passenger pricing.
-5. Surface supplier-specific Additional Services, tours/transfers, insurance, and payment choices.
-6. Stop on an unknown required field, rejected operator profile, price/rule change, or contract drift.
-7. Do not enter card information, accept terms, or perform the final submit.
+> When you tap the button, we will alert your agent and place your saved information at the top of the agent's booking screen before your phone starts the call. The agent will verify who you are, start a new live cruise booking session, recheck the current price, cabin and any discounts, enter your information, review the final choices and terms with you, take your payment information by phone, and complete the booking. If the agent cannot see your information automatically, give the agent your three-letter call key. Nothing is booked, held, or charged yet, and prices or cabins may change before the agent completes the booking.
 
-Resulting status: `ready_for_completion` or `blocked_change`.
+Tell the guest to have the fallback key, traveler documents needed to verify spelling/details, and payment card available. Never request payment data in Leisure Life.
 
-#### Stage 8 - Manual operator completion
+Actions:
 
-Owner: Authenticated operator using the Cruise Brothers-controlled browser
+1. Primary: **Call agent to finalize**. First complete the server-side `begin-call` command; only after its acknowledgement launch the approved `tel:` number on supported phones.
+2. Secondary: **Copy key**.
+3. Secondary: **Call later**, leaving `ready_to_call_agent` and the loop-safe call reminder active.
+4. More Options: review/correct saved information, resend ready-to-call email, request callback, change/stop reminders, or cancel/delete.
 
-This is the agreed launch procedure while official guest payment-request capability remains unproven.
+The primary tap transactionally records `call_launch_requested`, creates a short-lived `callAttemptId`, moves the draft to `call_signal_pending`, and publishes an authenticated operator-dashboard signal containing only the internal draft reference plus a masked expected-caller summary. The online dashboard must pin/render the draft and acknowledge that same attempt ID. Only that authenticated consumer acknowledgement may move the draft to `calling_now` and authorize the browser to launch `tel:`. A broker/server publish acknowledgement alone is insufficient. If the dashboard acknowledgement fails or times out, return to `ready_to_call_agent`; do not silently dial or claim automatic population. Show the phone number and fallback key with Retry. `calling_now` still means only that the guest initiated the handoff after the dashboard received it. It never proves ringing, connection, caller identity, agent claim, payment, or booking.
 
-1. The operator contacts or remains with the guest using the approved agency procedure.
-2. The operator confirms any unresolved Additional Services, tours/transfers, and insurance decision.
-3. The operator confirms the available deposit/full-payment schedule and exact amount to charge.
-4. The operator obtains the guest's required authorization and terms acknowledgement using the approved Cruise Brothers procedure.
-5. Card information is provided through that approved procedure and entered only into the official Odysseus payment form. It is never typed into, transcribed by, recorded by, or stored in Leisure Life systems.
-6. The operator reviews the final passenger list, cabin, fare rules, total, payment amount, billing data, and terms.
-7. The operator manually performs the final payment/reservation submit.
-8. On a decline, validation error, or expired session, do not mark the draft booked. Follow the recovery rules below.
+#### Stage 7 - Agent retrieves and manually completes the booking
 
-Resulting status: `operator_completing` until authoritative success exists.
+Owner: Authenticated operator using the protected Leisure Life workspace and Cruise Brothers-controlled browser
 
-#### Stage 9 - Confirm, reconcile, and communicate
+1. Protected Booking Queue receives the pending call-intent signal, pins/renders the expected draft with a masked caller summary and countdown, and acknowledges the same attempt ID; only then does the draft become `calling_now`. It does not claim the draft automatically.
+2. Operator compares the Google Voice caller ID with the saved masked number when available. Caller ID is supporting evidence only and may be blocked, spoofed, forwarded, or different.
+3. For a direct call, mismatched/unavailable caller ID, expired signal, multiple simultaneous attempts, or dashboard failure, caller reads the three-letter fallback key and the authenticated operator performs exact-key lookup.
+4. System returns one masked match or non-enumerating not-found/expired result. The signal, caller ID, and key are locators, not authentication and never authorize PII reveal.
+5. Operator verifies caller under approved procedure, claims the draft with a lease, and reveals only needed fields.
+6. Operator confirms saved sailing/material facts; corrections retain operator provenance and required guest confirmation.
+7. Operator starts one fresh Odysseus session. This is the first live `brn` for launch.
+8. Operator rechecks availability, price, taxes/fees, schedule, cabin/fare rules, and plausible ordinary/qualifying rates.
+9. Operator manually enters saved information and resolves live supplier-only choices with the caller.
+10. Operator explains material differences and obtains approval for exact rate, cabin, add-ons/insurance, amount, schedule, and terms.
+11. Caller provides card information by phone under the approved Cruise Brothers procedure. Operator enters it only in official Odysseus. Leisure Life does not record, transcribe, persist, proxy, or analyze card data/payment activity.
+12. Operator manually performs official payment/reservation submit.
+13. Decline, validation error, price change, unavailable cabin, dropped call, or expired session never marks booked or triggers duplicate submit.
+
+Resulting status: `agent_processing`, `needs_guest`, `payment_failed`, or `reconciliation_review` until authoritative success.
+
+#### Stage 8 - Confirm, reconcile, and communicate
 
 Owner: Operator and Booking Assistant
 
-1. Capture the official success state and booking reference through the protected operator workflow.
-2. Reconcile the booking against the CBAT Trip record and `Imported From Odysseus` evidence.
+1. Capture official success and booking reference through protected operator workflow.
+2. Reconcile against CBAT Trip and `Imported From Odysseus` evidence.
 3. Set `booking_confirmed` only after authoritative success or verified reconciliation.
-4. Stop booking-progress reminders.
-5. Send the guest the approved confirmation and next-step communication.
-6. Destroy or expire the ephemeral `brn`, cookies, ViewState, and worker execution data.
-7. Retain only the approved durable booking/audit data and PII according to policy.
+4. Stop Continue-later and call-to-finalize reminders.
+5. Mark fallback key `consumed`/terminally closed; retain only approved digest/audit metadata.
+6. Send approved confirmation and next steps.
+7. Destroy/expire ephemeral `brn`, cookies, ViewState, and live-session data.
 
-### 6A.2 Recovery behavior within the pilot flow
+### 6A.2 Fallback call-key contract
 
-- Guest leaves before review: resume the durable draft; no Odysseus state is needed.
-- Guest explicitly selects `Continue later`: enter `paused_by_guest`, keep only confirmed durable values, arm the single three-day reminder program, and resume at the exact next task.
-- Price, fare, cabin, or rules change: set `blocked_change`, show the difference, and require explicit confirmation.
-- `brn` or red-badge timer expires: discard ephemeral execution state, create one replacement session when ready, refill confirmed values, and revalidate everything material.
-- Cabin becomes unavailable: return to exact-cabin review; never choose the first available cabin automatically.
-- Card declines or payment validation fails: keep payment data out of Leisure Life, let the operator resolve it in the official surface, and do not create duplicate submissions.
-- Booking success is uncertain: leave the draft in reconciliation review; check CBAT before retrying a final submit.
-- Contract drift appears: stop the worker and let the operator continue manually or defer the booking.
+- Three case-insensitive letters displayed as one short word, for example `MAP`.
+- Draw only from a versioned, curated registry of easily spoken, non-offensive three-letter words; exclude confusable spellings, abbreviations, sensitive terms, and words likely to be misheard.
+- Select with cryptographically secure randomness and collision-check against every active key. Processing one call at a time does not imply only one ready/paused draft exists.
+- Encode no PII, Deal/date/phone suffix, sequence, DynamoDB key, or `brn`.
+- One active key per draft; idempotent reads return it and intentional rotation revokes the old key.
+- Index only a server-side deterministic HMAC/digest. Exclude raw keys from logs, analytics, URLs, traces, and push notifications.
+- If the product must redisplay the same key after secure resume, store the raw value only as a separately envelope-encrypted Tier B secret under the draft; never store it in the lookup alias. Authorized guest display and the transactional ready-to-call email body are its only permitted reveals.
+- Operator lookup is authenticated, rate-limited, journaled, and unavailable publicly.
+- The key locates a draft but never authenticates the caller or authorizes sensitive reveal. Its intentionally low entropy is acceptable only because public lookup is impossible, operator lookup is throttled/audited, and caller verification is mandatory.
+- Expired/not-found responses do not reveal whether a similar code/draft exists.
 
-The normal `Continue later` action is available only before a live timed Odysseus session begins. If the guest needs to leave after Stage 6 starts, the operator must close or allow the ephemeral execution to expire, explain that the cabin and price are not being held, and then return the durable draft to `paused_by_guest`.
+### 6A.3 Recovery behavior
 
-### 6A.3 Ownership boundary
+- Before final review: resume exact task; no Odysseus state exists.
+- `Continue later`: retain confirmed values and the one three-day intake reminder program.
+- After key issuance: retain the same key and switch to `call_to_finalize_v1`; create no supplier session.
+- `calling_now` signal expires after a short configured window and returns to `ready_to_call_agent` unless the operator claims it. Expiry does not rotate the key or discard the draft.
+- Lost key: recover through secure resume or resend ready-to-call email. Rotate only for suspected compromise/policy.
+- Material correction after key issuance: retain key, increment `packetVersion`, return to review, and block stale packet use until reconfirmed.
+- Dropped call: preserve key/draft, record outcome, let live session expire/close, and allow callback with the same key without hold promises.
+- Expired/not-found: use approved recovery; never guess by name/phone or expose matches.
+- Price/rule change: explain exact difference and require caller approval.
+- Payment failure: keep payment data outside Leisure Life and avoid duplicate submit.
+- Uncertain success: reconciliation review before retry.
+
+### 6A.4 Ownership boundary
 
 | Actor | Owns | Must not do |
 | --- | --- | --- |
-| Guest | Legal facts, preferences, exact decisions, correction, authorization | Supply agent-profile data or assume a cabin/payment succeeded |
-| Booking Assistant | Intake, validation, autosave, review, resume, reminders, operator packet | Collect card data, invent decisions, accept terms, submit a booking |
-| Controlled worker | Live scan, mapped safe fill, comparison, verification, sanitized checkpoint | Choose unapproved options, enter payment, accept terms, final-submit |
-| Operator | Claim, live-session supervision, exact cabin application, supplier choices, payment, terms, final submit, confirmation review | Copy card data into Leisure Life or report success without evidence |
-| Cruise Brothers/Odysseus | Official inventory, pricing, payment, reservation, confirmation | Be represented as durable by a raw session URL |
+| Guest | Facts, preferences, review, call initiation, fallback key, live decisions, payment authorization | Treat the signal/key as confirmation or enter card data into Leisure Life |
+| Booking Assistant | Intake, autosave, review, fallback key, disclosure, atomic call-intent signal, resume, reminders, operator packet | Claim a connected call, create pre-call `brn`, claim inventory, collect card data, accept terms, submit |
+| Operator | Pinned-draft or fallback-key lookup, caller verification, claim, fresh session, manual entry, comparisons, payment, terms, submit, confirmation | Treat button tap, caller ID, or key alone as authentication, copy card data into Leisure Life, report unsupported success |
+| Cruise Brothers/Odysseus | Official inventory, pricing, payment, reservation, confirmation | Be represented as durable by raw session URL |
+| Controlled worker | Future-only contract capture/approved adapter | Participate in launch call flow or create pre-call session |
 
-### 6A.4 Versioned pivot to a future completion flow
+### 6A.5 Versioned future pivot
 
-The common flow through Stage 7 remains stable. Only Stage 8 is selected by a versioned `completionMode` capability router.
+Stages 1-5 remain common. Stage 6 onward is selected by `completionMode`; the three-letter call key remains the human fallback.
 
-| Completion mode | Launch state | Stage 8 behavior |
+| Completion mode | Launch state | Behavior |
 | --- | --- | --- |
-| `operator_assisted_v1` | Enabled and default | Operator completes payment, terms, and final submit inside Odysseus. |
-| `guest_owned_share_v1` | Secondary fallback | Guest opens a fresh Share link and repeats from Stateroom or Guest Information. No prepared data, cabin, timer, or payment state transfers. |
-| `official_payment_request_v1` | Disabled/unproven | After an authorized hold/unpaid booking, send only a verified official guest payment URL. |
-| `transferable_checkout_v1` | Disabled; raw `brn` rejected | Use only if Cruise Brothers later supplies a clean-browser checkout mechanism that does not transfer agent cookies. |
+| `call_agent_to_finalize_v1` | Enabled/default/only public launch mode | Button signals/pins the draft before dialing; agent verifies and claims it, or uses the fallback key, then starts fresh Odysseus, takes payment by phone, and completes manually. |
+| `official_payment_request_v1` | Disabled/unproven | Send only a separately verified official guest payment URL after authorized reservation state. |
+| `transferable_checkout_v1` | Disabled; raw `brn` rejected | Requires clean-browser capability without agent-cookie transfer. |
+| `guest_owned_share_v1` | Research-only | Guest restarts from Stateroom/Guest Information; not prepared payment handoff. |
 
-Store on each draft:
+Store flow/mode/version/capability snapshot, selection time/actor/fallback reason, `callKeyVersion`, `packetVersion`, and call-disclosure version.
 
-- `bookingFlowVersion`;
-- `completionMode` and `completionModeVersion`;
-- `completionCapabilitySnapshot` with supplier, evidence version, and verified date;
-- `completionModeSelectedAtIso` and selecting actor;
-- `completionFallbackReason` when the selected mode changes.
+A new mode requires proven support, repeat clean-device tests when applicable, documented state/expiry/fallback, supplier/payment coverage, no Leisure Life card-data exposure, authoritative reconciliation, full tests, and feature flag. `call_agent_to_finalize_v1` remains rollback.
 
-Activation gate for a new completion mode:
-
-1. Cruise Brothers support or live read-only evidence proves the capability.
-2. It works twice in clean desktop/mobile guest contexts when guest transfer is involved.
-3. Cookie, `brn`, hidden-state, TTL, expiry, reissue, and fallback behavior are documented.
-4. Supported suppliers/fare types and deposit/full-payment behavior are documented.
-5. Card data remains entirely outside Leisure Life infrastructure.
-6. Booking completion can be reconciled authoritatively.
-7. Security, privacy, operator, and end-to-end tests pass.
-8. The mode is enabled by supplier capability configuration and feature flag, with `operator_assisted_v1` retained as rollback.
-
-Do not migrate an active timed Odysseus session to a newly enabled mode. Lock the completion mode when Stage 6 begins. A different mode may be selected only before the live session or after that execution expires and the material facts are revalidated.
-
+Do not migrate an active phone completion into another mode. Change only before completion begins or after the attempt ends and material facts are revalidated.
 ## 7. Guest experience
 
 ### 7.1 Entry from a Deal landing page
@@ -428,11 +430,11 @@ Implementation rules:
 
 - Maintain an approved, server-side `BookingContactProfile` for the Cruise Brothers account or assigned operator, including only the exact name, email, phone, and agency identifiers the live form requires.
 - Associate the profile with the authenticated Cruise Brothers credential/tenant. Do not hard-code a personal email in browser code, prompts, Deal manifests, or guest-visible configuration.
-- The deterministic Odysseus adapter fills this step from the approved profile. The LLM may not invent, select, or modify booking-agent contact data.
+- During the call, the authenticated operator fills this step from the approved profile while manually entering the fresh Odysseus session. A future adapter may automate only after separate approval. The LLM may not invent, select, or modify booking-agent contact data.
 - Keep the guest's email and the booking agent's email as different canonical fields. Never substitute one for the other unless a captured supplier contract explicitly identifies the field as guest contact.
 - Store only the profile ID and configuration version on the booking audit trail; do not copy the agent profile into every guest answer record.
-- If the approved profile is missing, does not match the active Cruise Brothers account, or is rejected by Odysseus, mark checkout preparation `blocked` and route it to the operator.
-- Before operator completion, verify that this section is complete. A future guest-owned mode must also prove that the profile survives transfer and never asks the guest to type the agent's email.
+- If the approved profile is missing, mismatched, or rejected during the call, mark the agent workflow `blocked` and resolve it before payment/final submit.
+- Before manual completion, verify that this section is complete. A future guest-owned mode must prove that the profile survives transfer and never asks the guest to type the agent's email.
 
 Guest-facing language, if this step must be acknowledged, should be simple: `We will add your booking agent's contact information for you.` Do not present it as another guest task.
 
@@ -446,20 +448,74 @@ Default order:
 4. Legal identity for traveler 1.
 5. Legal identity for each additional traveler.
 6. Nationality and residency required by the current supplier.
-7. Primary mailing address.
-8. Per-traveler contact fields only when the supplier requires them.
-9. Past-passenger/loyalty number if applicable and optional.
-10. System fills and verifies the approved agent booking-contact profile; no guest input is requested.
-11. Accessibility or service requests.
-12. Cabin/fare choice confirmation.
-13. Additional services and optional add-ons.
-14. Travel insurance decision.
-15. Full passenger and trip review.
-16. Explicit permission to prepare the Odysseus checkout.
-17. Price/cabin/rule change review, if any.
-18. Operator takeover for supplier choices, payment, terms, and final submission.
+7. Savings eligibility: automatically acknowledge the age-based check, then ask one optional military/service question.
+8. Primary mailing address.
+9. Per-traveler contact fields only when the supplier requires them.
+10. Past-passenger/loyalty number if applicable and optional.
+11. System fills and verifies the approved agent booking-contact profile; no guest input is requested.
+12. Accessibility or service requests.
+13. Cabin/fare choice confirmation.
+14. Additional services and optional add-ons.
+15. Travel insurance decision.
+16. Full passenger and trip review.
+17. Explicit permission to store the reviewed packet and place it in the authenticated operator dashboard through call-intent signaling, with fallback-key lookup when needed.
+18. Retrieval-code and phone-finalization explanation.
+19. **Call agent to finalize** handoff; live price/rate/cabin/rule decisions occur with the agent during the call.
 
 This is a default dependency order, not a rigid conversational order. The guest may jump to another available section. Completion rules remain deterministic, and Section 6A controls the actual execution order after guest review.
+
+### 7.3.1 Savings and special-rate qualification
+
+The product promise is **we always check**, not **you definitely qualify**. The assistant must screen for potential eligibility, the live supplier contract must reveal an available rate, and the guest must choose the final rate after an exact comparison.
+
+Supplier evidence captured July 19, 2026 shows why this requires a rule registry:
+
+- [MSC Senior Club](https://www.msccruisesusa.com/cruise-deals/cruises-for-seniors) currently requires every guest sharing the stateroom to be age 65 or older and requires date of birth during booking.
+- [Royal Caribbean special pricing](https://www.royalcaribbean.com/sgp/en/faq/questions/qualifications-special-pricing) currently describes senior rates for guests age 55 or older on selected sailings and requires at least one qualifying guest per stateroom for a discounted program.
+- [MSC military pricing](https://www.msccruisesusa.com/cruise-deals/military-discount-rates) currently lists active and retired U.S./Canadian military, specified service groups, some government/civil-service/interline personnel, and defined family relationships, with organization ID required and capacity/combinability restrictions.
+- [Carnival military pricing](https://help.carnival.com/app/answers/detail/a_id/2856/kw/cruises%26) currently uses different eligibility and proof rules, including short post-booking proof deadlines. Royal Caribbean separately lists qualifying honorably discharged veterans under its own conditions.
+
+These pages are evidence for the model, not permanent application constants. Supplier terms can change, promotional rate codes can be sailing-specific, and even supplier-owned pages may describe combinability differently. Each rule therefore needs a source URL, market, supplier, captured time, effective window when known, reviewer, and version.
+
+**Age-based flow**
+
+1. Calculate each traveler's age on the sailing date from the confirmed date of birth. Store the calculation version and sailing date used.
+2. Evaluate the current supplier rule at both traveler and cabin level. Some rules require one qualifying occupant; MSC Senior Club currently requires all occupants to qualify.
+3. Tell the guest once: `We'll automatically check age-based rates for everyone.` Do not ask `Are you a senior?` or require a self-label.
+4. Mark the result only as `candidate` until a live rate exists for the sailing and cabin.
+
+**Military, veteran, and service-related flow**
+
+Ask one optional question after identities/residency:
+
+> Could anyone in your party qualify for a military, veteran, or service-related cruise rate?
+
+Offer large single-choice answers: `Yes`, `No`, and `Not sure - check with my agent`. If `Yes`, ask only:
+
+- which traveler may qualify;
+- broad category: active duty, retired military, veteran/honorably discharged, Reserve/National Guard, Canadian Armed Forces, Department of Defense/government/civil service, first responder, airline/interline personnel, eligible family member, or other/not sure; and
+- proof readiness: available later, need help, or not sure.
+
+This is a claim, not a verified entitlement. Never imply that every veteran qualifies with every cruise line. Do not ask for a service number, military ID number, discharge details, disability percentage, document image, or DD214 upload in the pilot. If a supplier requires proof, the operator presents the exact current requirement and uses an approved supplier/agency document path outside ordinary chat and analytics. A future secure-upload feature requires its own authorization, encryption, retention, redaction, and deletion review.
+
+**Live comparison and guest approval**
+
+For every plausible qualifying rate, create a normalized `RateCandidate` containing:
+
+- supplier rate code/label and captured-at time;
+- qualified traveler and cabin mapping;
+- complete total including taxes/fees and the comparable ordinary-rate baseline;
+- deposit and payment schedule;
+- cabin/category inventory;
+- cancellation/change rules;
+- included benefits, credits, drinks, Wi-Fi, or other materially different value;
+- combinability/exclusivity result;
+- proof type, presentation channel, and deadline when the supplier exposes them; and
+- verification status and rule/source version.
+
+The deterministic comparison must retain the best ordinary promotion as a baseline. During the call, the operator presents a small set such as `Lowest total`, `Military/service rate`, and `Standard promotion with benefits`, with exact differences. Never choose a special rate merely because its label contains a discount or percentage. The caller selects the rate; the operator revalidates it in the same fresh session before application. Preserve the reason when a special rate is unavailable, unverified, non-combinable, or worse.
+
+For future multi-cabin trips, qualification is mapped per cabin and per qualifying occupant. Never assume one eligible traveler automatically qualifies every cabin; supplier rules differ.
 
 ### 7.4 Side questions without losing position
 
@@ -526,13 +582,14 @@ Resume behavior:
 | Available when | Actions |
 | --- | --- |
 | Always | Ask a question, switch voice/text, view progress, privacy and data use. |
-| Email captured, before live Odysseus execution | Continue later, email my resume link, change/stop reminders. `Continue later` is also visible outside this sheet. |
+| Email captured, before fallback-key issuance | Continue later, email my resume link, change/stop reminders. `Continue later` is also visible outside this sheet. |
 | Phone captured | Get help now, ask for a callback. |
 | Passenger count known | Jump to a specific traveler, adjust travelers. |
-| Some fields complete | Review what you have, have an agent continue, mark a non-blocking item `I don't have this yet`. |
-| Guest-review ready | Review all passenger details, correct an answer. |
-| Odysseus preparation ready | Confirm current price and cabin, prepare checkout. |
-| Operator completion ready | Continue with my agent, review the latest price/cabin, request a call. Show an official guest payment request only when a separately verified completion mode is enabled. |
+| Traveler identities known | Review or update savings eligibility; explain that age-based rates are checked automatically. |
+| Some fields complete | Review what you have, request help, mark a non-blocking item `I don't have this yet`. |
+| Guest-review ready | Review all details, correct an answer, confirm storage/call handoff. |
+| Ready to call/key issued | Call agent to finalize, Copy key, Read key aloud, Call later, resend ready-to-call email, review/correct saved information. |
+| Agent is processing | View call/processing status, provide a requested correction, or call back with the same key. No payment fields appear in Leisure Life. |
 | Deal/package is no longer eligible | Keep my saved details, ask for similar options, request a callback, cancel/delete according to retention policy. |
 
 Unavailable actions are hidden rather than disabled unless hiding would make the state confusing.
@@ -561,6 +618,7 @@ Design now for these likely later options:
 | `Schedule a call` | Immediate help is unavailable. | Offer real availability windows and timezone; do not promise an instant response. |
 | `Pause or change reminders` | Guest needs more or less time. | Change only the reminder program, not the booking draft or marketing consent. |
 | `Choose a different cabin or fare` | Live inventory or price changed. | Present exact differences and require a new explicit decision; never auto-substitute. |
+| `Review savings eligibility` | Guest remembers military/service eligibility or wants to correct the qualifying traveler/category. | Return to the one qualification task, invalidate dependent live rate candidates, preserve unrelated answers, and require a new live comparison. Never request proof in the ordinary assistant. |
 | `Consider a similar sailing` | Original Deal expired or became unavailable. | Preserve the profile but create a reviewed replacement draft with new attribution and pricing; never silently rewrite the original. |
 | `Cancel this booking attempt` | Guest no longer wants to proceed. | Stop reminders immediately and explain whether saved information will be retained or deleted. |
 | `I already booked` | Guest completed by phone, another device, or another agent. | Stop reminders immediately and place the draft into reconciliation review; do not mark confirmed without authoritative evidence. |
@@ -624,6 +682,10 @@ Targets:
 - no screen presents more than one primary decision;
 - every participant understands that Continue later saves confirmed answers but does not hold price or cabin;
 - every participant can stop or change three-day reminders without cancelling the draft;
+- every participant understands that tapping the call button places the saved draft at the top of the agent's screen before dialing;
+- every participant can read/copy the three-letter fallback key and explain that it is needed only when automatic matching fails and is not a booking confirmation;
+- every participant understands, before tapping the button, that the agent will start a fresh live booking, recheck price/cabin/discounts, take card information by phone, and complete the booking;
+- every participant can identify **Call agent to finalize** as the only primary action on the completed screen;
 - no participant sees more than four context-relevant More Options actions before requesting the full list;
 - at least four of five participants can resume from email without coaching.
 
@@ -637,14 +699,15 @@ Targets:
 | `collecting` | Durable draft exists and fields are in progress. | `paused_by_guest`, `needs_guest`, `human_requested`, `review_ready`, `reconciliation_review`, `cancelled`, `abandoned` |
 | `paused_by_guest` | Guest explicitly saved confirmed progress for later; no live Odysseus session is active. | `collecting`, `needs_guest`, `human_requested`, `review_ready`, `reconciliation_review`, `cancelled`, `abandoned` |
 | `needs_guest` | A missing/changed answer is required from the guest. | `paused_by_guest`, `collecting`, `human_requested`, `review_ready`, `reconciliation_review` |
-| `human_requested` | Guest explicitly requested help. | `agent_claimed`, `collecting`, `cancelled` |
-| `agent_claimed` | An authenticated operator owns the active booking draft and performs preflight. | `needs_guest`, `preparing_checkout`, `cancelled` |
-| `review_ready` | All currently required fields are complete. | `paused_by_guest`, `needs_guest`, `human_requested`, `agent_claimed`, `reconciliation_review` |
-| `preparing_checkout` | Worker/operator is creating or advancing the one Odysseus decision session. | `blocked_change`, `ready_for_completion`, `needs_guest`, `agent_claimed` |
-| `blocked_change` | Price, cabin, rule, or field contract changed. | `needs_guest`, `human_requested`, `preparing_checkout`, `cancelled` |
-| `ready_for_completion` | Safe fill is verified and automation has stopped before payment/terms/final submit. | `operator_completing`, `guest_completion_sent`, `reconciliation_review`, `preparing_checkout`, `cancelled` |
-| `operator_completing` | Operator owns the official Cruise Brothers surface for final choices, payment, terms, and submit. | `booking_confirmed`, `reconciliation_review`, `needs_guest`, `blocked_change`, `expired` |
-| `guest_completion_sent` | A future verified official guest completion request was delivered/opened. Disabled in `operator_assisted_v1`. | `booking_confirmed`, `reconciliation_review`, `needs_guest`, `operator_completing`, `expired` |
+| `human_requested` | Guest explicitly requested help before finishing intake. | `agent_claimed`, `collecting`, `cancelled` |
+| `review_ready` | Required intake fields and review acknowledgement are complete. | `ready_to_call_agent`, `paused_by_guest`, `needs_guest`, `human_requested`, `cancelled` |
+| `ready_to_call_agent` | Reviewed packet and one active fallback key exist; no live Odysseus session exists. | `call_signal_pending`, `agent_claimed`, `needs_guest`, `cancelled`, `abandoned` |
+| `call_signal_pending` | One idempotent call attempt is waiting for authenticated operator-dashboard receipt acknowledgement; dialing is not yet authorized. | `calling_now`, `ready_to_call_agent`, `cancelled` |
+| `calling_now` | Guest completed the atomic call-intent signal and the draft is pinned for the operator; no connection or identity is implied. | `agent_claimed`, `ready_to_call_agent`, `needs_guest`, `cancelled` |
+| `agent_claimed` | Authenticated operator matched the pinned draft or fallback key, verified the caller, and owns the draft lease. | `agent_processing`, `needs_guest`, `cancelled` |
+| `agent_processing` | Operator is manually entering/revalidating the fresh live Odysseus session with the caller. | `needs_guest`, `payment_failed`, `reconciliation_review`, `booking_confirmed`, `expired` |
+| `payment_failed` | Official payment attempt failed; no card data is stored in Leisure Life. | `agent_processing`, `needs_guest`, `cancelled`, `reconciliation_review` |
+| `guest_completion_sent` | Future verified official guest completion request delivered/opened. Disabled in `call_agent_to_finalize_v1`. | `booking_confirmed`, `reconciliation_review`, `needs_guest`, `agent_processing`, `expired` |
 | `reconciliation_review` | Completion is claimed or plausible but authoritative confirmation is not yet established. | `booking_confirmed`, `needs_guest`, `cancelled` |
 | `booking_confirmed` | Booking reference or authoritative confirmation exists. | Terminal |
 | `abandoned` | No explicit pause remains active and the draft passed the configured inactivity/retention rule. | `collecting`, `cancelled` |
@@ -695,6 +758,16 @@ Do not treat `GUEST_INFO.json` as the booking schema without extension.
 - `completionCapabilitySnapshot`
 - `completionModeSelectedAtIso`
 - `completionFallbackReason`
+- `packetVersion`
+- `callDisclosureVersion`
+- `callKeyVersion`
+- `callKeyState`
+- `callKeyIssuedAtIso`
+- `callKeyExpiresAtIso`
+- `readyToCallAtIso`
+- `callLaunchRequestedAtIso`
+- `activeCallAttemptId`
+- `callIntentExpiresAtIso`
 - `odysseusContractVersion`
 - `createdAtIso`
 - `updatedAtIso`
@@ -714,6 +787,17 @@ Do not treat `GUEST_INFO.json` as the booking schema without extension.
 - `claimLeaseExpiresAtIso`
 - `completionSummary`
 - `nextTaskId`
+
+### 10.1.1 Fallback call-key record
+
+- exact-match server-side HMAC/digest used by the authenticated lookup index;
+- key version, state (`active`, `revoked`, `consumed`, or `expired`), issued/expiry/closed times;
+- current `packetVersion` and call-disclosure version;
+- issuance/rotation/closure actor and reason;
+- no raw key in ordinary logs, analytics, URLs, push notifications, or general journal payloads; and
+- raw display value available only in the authorized guest ready screen/transactional email generation path under the approved retention design.
+
+The key is a locator, not authentication. Sensitive reveal still requires operator authorization, caller verification, and an audited reveal action.
 
 ### 10.2 Deal and price snapshot
 
@@ -744,7 +828,7 @@ Never compare a base fare with a tax-inclusive total as though they were the sam
 
 - stable traveler ID;
 - primary traveler flag and relationship;
-- adult/minor classification and age at sailing;
+- adult/minor classification, derived age at sailing, calculation date, and calculation-rule version;
 - title and supplier-required gender value;
 - exact confirmed legal first, middle, last, suffix;
 - date of birth;
@@ -753,6 +837,7 @@ Never compare a base fare with a tax-inclusive total as though they were the sam
 - address fields;
 - email/phone only when required;
 - past-passenger/loyalty data;
+- rate-qualification claims with type, broad category, source, claim status, proof-readiness status, rule version, and confirmed time; no proof document or credential number;
 - accessibility/service needs;
 - field-level status, source, confirmation, and updated time.
 
@@ -762,6 +847,9 @@ Never compare a base fare with a tax-inclusive total as though they were the sam
 - assigned traveler IDs;
 - category/fare/cabin preferences;
 - exact selected category, rate, and cabin when known;
+- qualifying traveler IDs and versioned cabin-level qualification results;
+- normalized live rate candidates, ordinary-rate baseline, selected rate-candidate ID, savings/value comparison, and not-selected reasons;
+- proof-requirement snapshot and verification status for the selected rate;
 - price snapshot;
 - accessibility requirement;
 - selection confirmation time.
@@ -775,8 +863,10 @@ One cabin is one booking transaction unless Cruise Brothers proves otherwise. Mu
 - add-on decision set;
 - travel-insurance decision and disclosure version;
 - passenger-data review confirmation;
-- permission to prepare Odysseus checkout;
+- permission to store the reviewed packet and expose it to an authenticated operator through the call-intent/fallback-key workflow;
+- call-finalization disclosure version and acknowledgement/tap evidence;
 - price/cabin change confirmations;
+- qualifying-rate comparison presented version and explicit selected-rate confirmation;
 - terms presented version;
 - selected completion mode acknowledgement;
 - confirmed payment amount/schedule instruction when known;
@@ -800,6 +890,22 @@ Each canonical field has:
 - `revision`.
 
 Only `confirmed` and still-applicable values may be sent to Odysseus.
+
+### 10.7.1 Versioned rate-qualification rule registry
+
+Keep supplier-specific qualification logic out of UI components. Each `RateQualificationRule` records:
+
+- supplier, sales market, residency scope, sailing/promotion scope, and effective window;
+- qualification type and supplier rate code when known;
+- age threshold and whether one or every cabin occupant must qualify;
+- allowed service/employment/family categories and required occupant relationship;
+- cabin-count extension rules;
+- combinability/exclusivity rules;
+- accepted proof classes, proof channel, and deadline without storing the proof itself;
+- authoritative source URL or captured Odysseus contract reference;
+- captured/reviewed times, reviewer, rule version, and current confidence/status.
+
+Unknown or stale rules produce `needs_operator_verification`; they never default to eligible or ineligible. A marketing label such as `Military Rate` is evidence that a candidate should be inspected, not sufficient proof of qualification, savings, or availability.
 
 ### 10.8 Booking Activity Journal
 
@@ -836,8 +942,8 @@ Journal coverage includes:
 2. **Conversation:** every guest text turn, assistant response, side question, clarification, refusal/uncertainty, escalation, operator message, and channel transition, subject to the transcript policy below.
 3. **Voice:** permission result, listening/processing/speaking states, interruption, fallback, sanitized transcript turn, proposed interpretation, correction, and confirmation. Raw microphone audio is not retained by default.
 4. **Email/reminders:** template/version, scheduled window, send claim, provider acceptance, delivery, bounce/suppression, open, link click, token exchange, preference change, retry, and stop reason. An open is observable but is not treated as guest intent or booking progress.
-5. **Operator activity:** queue view, claim/release, sensitive-field reveal, call attempt/outcome, note, guest contact, field edit, preparation request, approval, completion checkpoint, booking-reference entry, and cancellation/deletion action.
-6. **Odysseus/worker:** session creation/expiry, page/contract version, normalized choices shown, guest approval reference, mutation class, safe apply, validation result, price/cabin/rule diff, contract drift, timer state, last safe checkpoint, and sanitized completion/reconciliation result.
+5. **Operator activity:** call-intent receipt/pin/expiry, fallback-key lookup, masked match, caller-ID comparison, caller verification, queue/detail view, claim/release, sensitive-field reveal, call attempt/outcome, note, guest contact, field edit, agent-processing start, live-choice approval, completion checkpoint, booking-reference entry, and cancellation/deletion action.
+6. **Odysseus/worker:** session creation/expiry, page/contract version, qualification rules evaluated, normalized rate candidates compared, proof requirement presented, choices shown, guest approval reference, mutation class, safe apply, validation result, price/cabin/rule diff, contract drift, timer state, last safe checkpoint, and sanitized completion/reconciliation result.
 7. **System/security:** state transition, lease conflict, authorization denial, concurrency conflict, token issue/consume/revoke, reminder suppression, redaction/quarantine action, retention/deletion job, and integration failure/recovery.
 
 Tracking completeness does not mean indiscriminate surveillance. Do not capture individual keystrokes, mouse coordinates, clipboard contents, raw DOM/HTML, unrestricted screenshots, payment-page activity, card data, passwords, cookies, ViewState, microphone audio, or third-party session-replay video. A structured journey replay built from the journal is the approved default.
@@ -849,8 +955,8 @@ Each state-changing command and its resulting journal event must commit transact
 | Tier | Examples | Allowed collection path | LLM/transcript policy |
 | --- | --- | --- | --- |
 | A - operational contact | First name, email, phone, guest count, broad ages | Secure form; voice/text allowed with confirmation | May be used only when needed; redact from logs. |
-| B - booking PII | Legal names, date of birth, home address, nationality, residency | Secure deterministic form by default | Do not send to the LLM in the first release. Store only status/field keys in conversation context. |
-| C - highly sensitive travel data | Accessibility/medical needs, passport, redress, known-traveler data | Dedicated secure form only if required | Never place in chat prompts, voice transcripts, analytics, push notifications, or ordinary logs. |
+| B - booking PII | Legal names, date of birth, home address, nationality, residency, broad military/service qualification claim | Secure deterministic form by default | Do not send to the LLM in the first release. Store only status/field keys in conversation context. Aggregate analytics may use only a coarse, de-identified qualification type. |
+| C - highly sensitive travel data | Accessibility/medical needs, passport, redress, known-traveler data, military/service proof documents or credential numbers | Dedicated secure form only if required | Never place in chat prompts, voice transcripts, analytics, push notifications, or ordinary logs. Special-rate proof is not collected by Leisure Life in the pilot. |
 | D - payment | Card number, CVV, bank details, payment form values | Cruise Brothers-controlled surface only | Never collect, store, proxy, log, or transcribe. |
 
 ### 11.1 Conversation and recording policy
@@ -916,6 +1022,8 @@ Use one dedicated table: `lll-booking-assistant`.
 | `DRAFT#<id>` | `CALL#<time>#<id>` | Call request/attempt/outcome and operator summary; no audio in the pilot. |
 | `DRAFT#<id>` | `EXECUTION#<id>` | Encrypted short-lived Odysseus execution state and worker outcome. |
 | `DRAFT#<id>` | `NOTIFICATION#<id>` | Reminder/completion notification state and idempotency. |
+| `DRAFT#<id>` | `CALL_KEY` | Three-letter fallback-key version/state, lookup-digest reference, packet version, issuance/rotation/consumption metadata; no public lookup capability. |
+| `CALLKEY#<hmac>` | `DRAFT#<id>` | Exact-match active-key alias for authenticated operator fallback lookup; contains no raw key or PII. |
 | `PERSON#<id>` | `PROFILE` | Reusable, consented encrypted guest profile and freshness metadata. |
 | `CONTACT#<hmac>` | `PERSON#<id>` | Contact-to-person alias without raw PII. |
 
@@ -935,11 +1043,14 @@ Use one dedicated table: `lll-booking-assistant`.
 - Client observation events are allowlisted and rate-limited. They cannot create state transitions or field revisions.
 - PII-free analytics projections are asynchronous and deduplicated by `journalEventId`; projection failure never deletes or rewrites the canonical journal.
 - Notification jobs use a stable key such as `draftId:notificationType:scheduledWindow`.
+- Final packet persistence, active-key alias creation, fallback-key metadata, and journal result are one transaction. A retry returns the same active key and packet version.
+- Key rotation transactionally revokes the old alias before enabling the replacement. The key HMAC uses a dedicated rotatable secret and constant-time exact-match comparison.
+- `begin-call` conditionally moves `ready_to_call_agent` to `call_signal_pending`, writes one `CALL` attempt and journal chain, and publishes one idempotent operator signal. Only an authenticated online-dashboard acknowledgement for the same `callAttemptId` moves it to `calling_now` and returns permission to launch `tel:`. Publish-only acknowledgement is insufficient. Timeout returns it to ready without deleting the draft or key.
 - TTL applies to resume-token, execution, and unverified-start items, not the durable draft by accident.
 
 ### 12.4 Continue-later reminder program
 
-Store one canonical `NOTIFICATION#CONTINUE_LATER` program per draft rather than pre-creating an unbounded series of jobs. It contains:
+Store at most one canonical booking-progress program per draft rather than pre-creating an unbounded series of jobs. Before fallback-key issuance its type is `NOTIFICATION#CONTINUE_LATER`; after key issuance it is transactionally replaced by `NOTIFICATION#CALL_TO_FINALIZE`. The two programs are mutually exclusive. It contains:
 
 - `programVersion` and `generation`;
 - `state`: `armed`, `suppressed_active`, `suspended_limit`, `stopped`, or `completed`;
@@ -1026,7 +1137,10 @@ Actions:
 - `update-reminder-preferences`
 - `stop-reminders`
 - `review`
-- `prepare-checkout`
+- `issue-call-key`
+- `ready-to-call`
+- `begin-call`
+- `resend-ready-to-call`
 - `cancel`
 
 Every mutation accepts `expectedVersion` and `idempotencyKey`. Authoritative command/result events are written server-side. `record-observation` accepts only a small versioned enum of non-PII UI observations, supports bounded batching, and cannot accept free-form payloads or cause state changes.
@@ -1050,15 +1164,19 @@ Actions:
 - `timeline`
 - `conversation`
 - `journey-replay`
+- `acknowledge-call-intent`
+- `lookup-call-key`
+- `verify-caller`
 - `claim`
 - `release`
 - `update-field`
 - `request-guest-field`
 - `send-resume`
-- `start-operator-completion`
+- `start-agent-processing`
 - `record-completion-checkpoint`
+- `record-call-outcome`
 - `send-guest-completion` (future verified modes only)
-- `prepare-odysseus`
+- `prepare-odysseus` (future automation only; disabled for launch)
 - `status`
 - `audit`
 
@@ -1075,7 +1193,7 @@ Timeline/conversation reads are paginated, role-scoped, and journaled. Protected
 - contract-drift report;
 - completion/failure report.
 
-The public browser never receives agent cookies, raw hidden fields, or worker credentials.
+The public browser never receives agent cookies, raw hidden fields, or worker credentials. The launch flow does not invoke the worker; this handler exists only for a separately approved future automation phase.
 
 ## 15. AI responsibility boundary
 
@@ -1118,17 +1236,20 @@ Validate against an allowlisted schema. Never parse `[Form: ...]` or other inlin
 
 ## 16. Odysseus contract adapter
 
+Launch boundary: `call_agent_to_finalize_v1` does not create or automate an Odysseus session before the phone call. The authenticated agent manually starts a fresh session only after matching the pinned call intent or fallback key, verifying the caller, claiming the draft, and confirming that the caller is ready to continue. The remaining adapter/worker design in this section is future automation and a manual-agent checklist; it is not a launch dependency.
+
 ### 16.1 Just-in-time session creation
 
-Do not create a live `brn` when the guest clicks Start booking.
+Do not create a live `brn` when the guest clicks Start booking, finishes review, receives a fallback key, opens an email, publishes a call-intent signal, or taps the phone link.
 
-Create or recreate it only when:
+During the live finalization call, the agent may create the first/fresh `brn` only when:
 
 - the package is still eligible;
 - passenger count/ages/residency needed for session creation are confirmed;
 - cabin/fare intent is known enough to proceed;
-- the guest or operator explicitly requests checkout preparation; and
-- a worker is available to finish the safe sequence promptly.
+- the pinned call-intent draft or fallback call key resolves to a claimed draft and caller verification is recorded;
+- the guest understands that live price, cabin, discounts, choices, terms, and payment will be handled during this call; and
+- the agent is ready to keep processing promptly.
 
 This minimizes expiry, stale price, and inventory side effects.
 
@@ -1137,7 +1258,7 @@ This minimizes expiry, stale price, and inventory side effects.
 Yes: downstream availability and choices require a live Odysseus working session. Category, rate, cabin, dining, services, add-ons, insurance, and payment rules are not one static package payload. They are revealed sequentially from the current `brn`, browser cookies, submitted choices, passenger mix, residency, and supplier rules.
 #### Temporary lock permission
 
-Creating one normal Odysseus `brn` working session is an allowed part of careful testing and active booking preparation. Operator-observed behavior indicates that the session may temporarily lock the sailing/booking path for about 15 minutes and automatically releases when it expires.
+Creating one normal Odysseus `brn` working session is allowed during careful testing or an active finalization call. Operator-observed behavior indicates that the session may temporarily lock the sailing/booking path for about 15 minutes and automatically releases when it expires.
 
 This temporary lock is not treated as a prohibited durable hold. Guardrails:
 
@@ -1150,43 +1271,46 @@ This temporary lock is not treated as a prohibited durable hold. Guardrails:
 - escalate if a booking reference, named hold, durable reservation, or unclear inventory effect appears.
 
 
-Use one isolated decision session per booking/cabin and advance it through an explicit loop:
+For launch, the agent uses the following as a manual call checklist. A future approved worker may automate only the already classified safe steps. Use one isolated decision session per booking/cabin and advance it through an explicit loop:
 
 1. **Discover** the options rendered at the current page without inventing hidden state.
-2. **Normalize** them into typed choices with price, restrictions, source page, capture time, and short expiry.
-3. **Filter** hard constraints such as occupancy, accessibility, connecting-cabin need, and bed configuration.
-4. **Rank** soft preferences such as category, deck, location, elevator distance, obstruction, and price.
+2. **Normalize** them into typed choices with rate code/label, comparable total, benefits, restrictions, qualification/proof requirements, source page, capture time, and short expiry.
+3. **Filter** hard constraints such as occupancy, accessibility, connecting-cabin need, bed configuration, and verified rate eligibility.
+4. **Compare and rank** the best ordinary promotion alongside every qualifying-rate candidate using total, payment schedule, rules, included value, and the guest's confirmed preferences.
 5. **Present** a small shortlist plus View more, not the full Odysseus page.
 6. **Confirm** the guest's exact choice.
 7. **Apply** that choice to the same live session only after its mutation class is known and approved.
 8. **Verify** the resulting page, total, rules, and next option set.
-9. Repeat until the verified `ready_for_completion` boundary is reached.
+9. Repeat until the documented phone-payment/manual-submit boundary is reached while the caller remains present.
 
 Important consequences:
 
 - Collect party size, ages, residency, cabin count, accessibility requirements, and hard cabin preferences before creating the session.
+- Derive age-based candidates from confirmed date of birth and sailing date. Carry military/service answers only as claims until the live rate and proof rule are verified.
+- The existing category POST carries a rate code, but the current MSC capture does not yet prove how every senior/military/service candidate is exposed or selected. Phase 5 must capture and fixture the actual fare-code/category behavior before enabling automatic application.
 - Do not try to precompute every cabin/dining/add-on combination. That creates branch explosion, stale prices, and possible inventory side effects.
 - Category submission is stateful. Cabin submission is reservation-sensitive until Phase 0 proves the exact mutation boundary.
 - Dining and later checkout choices may not exist until a specific cabin path reaches checkout. Treat the live rendered checkout contract as authoritative.
-- Treat `Booking Contact Information` as a separate agent-profile namespace. Fill it from approved server-side configuration and verify it before operator completion; never source it from the passenger or guest contact record by label similarity.
+- Treat `Booking Contact Information` as a separate agent-profile namespace. During the call, fill it from approved server-side configuration and verify it before payment; never source it from the passenger or guest contact record by label similarity.
 - Store normalized option snapshots and confirmed choice IDs durably; keep cookies, hidden form state, and `brn` encrypted and ephemeral.
+- Preserve the ordinary-rate baseline and an explicit reason whenever a qualifying rate is not found, cannot be verified, is non-combinable, or loses the guest-approved comparison.
 - Revalidate an option immediately before applying it. A displayed cabin is not guaranteed merely because it appeared in an earlier snapshot.
 - Use one child decision session per cabin for multi-cabin travel. A parent journey coordinates the children; one `brn` must not be assumed to cover every cabin transaction.
-- A worker lease guarantees that only one guest/operator action advances a decision session at a time.
+- The operator claim lease serializes the launch session. A future worker additionally requires its own task lease before it may advance a decision session.
 
 The ranking engine should be deterministic. AI may explain tradeoffs in guest-friendly language, but it may not decide which cabin, dining time, insurance option, fare rule, or add-on the guest accepts.
 
 ### 16.3 Completion-mode router
 
-The adapter implements the Stage 8 branch defined in Section 6A. It does not assume that a guest payment link exists.
+The router controls the public handoff after the common saved-packet stages. It does not assume that a guest payment link exists.
 
-For `operator_assisted_v1`:
+For `call_agent_to_finalize_v1`:
 
-1. return a sanitized `ready_for_completion` checkpoint to the protected operator workspace;
-2. keep the active Odysseus page in the controlled official browser;
-3. stop all worker automation before card entry, terms acceptance, and final submit;
-4. transfer control to the claimed operator; and
-5. accept only a protected success/reconciliation result afterward.
+1. persist the reviewed packet and issue/reuse its active fallback call key;
+2. return the clear `ready_to_call_agent` guest screen with the required disclosure and **Call agent to finalize** action;
+3. create no pre-call supplier session, timer, cabin selection, or inventory claim;
+4. publish/pin the call intent before dialing, then let an authenticated operator match, verify, claim, and manually process the booking with the caller; and
+5. accept only a protected call outcome and authoritative success/reconciliation result afterward.
 
 For a future guest-transfer mode, generate or reveal a guest link only through an approved supplier capability adapter. A raw `checkout.aspx?brn=...` URL is never a durable link and must not be emailed or texted as payment access.
 
@@ -1204,7 +1328,7 @@ The completion router is deterministic and configuration-driven. The LLM cannot 
 
 ### 16.4 Worker boundary
 
-The Odysseus worker is a separate controlled process, not a Vercel request handler.
+The future Odysseus worker is a separate controlled process, not a Vercel request handler. It is disabled for the launch call flow and must never be required to issue a fallback key, publish the call-intent signal, or present the call CTA.
 
 Responsibilities:
 
@@ -1217,7 +1341,7 @@ Responsibilities:
 7. Stop and report any material change.
 8. Fill only confirmed canonical values into fields that exist.
 9. Re-read validation and resulting page state after each submit.
-10. Stop at the documented `ready_for_completion` boundary before card entry, terms acceptance, or final submit.
+10. Stop at the documented manual phone-payment boundary before card entry, terms acceptance, or final submit.
 11. Return a sanitized result and destroy/expire execution state.
 
 ### 16.5 Prohibited worker behavior
@@ -1266,6 +1390,8 @@ A price decrease is still shown before payment but does not require the same esc
 
 Add a **Bookings** tab to the shared Deals dashboard, but expose real PII only through authenticated `/admin/deals-system`.
 
+Place a **Calling now** slot above the queue. The latest unexpired call-intent signal pins/opens its draft with a masked expected-caller summary and countdown. If multiple guests initiate close together, show an ordered mini-queue rather than silently replacing one. Beside it, provide exact fallback-key lookup. Key lookup is authenticated, rate-limited, abuse-monitored, and fully journaled. A signal, caller ID, or key is a locator, not authentication: the operator must verify the caller before revealing or using protected values.
+
 ### 17.1 Queue columns/cards
 
 - guest first name or privacy-safe label;
@@ -1278,10 +1404,13 @@ Add a **Bookings** tab to the shared Deals dashboard, but expose real PII only t
 - assigned operator;
 - next recommended action;
 - channel availability: phone/email.
+- savings-qualification status: automatic age check, service claim, proof/verification blocker, and live rate-found indicator.
+- call-intent/pin state, fallback-key state, packet version, ready-to-call age, and latest call outcome; never expose the raw key in broad queue exports or analytics.
 
 ### 17.2 Detail workspace
 
 - Deal and current price snapshot;
+- call-intent/pin, fallback-key lookup, caller-verification/claim state, and reviewed packet version;
 - passenger/cabin progress with sensitive values masked until reveal;
 - missing and blocked fields;
 - complete redacted timeline;
@@ -1289,6 +1418,7 @@ Add a **Bookings** tab to the shared Deals dashboard, but expose real PII only t
 - email/reminder delivery history;
 - Odysseus execution status and last safe checkpoint;
 - current price/cabin differences;
+- age/service qualification summary, rule/source version, proof readiness, live rate comparison, savings versus baseline, and reason a candidate was not selected;
 - operator notes;
 - explicit audit history.
 
@@ -1299,6 +1429,7 @@ The top of the detail workspace must answer **What is happening now?** without r
 - last meaningful guest action and elapsed time;
 - current blocker, most recent validation/error, and who owns the next action;
 - latest Deal/price/cabin verification age;
+- latest qualification-rule and rate-candidate verification age;
 - operator assignment/lease and reminder/completion state; and
 - recommended deterministic next step.
 
@@ -1322,16 +1453,18 @@ The workspace updates near-real-time from journal sequence checkpoints, visibly 
 - send a link requesting only remaining fields;
 - edit a field with source `operator` and required confirmation policy;
 - mark guest response needed;
-- trigger a non-mutating Odysseus validation;
-- request checkout preparation;
-- review and approve changed price/cabin;
-- start or continue the approved operator-completion checklist;
+- accept the pinned calling draft or look up the caller's fallback key and show a masked match;
+- record caller verification, then claim the draft;
+- start `agent_processing` and open a fresh official Odysseus session manually;
+- recheck and review price, cabin, rate qualifications, payment schedule, and supplier choices with the caller;
+- start or continue the approved call-finalization checklist;
 - record the manual completion checkpoint without recording card data;
+- record call outcome, including disconnected, callback needed, declined, unavailable, payment failed, or completed;
 - send an official guest payment request only when a verified future completion mode is enabled;
 - record booking reference/confirmation;
 - cancel/close with reason.
 
-The operator may change `completionMode` only before the live Odysseus session begins, or after that session has expired and the booking has been revalidated. Every change requires a reason and a new capability snapshot.
+The launch mode is fixed to `call_agent_to_finalize_v1`. A future authorized operator may change to another verified `completionMode` only before phone processing/live Odysseus begins, or after that session has expired and the booking has been revalidated. Every change requires a reason and a current capability snapshot.
 
 ### 17.4 Concurrency and presence
 
@@ -1381,6 +1514,14 @@ Explicit `Continue later` supersedes and cancels the ordinary inactivity program
 4. Continue at the three-day cadence until authoritative booking completion or another stop condition occurs.
 5. To prevent a configuration defect from creating an infinite email loop, use renewable capped generations. Recommended default: ten recurring reminders, covering 30 days. The tenth explains that automatic reminders will pause and offers `Keep reminding me every 3 days`. That explicit action starts a new generation; no response sets `suspended_limit` while preserving the draft under the retention policy.
 
+Issuing the fallback key transactionally completes any pre-key program and starts the mutually exclusive `CALL_TO_FINALIZE` program:
+
+1. Send one immediate `Ready to call` receipt with the fallback key in the email body, approved phone number/hours, exact finalization disclosure, secure resume link, and reminder controls.
+2. If the guest chooses `Call later`, or remains ready without agent processing, send at most one reminder every 72 hours under the same capped-generation rules.
+3. Never put the key in the subject line, URL, analytics parameters, push text, or provider metadata beyond the minimum authorized message body.
+4. Stop/suppress while an operator has claimed the draft or `agent_processing` is active. A disconnected call may return to reminders only through an explicit operator or guest action.
+5. Confirmation, cancellation, ineligibility, opt-out, deletion, hard bounce, or the generation ceiling ends/suspends the program exactly once.
+
 The cadence and generation limit are configuration, not hard-coded UI assumptions. The guest can stop reminders or change the allowed cadence without cancelling the booking draft.
 
 Before every send, conditionally claim the due window and re-check all of the following:
@@ -1389,7 +1530,7 @@ Before every send, conditionally claim the due window and re-check all of the fo
 - the draft is incomplete and not cancelled, abandoned, or pending deletion;
 - no authoritative confirmation or plausible external-completion match is waiting for reconciliation;
 - the Deal/package is still eligible for a truthful booking reminder;
-- no operator has claimed it and no help request, live Odysseus execution, operator completion, or guest-completion request is active;
+- no `call_signal_pending`/`calling_now` attempt, operator claim, help request, live Odysseus execution, agent processing, or future guest-completion request is active;
 - the guest-confirmed booking-progress email has not hard-bounced, been provider-suppressed, or opted out;
 - no meaningful guest activity occurred inside the preceding 72 hours;
 - the generation send ceiling has not been reached; and
@@ -1401,7 +1542,7 @@ Suppress or stop reminders when:
 
 - the guest is actively editing; reschedule from the last meaningful confirmed action rather than sending mid-session;
 - the operator claims the draft or help is requested;
-- live Odysseus execution or any completion flow begins;
+- `call_signal_pending`, `calling_now`, live Odysseus execution, or any completion flow begins;
 - the booking is authoritatively confirmed;
 - the guest stops reminders, cancels, or requests deletion;
 - the Deal/package becomes invalid, reaches the booking cutoff, or departs;
@@ -1414,7 +1555,7 @@ An email open, provider webhook, analytics event, retry, or duplicate `Continue 
 
 Transport failure uses bounded retry with backoff and a dead-letter/alert path. It never advances the three-day schedule on failure and never creates a second reminder generation.
 
-Each email contains one **Continue booking** CTA, a safe progress/remaining-section summary, the availability recheck warning, and links to change or stop reminders. It does not include sensitive answers or imply that a price or cabin is held.
+Before key issuance, each email contains one **Continue booking** CTA, a safe progress/remaining-section summary, the availability recheck warning, and links to change or stop reminders. After key issuance, each email contains one **Call agent to finalize** CTA plus the fallback key and phone expectation described above. Neither includes sensitive answers or implies that a price or cabin is held.
 
 Each reminder gets a new one-time resume token. When a newer reminder replaces an older unused token, the older link must lead to a safe `This link has been replaced` page that can send a fresh link; it must never strand the guest or expose the draft.
 
@@ -1511,6 +1652,17 @@ The event registry includes, at minimum:
 - `field_confirmed`
 - `field_corrected`
 - `field_deferred`
+- `rate_qualification_derived`
+- `rate_qualification_claimed`
+- `rate_qualification_needs_verification`
+- `rate_qualification_verified`
+- `rate_qualification_rejected`
+- `rate_candidates_compared`
+- `qualifying_rate_found`
+- `qualifying_rate_not_available`
+- `qualifying_rate_selected`
+- `qualifying_rate_not_selected`
+- `proof_requirement_presented`
 - `guest_message_received`
 - `assistant_response_presented`
 - `operator_message_sent`
@@ -1550,7 +1702,26 @@ The event registry includes, at minimum:
 - `operator_field_edited`
 - `state_transitioned`
 - `review_ready`
-- `checkout_prepare_requested`
+- `booking_packet_reviewed`
+- `fallback_call_key_issued`
+- `fallback_call_key_reused`
+- `fallback_call_key_rotated`
+- `fallback_call_key_expired`
+- `ready_to_call_presented`
+- `ready_to_call_email_sent`
+- `call_disclosure_presented`
+- `call_launch_requested`
+- `call_intent_signal_published`
+- `operator_call_draft_pinned` (the authenticated receipt acknowledgement)
+- `call_intent_signal_expired`
+- `call_later_selected`
+- `fallback_call_key_lookup_attempted`
+- `fallback_call_key_lookup_result`
+- `caller_verification_recorded`
+- `agent_processing_started`
+- `call_outcome_recorded`
+- `fallback_call_key_consumed`
+- `checkout_prepare_requested` (future automated modes only)
 - `odysseus_session_created`
 - `odysseus_recreated`
 - `odysseus_session_expired`
@@ -1562,8 +1733,8 @@ The event registry includes, at minimum:
 - `odysseus_contract_drift`
 - `material_change_detected`
 - `completion_mode_selected`
-- `ready_for_completion`
-- `operator_completion_started`
+- `ready_for_completion` (future automated modes only)
+- `operator_completion_started` (future automated modes only)
 - `operator_completion_checkpoint_recorded`
 - `guest_completion_sent`
 - `guest_completion_opened`
@@ -1619,10 +1790,12 @@ Journey/product measures:
 - Odysseus recreation success rate;
 - contract drift rate by supplier;
 - review-ready to operator-claim latency;
-- ready-for-completion to verified-confirmation time by completion mode;
+- ready-to-call to call launch, operator claim, agent processing, and verified confirmation time;
 - guest-completion open rate when a future guest-owned mode is enabled;
+- review-to-key issuance, call-button-to-signal acknowledgement, operator pin latency, signal expiry/failure, normal matched flow versus fallback-key use, key lookup success/failure, ready-to-agent-claim time, call outcomes, dropped-call recovery, key rotation/recovery, and call-to-confirmed-booking conversion;
 - verified booking conversion;
 - conversion and friction by Deal, supplier, flow definition, option-registry version, completion mode, campaign attribution, device class, and experiment variant;
+- qualification screening completion, candidate-to-live-rate success, verification failure, qualifying-rate selection, gross savings versus the ordinary baseline, and conversion impact by supplier/rule version using only coarse de-identified dimensions;
 - zero-PII-log compliance.
 
 Conversation topic/sentiment/confusion classifications run only on the sanitized allowed text or typed metadata and are analytical annotations, not facts about the guest. Store the classifier/version/confidence, permit operator correction, and never let an automated label change booking state or guest treatment.
@@ -1638,7 +1811,7 @@ Conversation topic/sentiment/confusion classifications run only on the sanitized
 - more than one active reminder program for a draft or equivalent person/Deal pair;
 - reminder sent after a terminal, operator-owned, or ineligible state;
 - abnormal reminder-generation renewal or send volume suggesting a loop;
-- operator completion stalled beyond the configured service window;
+- ready-to-call or agent processing stalled beyond the configured service window;
 - verified future guest-completion request expiry;
 - completion capability snapshot no longer matches the enabled mode;
 - unusually high task abandonment;
@@ -1665,7 +1838,7 @@ Every chart links back only to an authorized filtered draft list or de-identifie
 
 ### Phase 0 - Complete the booking transport research
 
-Current result: Passed for the operator-assisted Option D pilot. Option C is retained only as a secondary fresh-start path.
+Current result: Passed for the `call_agent_to_finalize_v1` Option D pilot. Option C is retained only as research for a possible future fresh-start path.
 
 Deliverables:
 
@@ -1679,7 +1852,7 @@ Deliverables:
 
 Exit gate:
 
-- the operator-assisted path reaches visible payment and the documented manual takeover boundary in repeated dry runs;
+- the agent-driven path reaches visible payment and the documented manual phone-payment boundary in repeated dry runs;
 - clean-device Share-link behavior and its restart limitations are documented;
 - last safe automation boundary is documented;
 - no card data or real booking is submitted during research.
@@ -1690,10 +1863,11 @@ Build first, before durable business logic:
 
 - `/tests/deals-system/booking-assistant` prototype;
 - mocked Deal and draft state;
-- the Section 6A order of operations and a mocked `completionMode` branch;
+- the Section 6A order of operations with only `call_agent_to_finalize_v1` enabled;
 - contact bootstrap;
 - large one-task forms;
 - dynamic traveler tasks;
+- automatic age-based candidate feedback and the optional military/service qualification task, including Yes/No/Not sure branches;
 - text/voice switch using the hybrid path;
 - editable voice confirmation;
 - side-question overlay;
@@ -1702,6 +1876,8 @@ Build first, before durable business logic:
 - human-help simulation;
 - iPhone viewport and WebKit tests;
 - operator preview panel showing collected/missing fields;
+- final reviewed-packet save, stable mock three-letter fallback key, required call disclosure, atomic call-intent signal, `call_signal_pending`, authenticated mock dashboard acknowledgement, `calling_now`, **Call agent to finalize**, Copy key, Read key aloud, and Call later states;
+- mocked operator Calling-now pin, signal expiry/mini-queue, fallback-key lookup, masked match, caller verification, claim, fresh-session start, call outcome, and confirmation states with no real Odysseus or payment action;
 - mocked Activity Journal timeline, conversation view, and structured journey replay for every prototype action.
 
 No real Tier B/C PII is persisted in this phase.
@@ -1718,6 +1894,9 @@ Deliverables:
 - `lll-booking-assistant` infrastructure;
 - KMS/envelope encryption helper;
 - typed booking schema and field status model;
+- cryptographically random curated three-letter call-key selector, dedicated HMAC lookup index, collision/idempotency/rotation rules, lookup-abuse rate limits, and protected operator lookup authorization;
+- transactional `begin-call` command, short-lived call-attempt record/signal, authenticated operator delivery, Calling-now pin/mini-queue, acknowledgement-before-dial behavior, and expiry recovery;
+- versioned supplier rate-qualification registry, age-at-sailing calculator, qualification-claim model, and normalized rate-candidate schema;
 - deterministic state machine;
 - guest session cookie and resume-token exchange;
 - optimistic concurrency/idempotency;
@@ -1741,40 +1920,44 @@ Deliverables:
 - `/deals/[id]/book` production route behind a feature flag;
 - single CTA integration behind rollback control;
 - real autosave and resume;
-- contact, passenger roster, legal details, residency/address, review;
+- contact, passenger roster, legal details, residency/address, savings qualification, review;
 - server-defined task/forms API;
 - saved/completion indicators;
 - secure resume email;
-- ordinary inactivity reminders plus the idempotent three-day Continue-later reminder program;
+- mutually exclusive ordinary inactivity/Continue-later and ready-to-call reminder programs with idempotent three-day recurrence;
 - complete guest/form/email lifecycle instrumentation;
 - Deal attribution and journal-derived analytics.
 
 Exit gate:
 
 - refresh, close/reopen, multi-tab, and email resume preserve confirmed state;
-- one-adult/one-cabin pilot draft reaches review-ready without Odysseus.
+- one-adult/one-cabin pilot draft reaches `ready_to_call_agent`, displays/reuses its fallback key, transitions to `calling_now` only after acknowledged dashboard signaling, and creates no Odysseus session.
 
-### Phase 4 - Operator Booking Queue and manual completion
+### Phase 4 - Calling-now operator queue and manual call finalization
 
 Deliverables:
 
 - protected Bookings tab;
 - queue/detail workspace;
+- authenticated Calling-now pin/mini-queue plus exact fallback-key lookup, masked result, caller-verification gate, lookup rate limiting, and audit;
 - claim lease and presence;
 - call/email/request-field actions;
 - Pushover urgency routing;
 - operator edits with audit and guest confirmation rules;
+- qualification/proof-readiness status and exact live rate-comparison workspace;
 - near-real-time current-state panel, synchronized timeline/conversation views, and structured journey replay;
-- operator-completion checklist and versioned completion-mode display;
+- call-finalization checklist, fresh-session/manual-entry guidance, call outcomes, and fixed launch-mode display;
 - guarded future-mode selector that is disabled after live execution begins;
 - booking-reference reconciliation.
 
 Exit gate:
 
-- operator can take over any pilot draft without asking the guest to repeat confirmed answers;
+- operator receives the expected draft before dialing, or locates it from the fallback key, then verifies/claims/processes it without asking the guest to repeat confirmed answers;
 - urgent help is acknowledged and tracked end to end.
 
-### Phase 5 - Odysseus preparation worker
+### Phase 5 - Future Odysseus preparation automation (not a launch dependency)
+
+The launch may proceed after Phases 1-4 without this worker. Until separately approved, the operator performs the fresh Odysseus session manually during the call. Enabling this phase may shorten operator entry time but may not change the guest's code/call flow or cross the payment/final-submit boundary.
 
 Deliverables:
 
@@ -1782,10 +1965,12 @@ Deliverables:
 - approved MSC contract adapter;
 - just-in-time `brn` creation/recreation;
 - exact fare/category/cabin selection inputs;
+- captured MSC fare-code/category fixtures for ordinary, age-based, and military/service candidates when exposed;
+- deterministic qualifying-rate evaluation and comparable ordinary-rate baseline;
 - live field scan and fail-closed drift detection;
 - confirmed-value fill;
 - price/cabin/rule diff;
-- `ready_for_completion` checkpoint with a hard automated payment/final-submit stop;
+- documented manual phone-payment checkpoint with a hard automated payment/final-submit stop;
 - sanitized operator progress.
 
 Exit gate:
@@ -1824,12 +2009,12 @@ Recommended pilot envelope:
 - one to four adult US-resident travelers;
 - one approved Curated Deal at a time;
 - business-hours human fallback;
-- operator approval before checkout preparation;
-- `completionMode=operator_assisted_v1`;
+- no pre-call checkout preparation or `brn`;
+- `completionMode=call_agent_to_finalize_v1`;
 - approved Cruise Brothers manual payment and final-submit procedure;
 - no autonomous hold/reservation.
 
-After pilot success, add supplier contract fixtures one cruise line at a time. Minors, international addresses, multiple cabins, and accessibility-heavy bookings graduate only after dedicated rule and operator tests.
+After pilot success, add supplier contract and rate-qualification fixtures one cruise line at a time. Minors, international addresses, multiple cabins, and accessibility-heavy bookings graduate only after dedicated rule and operator tests. Never carry an MSC threshold, eligible relationship, proof rule, or rate code into another supplier without its own captured rule version.
 
 ## 22. Test plan
 
@@ -1841,6 +2026,13 @@ After pilot success, add supplier contract fixtures one cruise line at a time. M
 - only-confirmed-values adapter;
 - stale-field behavior;
 - price-basis comparison;
+- age on sailing date around the qualifying birthday boundary;
+- MSC fixture: every cabin occupant is 65 or older produces an age-based candidate; one 64-year-old does not;
+- Royal Caribbean fixture: the selected-sailing 55-or-older rule remains separate from the MSC rule;
+- service-related `No`, `Yes`, and `Not sure` branches; broad claim category and proof readiness never become verified automatically;
+- one-occupant versus all-occupant qualification and multi-cabin mapping rules;
+- qualifying fare that is costlier or loses valued benefits remains visible but is not auto-selected;
+- non-combinable and stale-rule results fail closed to operator verification;
 - material-change rules;
 - reminder scheduling/cancellation;
 - `Continue later` saves confirmed values but never an unconfirmed current input;
@@ -1861,9 +2053,12 @@ After pilot success, add supplier contract fixtures one cruise line at a time. M
 - idempotency and optimistic concurrency;
 - claim lease expiry;
 - operator authorization;
-- Section 6A stages cannot be skipped or reordered across review, claim, live revalidation, and approval;
-- completion mode locks when Stage 6 begins and changes only after expiry/revalidation;
-- unverified completion modes remain disabled and fall back to `operator_assisted_v1`;
+- fallback key comes from the approved three-letter safe-word registry, survives case normalization, contains no PII/IDs, collision-checks across active keys, and is cryptographically selected;
+- key issuance is idempotent for one packet version; deliberate rotation revokes the old alias; HMAC secret rotation and constant-time lookup remain valid;
+- `begin-call` transaction/signal is idempotent, authenticated dashboard receipt acknowledgement precedes dialing, broker acknowledgement alone cannot authorize dialing, duplicate taps cannot create duplicate active attempts, and timeout/expiry safely returns to `ready_to_call_agent`;
+- Section 6A stages cannot be skipped or reordered across review, packet/key storage, disclosure, call signaling, caller verification, claim, and agent processing;
+- completion mode locks when agent processing begins and changes only after expiry/revalidation;
+- unverified completion modes remain disabled and fall back to `call_agent_to_finalize_v1`;
 - completion event fires once.
 
 ### 22.2 Contract tests
@@ -1872,6 +2067,9 @@ After pilot success, add supplier contract fixtures one cruise line at a time. M
 - required-field mapping;
 - visible/conditional field variants;
 - select option validation;
+- fare-code/rate-label discovery and comparable ordinary-rate baseline;
+- supplier-specific qualification, cabin-occupant, combinability, and proof-requirement fixtures;
+- live special-rate absence is represented as checked/not available rather than silently omitted;
 - safe-submit target;
 - expected redirect/state;
 - drift on new/missing/renamed fields;
@@ -1893,8 +2091,10 @@ After pilot success, add supplier contract fixtures one cruise line at a time. M
 - Pushover urgency with fake transport;
 - worker lease/heartbeat/timeout;
 - operator claim and guest concurrent update;
+- transactional packet/key/journal write, call-attempt signal and operator pin, exact-key fallback lookup, masked match, caller verification, claim, and agent-processing transition;
 - price/cabin change approval loop;
-- operator-assisted completion checkpoint without card-data persistence;
+- supplier-rule lookup, age-at-sailing derivation, qualification claim, live rate comparison, proof-requirement presentation, and selected-rate approval loop;
+- call-agent manual completion checkpoint without card-data persistence;
 - future completion-mode capability loss and fallback;
 - booking reconciliation.
 
@@ -1915,12 +2115,22 @@ After pilot success, add supplier contract fixtures one cruise line at a time. M
 - expired token replacement;
 - offline/network error and retry;
 - duplicate taps/idempotency;
+- final screen presents one stable three-letter fallback key, the exact automatic-handoff/call/payment explanation, and one primary **Call agent to finalize** action;
+- Copy key, Read key aloud, Call later, refresh, close/reopen, second-device resume, and ready-email resend preserve the same active key;
+- the button waits for successful `begin-call` acknowledgement, pins the correct mock draft, then simulates dialing; failed acknowledgement shows Retry plus number/key and does not silently dial;
+- `call_signal_pending`, `calling_now`, and phone-link tap never mark connected, caller-verified, agent-claimed, processing, paid, or booked;
+- direct call, different phone, blocked/mismatched caller ID, expired signal, two near-simultaneous call attempts, and dashboard-delivery failure all recover through the fallback key without exposing another draft;
+- no pre-call action creates a `brn`, timer, cabin selection, inventory hold, or payment session;
 - multiple tabs/conflict recovery;
 - complete structured journey replay matches the actual task/action sequence after refresh, resume, channel switch, and operator takeover;
 - every text/voice/assistant/operator turn appears once in the protected conversation view with the correct active-task context;
 - Get help now;
 - Deal becomes unavailable;
 - material price change;
+- automatic age-based check without asking the guest to self-identify as a senior;
+- military/service Yes, No, and Not sure paths return to the exact next task;
+- review shows candidate/claim status without promising a discount;
+- ordinary and qualifying-rate comparison requires explicit guest selection;
 - guest is never asked for the booking agent's email, including after resume or clean-device handoff;
 - accessibility, zoom, reduced motion, and screen reader smoke.
 
@@ -1929,15 +2139,22 @@ After pilot success, add supplier contract fixtures one cruise line at a time. M
 - guest cannot enumerate or read another draft;
 - raw draft ID is insufficient authorization;
 - operator endpoints reject anonymous/non-operator users;
+- public/guest endpoints cannot search by fallback key or use a key to reveal protected data;
+- a guest session can signal only its own authorized draft; repeated/forged call attempts are rate-limited and cannot pin another draft or flood the operator queue;
+- only the authenticated operator dashboard may acknowledge a call attempt; a forged, stale, mismatched, or publish-only acknowledgement cannot authorize `tel:` launch;
+- fallback-key lookup is exact-match, authenticated, rate-limited, abuse-monitored, and audited; a valid key, caller ID, or call-intent signal alone cannot pass caller verification;
+- raw fallback keys are absent from URLs, subjects, analytics, logs, traces, push notifications, exports, and error payloads;
 - resume token cannot be reused;
 - tokens do not leak in referrer or logs;
 - a stale queued reminder cannot send after confirmation, operator claim, opt-out, Deal invalidation, cancellation, or deletion request;
 - provider webhooks and duplicate jobs cannot recursively schedule reminders;
 - Tier B/C values absent from prompts, transcripts, analytics, errors, and notifications;
+- military ID numbers, DD214/discharge documents, disability details, and proof images are rejected from ordinary assistant persistence and excluded from transcripts/analytics;
 - card number, CVV, expiry, and raw payment form values are never accepted or persisted by Leisure Life;
 - payment markers and final submit remain blocked;
 - worker cannot run an unapproved mutation command;
 - retention deletion removes encrypted values and aliases.
+- fallback-key rotation/expiry/deletion removes or revokes every old lookup alias.
 
 ### 22.6 Activity Journal and analytics tests
 
@@ -1962,9 +2179,9 @@ After pilot success, add supplier contract fixtures one cruise line at a time. M
 - `BOOKING_ASSISTANT_CLIENT_OBSERVABILITY_ENABLED`
 - `BOOKING_ASSISTANT_ANALYTICS_PROJECTION_ENABLED`
 - `BOOKING_ASSISTANT_CONTINUE_LATER_ENABLED`
+- `BOOKING_ASSISTANT_CALL_AGENT_FINALIZATION_ENABLED`
 - `BOOKING_ASSISTANT_VOICE_ENABLED`
-- `BOOKING_ASSISTANT_ODYSSEUS_WORKER_ENABLED`
-- `BOOKING_ASSISTANT_OPERATOR_COMPLETION_ENABLED`
+- `BOOKING_ASSISTANT_ODYSSEUS_WORKER_ENABLED` (future only)
 - `BOOKING_ASSISTANT_GUEST_SHARE_COMPLETION_ENABLED`
 - `BOOKING_ASSISTANT_OFFICIAL_PAYMENT_REQUEST_ENABLED`
 - `BOOKING_ASSISTANT_TRANSFERABLE_CHECKOUT_ENABLED`
@@ -1991,18 +2208,25 @@ One flag restores the existing three CTA experience without deleting drafts. Exi
 
 | Priority | Gap/risk | Required resolution |
 | --- | --- | --- |
-| Resolved for pilot; product capability still open | Raw Odysseus checkout URL is not transferable; post-booking hold, payment, and email features exist but a guest payment URL is unproven. | Use operator-assisted Option D for launch. Verify Option B without a new booking by inspecting generic help or an existing unpaid booking, or obtain written Cruise Brothers confirmation. Never transfer cookies or proxy card entry. |
+| Resolved for pilot; product capability still open | Raw Odysseus checkout URL is not transferable; post-booking hold, payment, and email features exist but a guest payment URL is unproven. | Use `call_agent_to_finalize_v1` for launch. Treat every self-service mode as disabled research until independently proven. Never transfer cookies or proxy card entry. |
 | Resolved in Phase 0 research | First reservation-like mutation boundary was unknown. | Cabin-selection POST starts the visible 15-minute timer; require explicit operator approval before it. |
 | Resolved for tested flow | MSC checkout and Booking Contact contract required verification. | The trace reached visible payment; Booking Contact requires Email and Phone from the approved operator profile. Stop on new supplier fields. |
 | Blocker | Operator routes are not protected by real auth. | Add Clerk operator authorization before real PII. |
-| Blocker | Local Windows Chrome engine is not a production worker. | Build explicit task lease, protected auth, and controlled worker deployment. |
+| Future automation blocker; not a call-flow launch blocker | Local Windows Chrome engine is not a production worker. | Keep launch manual. Before enabling Phase 5 automation, build explicit task lease, protected auth, and controlled worker deployment. |
 | Resolved for first implementation | Booking completion source was unknown. | Use read-only CBAT Trip reconciliation and `Imported From Odysseus` evidence; do not treat sent/opened links as confirmation. |
 | High | Current generic fast-booking flow assumes search/hold behavior. | Create isolated Deal booking-completion flow. |
 | High | Existing form directives and some voice cleanup use regex. | Use typed structured responses and deterministic renderers; do not copy those parsers. |
 | High | `GUEST_INFO.json` omits checkout-required fields and lifecycle metadata. | Create canonical booking schema and supplier mappings. |
 | High | Existing callback records are too shallow for takeover. | Use a booking draft, queue, assignment, audit, and execution history. |
+| High | A guest may mistake the fallback key for a reservation, hold, confirmation, or price guarantee. | Label it `three-letter call key`, de-emphasize it as fallback only, and immediately state that nothing is booked/held/charged and that the agent must recheck and complete the booking by phone. Test comprehension, not just button discovery. |
+| High | A low-entropy key may be guessed, shared, photographed, or read to the wrong person. | Make it a locator only: curated random active-unique key, HMAC exact lookup, operator authentication, rate limits, caller verification, masked pre-verification result, rotation/revocation, and full audit. Public lookup is prohibited. |
+| High | A phone-link tap or `calling_now` signal does not prove that a call connected or that an agent started processing. | Record the signal/pin only; require separate operator-authored caller verification, claim, processing, call outcome, and booking-confirmed events. |
+| High | Manual re-entry increases agent workload and transcription mistakes. | Provide a field-by-field reviewed packet, fixed call checklist, caller reconfirmation of live choices/material changes, training, error/outcome metrics, and later optional safe-entry automation behind the same handoff. |
 | High | Multi-cabin bookings are separate transactions. | Route to human in pilot; add a parent journey with one child draft per cabin later. |
 | High | Price/cabin availability changes while the guest pauses. | Revalidate just in time and require material-change confirmation. |
+| High | Senior/military/veteran rules, proof, rate availability, and combinability vary by supplier, market, sailing, cabin, and promotion. | Use a sourced/versioned qualification registry, derive age at sailing, collect only a guest claim for service eligibility, compare live candidates against the ordinary baseline, and fail closed to operator verification. Never hard-code a universal senior age or veteran promise. |
+| High | A nominal qualifying discount can cost more or remove benefits compared with the best ordinary promotion. | Compare full total, payment schedule, cancellation rules, cabin inventory, and included value; show the exact tradeoff and require the guest's explicit rate selection. |
+| High | Military/service proof can contain identity numbers, discharge details, disability information, or other sensitive data. | Do not collect proof in the pilot. Store only broad claim/proof-readiness status and route exact proof through an approved supplier/agency path. A future upload flow requires separate security and retention approval. |
 | High | Free-form voice/chat can leak sensitive PII to providers/logs. | Tier fields and keep Tier B/C out of LLM/transcripts. |
 | High | "Track everything" could create a second PII database, PCI exposure, or invasive session replay. | Journal every meaningful action through typed events and protected content references; prohibit keystrokes, raw DOM/video/audio, secrets, and payment-surface capture. Separate protected operations from de-identified analytics. |
 | High | Missing, duplicated, late, or looping instrumentation could give a false picture of the guest journey. | Transactional server events, versioned schemas, idempotency, causation/sequence metadata, client-event limits, completeness dashboards, projection lag/gap alerts, and replay-vs-state tests. |
@@ -2041,22 +2265,32 @@ Recommended defaults are included so implementation can proceed without broad am
 | Ordinary inactivity cadence | Immediate receipt, 1 hour, 24 hours, 72 hours, then stop |
 | Continue-later cadence | Immediate save receipt, then every 72 hours; ten-send renewable generation by default |
 | Human help label | `Get help now` with availability-aware expectation |
-| `brn` creation | Just in time after review and explicit preparation request |
+| `brn` creation | Only during the authenticated finalization call after pinned-draft/key matching, caller verification, and agent claim; never on review/key issuance/call tap |
 | Pilot | MSC, one cabin, adult US residents, one to four guests |
-| Pilot completion mode | `operator_assisted_v1` using the official Cruise Brothers surface |
-| Future completion pivot | Replace only the Stage 8 completion adapter after its capability gates pass; preserve Stages 1-7 and reconciliation |
+| Savings qualification | Derive age-based candidates automatically; ask one optional military/veteran/service question with Yes, No, and Not sure; verify and compare live rates before guest selection |
+| Special-rate proof | No Leisure Life document upload in the pilot; operator uses the current approved supplier/agency process and records only verification status, rule version, and deadline |
+| Normal call handoff | `begin-call` atomically records/publishes a short-lived attempt; an authenticated online operator dashboard pins/renders and acknowledges the same attempt ID; only then enter `calling_now` and launch `tel:` |
+| Fallback call key | Three-letter curated safe word such as `MAP`; random, collision-checked across active keys, one active key per packet, HMAC-indexed, no PII/IDs/`brn`, and never treated as authentication |
+| Public final action | `Call agent to finalize` with the phone/payment/manual-processing disclosure immediately above it |
+| Pilot completion mode | `call_agent_to_finalize_v1` using a fresh official Cruise Brothers/Odysseus session during the call |
+| Future completion pivot | Preserve common Stages 1-5 and call-intent/fallback-key/operator recovery; replace only the post-save handoff/completion adapter after capability gates pass, with call-agent mode retained as fallback |
 | Abandoned draft retention | 90 days after verified contact, pending approval |
 | Supplier expansion | One captured and tested contract at a time |
 
 Business decisions still needed:
 
-- operator business hours and urgent-response expectation;
+- approved agency phone number, operator business hours, after-hours behavior, and realistic call-duration/response expectations;
+- caller-verification procedure before protected packet reveal;
+- fallback-key expiry/retention, rotation/recovery policy, approved safe-word registry, and approved raw-key display/email-body handling;
+- approved phone-payment procedure, including whether calls are recorded (default: no), how PCI-sensitive portions are handled, and dropped-call recovery;
 - approved retention periods;
 - approved conversation-content, journal-metadata, and de-identified analytics retention periods;
 - whether transactional SMS is in the first release;
 - whether inbound email replies are supported and correlated in the first release or emails direct all replies back to the secure assistant;
 - approval of the ten-reminder/30-day generation ceiling and which guest-selectable cadences are allowed;
 - the first public pilot Deal;
+- the approved Cruise Brothers process for inspecting and applying MSC senior/military/service rate codes and for receiving any required proof without placing documents in Leisure Life chat, email, logs, or analytics;
+- which supplier-specific service categories may be advertised publicly versus merely screened as `Not sure - check with my agent`;
 - top supplier order after MSC;
 - the authoritative booking-confirmation source Cruise Brothers can support.
 
@@ -2082,9 +2316,15 @@ components/booking-assistant/
   progress-summary.tsx
   saved-status.tsx
   review-passengers.tsx
+  fallback-call-key-card.tsx
+  ready-to-call-screen.tsx
+  savings-qualification-task.tsx
+  rate-comparison-card.tsx
   material-change-review.tsx
   operator-booking-queue.tsx
   operator-booking-detail.tsx
+  operator-calling-now.tsx
+  operator-call-key-lookup.tsx
   booking-activity-timeline.tsx
   booking-conversation-history.tsx
   booking-journey-replay.tsx
@@ -2097,6 +2337,12 @@ lib/booking-assistant/
   field-catalog.ts
   flow-definition.ts
   option-registry.ts
+  fallback-call-key.ts
+  call-intent.ts
+  call-finalization.ts
+  rate-qualification-registry.ts
+  age-at-sailing.ts
+  rate-comparison.ts
   next-task.ts
   state-machine.ts
   authorization.ts
@@ -2139,6 +2385,11 @@ tests/booking-assistant/
   security.test.ts
   reminders.test.ts
   option-registry.test.ts
+  fallback-call-key.test.ts
+  call-intent.test.ts
+  call-finalization.test.ts
+  rate-qualification.test.ts
+  rate-comparison.test.ts
   activity-journal.test.ts
   conversation-store.test.ts
   analytics-projector.test.ts
@@ -2162,8 +2413,14 @@ The feature is complete only when all of the following are true:
 - State-changing command coverage is complete; observation gaps, projection lag, schema failures, and instrumentation loops are visible and alertable.
 - The guest can ask a side question and return to the exact task.
 - The guest can request human help at any time after phone capture.
-- The operator can claim the draft, see what is complete/missing, contact the guest, and continue without repetition.
+- The guest reviews and stores the complete packet, receives one stable three-letter fallback key, and sees exactly what the automatic dashboard handoff, phone call, manual re-entry, live recheck, payment, and final submission will involve.
+- The ready screen has one primary **Call agent to finalize** action plus de-emphasized Copy key, Read key aloud, and Call later; it never implies a hold, reservation, payment, or confirmation.
+- The acknowledged call-button action places the correct draft in the protected Calling-now operator slot before dialing; signal failure/expiry is recoverable and never claims a connected call.
+- The authenticated operator can use the pinned draft or fallback key, see only a masked result before caller verification, verify/claim it, and continue without asking the guest to repeat confirmed answers.
 - Required fields come from deterministic rules plus the live supplier contract.
+- Every guest is screened for age-based candidates from confirmed date of birth/sailing date, and every guest can answer one optional military/veteran/service qualification question without being forced to self-label or provide proof in chat.
+- The operator can see which qualifying rates were checked, the rule/source version, proof status, live candidate, ordinary-rate baseline, exact value difference, selected rate, and reason a candidate was unavailable or not selected.
+- No senior, military, veteran, family, government, or other special-rate eligibility is promised from a generic label or stale rule; an unknown contract fails to operator verification.
 - Unknown or changed Odysseus contracts fail closed.
 - Price/cabin/rule changes are presented before continuation.
 - No autonomous hold, reservation, terms acceptance, or payment occurs.
@@ -2173,7 +2430,7 @@ The feature is complete only when all of the following are true:
 - Reminder messages are secure, capped, cancellable, and state-aware.
 - Continue later saves only confirmed values, returns to the exact next task, and maintains no more than one loop-safe reminder program per draft.
 - Option availability comes from the progressive registry; unavailable or unsafe actions are not presented as choices.
-- The `operator_assisted_v1` checklist carries every pilot draft from `ready_for_completion` through the official Cruise Brothers payment/final-submit surface without exposing card data to Leisure Life.
+- The `call_agent_to_finalize_v1` checklist carries every pilot draft from `ready_to_call_agent` through call-intent signaling/pin or fallback-key lookup, caller verification, a fresh manual Odysseus session, phone payment, final submit, and reconciliation without exposing card data to Leisure Life.
 - A guest-owned completion mode is never promised or enabled until its Section 6A capability gates pass.
 - Booking completion is based on an authoritative confirmation, not a sent/opened link.
 - Pilot metrics and usability targets meet the approved thresholds.
@@ -2181,9 +2438,104 @@ The feature is complete only when all of the following are true:
 
 ## 28. Recommended first build action
 
-Phase 0 is complete for the selected operator-assisted pilot. Start with two parallel-but-independent artifacts, without production PII:
+Phase 0 is complete for the selected call-agent pilot. Start with two parallel-but-independent artifacts, without production PII:
 
-1. Build the Phase 1 mobile Interaction Flow Lab directly from the Section 6A stages, including Continue later and the progressive option registry, using mocked booking state. Every prototype action emits a registered mock journal event from the beginning.
-2. Implement the versioned flow definition, option registry, event registry/activity-journal contract, and completion-mode registry with `operator_assisted_v1` enabled and all unverified guest-owned modes disabled.
+1. Amend the Phase 1 mobile Interaction Flow Lab directly from the Section 6A stages, preserving the current collection/review experience and replacing its end goal with the call-intent/fallback-key phone-finalization experience in Section 29. Every prototype action emits a registered mock journal event.
+2. Implement the versioned flow definition, option registry, call-intent/fallback-key contracts, event registry/activity-journal contract, and completion-mode registry with only `call_agent_to_finalize_v1` enabled.
 
-Do not start the durable PII store, production CTA replacement, or Odysseus worker until the interaction prototype and operator-completion procedure are approved. A later verified Cruise Brothers guest-payment capability changes the Stage 8 adapter and feature flags, not the upstream booking draft or task engine.
+Do not start the durable PII store, production CTA replacement, or future Odysseus worker until the interaction prototype and call-finalization procedure are approved. A later verified Cruise Brothers guest-payment capability changes the post-save completion adapter and feature flags, not the upstream booking draft, task engine, call-intent/fallback-key recovery, or operator workflow.
+
+## 29. Prototype amendment brief for implementation agents
+
+This is the immediate prototype assignment. Preserve the current mobile-first intake, voice/text continuity, task order, progress, review/edit, savings-qualification, side-question, More Options, Continue later, resume, and mock journal behavior. Replace the prototype's post-review ending with an acknowledged web-to-operator call-intent handoff. The guest should not normally need to say a code; the three-letter call key is a visible fallback.
+
+### 29.1 Guest flow changes
+
+1. After final review and acknowledgement, simulate an atomic packet save.
+2. Move the mock draft from `review_ready` to `ready_to_call_agent`.
+3. Generate one stable mock fallback call key for that draft, displayed as `MAP` in the default scenario. Refresh, back/forward navigation, and prototype resume must return the same key until the scenario is deliberately reset or rotated.
+4. Show this final screen hierarchy:
+   - eyebrow/status: `Information saved`;
+   - headline: `Your information is saved. Call your booking agent to finalize.`;
+   - phone-finalization disclosure immediately above the primary button;
+   - one primary button: **Call agent to finalize**;
+   - short expectation: `We will place your saved information on your agent's screen before the call starts.`;
+   - de-emphasized fallback card: `If needed, your three-letter call key is MAP`;
+   - secondary actions: **Copy key**, **Read key aloud**, **Call later**, then the existing progressive More Options affordance.
+5. Use this meaning-preserving disclosure in the prototype; agents may improve line wrapping, but may not remove any promise boundary:
+
+> When you tap the button, we will alert your agent and place your saved information at the top of the agent's booking screen before your phone starts the call. The agent will verify who you are, start a new live cruise-booking session, recheck the current price, cabin availability, and any discounts, enter your information, review the final choices and terms with you, take your payment by phone, and complete the booking. If the agent cannot see your information automatically, give the agent your three-letter call key. Nothing is booked, held, or charged yet, and price or availability may change before the agent completes the booking.
+
+6. The phone number comes from one configuration value. Until the real agency number/hours are approved, the lab must simulate the tap instead of dialing a real number and visibly label the interaction as a prototype. In production, use a `tel:` action with the approved number.
+7. A primary-button tap first disables duplicate submission, emits `call_disclosure_presented`, calls the mocked `begin-call`, creates one idempotent `callAttemptId`, enters `call_signal_pending`, publishes the operator signal, and waits for the mock operator panel to pin/render and acknowledge that same attempt. A generic server/publish success is not enough. Only then move to `calling_now` and simulate launching `tel:`.
+8. If acknowledgement fails or times out, remain `ready_to_call_agent` and show `We could not alert your agent yet`, **Try again**, the phone number, and the fallback key. Never silently place the call while claiming the agent has the packet.
+9. `calling_now` must not set `agent_claimed`, `agent_processing`, `payment_started`, or `booking_confirmed`. An unclaimed mock signal expires after the configured short window and returns the draft to `ready_to_call_agent` without changing the key.
+10. **Call later** preserves the key, shows the ready-to-call receipt/reminder state, and never sends a real message in the lab. **Copy key** gives accessible success feedback. **Read key aloud** reads `M-A-P` and falls back to visible text if speech synthesis is unavailable.
+
+### 29.2 Mock operator flow changes
+
+Add an operator scenario panel that demonstrates the complete handoff without opening Odysseus or collecting payment:
+
+1. Receive the mocked call-intent signal and pin/open the matching draft in a **Calling now** slot before the simulated dial action completes.
+2. Display masked expected caller, Deal/sailing, packet version, signal age/countdown, and **Awaiting caller verification**. Do not display the raw key in this broad card.
+3. If two signals arrive close together, show a small ordered Calling-now queue; do not replace or merge them.
+4. Provide signal expiry, retry, and `No call received` behavior that safely returns the draft to ready-to-call follow-up.
+5. Provide exact three-letter fallback-key lookup with no-match, expired/replaced, rate-limited, or masked-match states for direct calls, a different calling phone, blocked/mismatched caller ID, or signal failure.
+6. Let the operator mark caller ID as `matched`, `different`, `blocked`, or `unavailable`; caller ID is never authentication and the prototype does not claim a Google Voice API connection.
+7. Record caller verification before revealing the full mock packet, then claim/release the draft.
+8. Start `agent_processing` and display the explicit checklist: open a fresh supplier session; recheck Deal/package, price, taxes/fees, cabin, special rates, payment schedule, optional services/insurance, and required terms; manually enter confirmed data; collect payment by the approved phone procedure; submit manually; record the result.
+9. Simulate call outcomes: no call received, disconnected/call back, needs guest decision, unavailable/material change, payment failed, declined, completed pending reconciliation, and confirmed.
+10. Never render card fields, accept card-like text, call a real supplier/Google Voice endpoint, create a `brn`, or imply that the prototype completed a real booking.
+
+### 29.3 Mock journal requirements
+
+At minimum, the lab must visibly journal:
+
+- `booking_packet_reviewed`;
+- `fallback_call_key_issued` or `fallback_call_key_reused`;
+- `ready_to_call_presented`;
+- `call_disclosure_presented`;
+- `call_launch_requested`, `call_intent_signal_published`, and `operator_call_draft_pinned`, or `call_later_selected`;
+- `call_intent_signal_expired` when applicable;
+- `fallback_call_key_lookup_attempted` and `fallback_call_key_lookup_result` when fallback is used;
+- `caller_verification_recorded`;
+- `operator_claimed`;
+- `agent_processing_started`;
+- `call_outcome_recorded`; and
+- `booking_confirmed` only after the separate mock reconciliation action.
+
+The raw key may be visible in the guest fallback card and the operator's active fallback input for the lab, but it must be redacted from event payloads, analytics preview, URLs, errors, and exported replay.
+
+### 29.4 Prototype acceptance checklist
+
+- Existing collection/review behavior remains intact; the change begins only after final review acknowledgement.
+- One primary end action is visible: **Call agent to finalize**.
+- In a five-second scan, the guest can say: `Tapping the button sends my information to the agent before the call; the agent rechecks everything, takes payment by phone, and completes the booking.`
+- The screen plainly says nothing is booked, held, or charged yet.
+- Reload/resume preserves both reviewed answers and the same fallback key.
+- No pre-call state contains a `brn`, cabin timer, selected live inventory, or payment state.
+- The key is never called a booking number, reservation number, confirmation number, hold number, payment code, or authentication code.
+- The call-button sequence visibly signals and pins before dialing; failure does not make a false automatic-handoff claim.
+- `call_signal_pending` is visibly distinct from `calling_now`; both are distinct from connected, verified, claimed, processing, paid, and booked.
+- Normal matched flow does not require the guest to say the key; every failure/direct-call path can use it.
+- The operator cannot reveal the full packet until caller verification is recorded.
+- Every guest and operator action appears once in the mock timeline with the correct actor, state, and outcome.
+- iPhone SE/current iPhone, keyboard-only, screen-reader labeling, zoom, copy feedback, and speech-unavailable fallback pass.
+
+### 29.5 Future-pivot seam
+
+Keep Stages 1-5 and their components independent of the completion adapter. The final screen is selected from the versioned completion-mode registry. Only `call_agent_to_finalize_v1` is enabled now. Future verified modes may add a guest payment request, transferable supplier checkout, or safe preparation automation, but they must reuse the reviewed packet, call-intent signal, fallback key, journal, recovery, operator lookup, and reconciliation contracts. Disabling a future mode must immediately fall back to the call-agent screen without losing data or changing the guest's key.
+
+### 29.6 Google Voice constraint and optional Contacts experiment
+
+Research conclusion as of July 20, 2026: do not design launch around a Google Voice incoming-call webhook. The supported [Google Workspace Events API](https://developers.google.com/workspace/events) lists Chat, Drive, and Meet resources, not Voice calls. Voice audit/activity rules occur after logged events, and Premier's [Voice activity export](https://support.google.com/voice/answer/9249103) is reporting rather than a supported pre-answer application webhook. A standard [`tel:` URI](https://datatracker.ietf.org/doc/rfc3966/) addresses the phone call/extension; it does not transfer an arbitrary Leisure Life draft payload into Google Voice.
+
+Therefore the web application signal, not the telephone network, performs automatic population. The guest button sends the internal call intent to Leisure Life, the protected dashboard pins the draft, and Google Voice remains the voice channel. The operator may visually compare Google Voice caller ID with the saved masked phone, but caller ID is neither a reliable connection event nor identity proof. Do not scrape undocumented Google Voice browser endpoints or require a Chrome extension.
+
+Optional experiment, disabled by default:
+
+1. With explicit Workspace authorization, create a temporary Google Contact through the official [People API](https://developers.google.com/people/api/rest/v1/people/createContact) using a minimal label such as `BOOKING - Nate - MAP` and the confirmed phone number. Google Voice [synchronizes Google Contacts](https://support.google.com/voice/answer/9098007).
+2. Measure time from contact creation to correct display in Google Voice web, forwarded phone, and iPhone app across repeated clean tests. A test passes only if the label consistently appears before an immediate call.
+3. Test update/deletion propagation, reused phone numbers, duplicate contacts, international formatting, caller-ID blocking, calls from another number, and privacy-safe cleanup.
+4. Store the Google contact resource ID only in protected integration metadata; delete the temporary contact after completion/cancellation/retention expiry.
+5. Even if the experiment passes, use the contact label only as operator convenience. The web call-intent signal and fallback key remain authoritative recovery paths, and caller verification remains mandatory.

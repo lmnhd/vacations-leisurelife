@@ -1,3 +1,33 @@
+After all our research, it is obvious that there's really only one viable approach to Final booking, and that is, I'm going to have to have the caller call me and provide a code where I can pull up their information and set up the booking and take their payment. It's turning out to be the only viable way, at least for now. 
+keep the flow similiar
+change the end goal to:
+collect all info then present user with 'call agent to finalize' button
+
+make it clear that this will call an agent to take a payment and complete the booking.
+after storing the data we give the user a simple code to provide to the agent so he can pull up the order and begin processing the payment (in the background I will have to load the info using the code, start a new booking session, enter all the info and collect the payment from the user the old fashioned way) we need to be very clear about this with the user before they call!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 after several weeks of running Meta ads and wathing the metrics, I think one of the biggest issues we face is the Cruise Brothers booking page/s itself.
 The booking page and portal are designed with a real agent in mind first and foremost and cause a 'Deer in the headlights' situation for the average 'Facebook/AOL' crowd that fit's our desired demographic almost perfectly - if we can make it WAY MORE easy for them to book - more specifically, getting them through the super long data process for them and their guests, and to the final payment phase where we should try to considate any 'must have' Odysseus steps for the user to manage (I don't currently see any feasible way to completely remove Odysseus from the guest flow - but it would be nice!)
 All  ideas should be grounded around the idea of just about all of our guests being 'technically' un-sophisticated, using their IPhone only, Boomer generation, Ready to purchase a ticket, and easily distracted!

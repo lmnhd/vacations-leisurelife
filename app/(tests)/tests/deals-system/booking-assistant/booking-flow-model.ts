@@ -16,7 +16,12 @@ export type MockDraftStatus =
   | "paused_by_guest"
   | "human_requested"
   | "review_ready"
-  | "agent_claimed";
+  // Section 29 call-agent-to-finalize completion states.
+  | "ready_to_call_agent"
+  | "call_signal_pending"
+  | "calling_now"
+  | "agent_processing"
+  | "booking_confirmed";
 
 export interface MockTraveler {
   title: string;
@@ -41,6 +46,10 @@ export interface MockDraft {
   travelers: MockTraveler[];
   citizenship: string;
   residencyState: string;
+  serviceRateInterest: "" | "yes" | "no" | "not_sure";
+  serviceRateTravelerIndex: string;
+  serviceRateCategory: string;
+  serviceRateProofReadiness: string;
   addressLine1: string;
   addressCity: string;
   addressState: string;
@@ -68,6 +77,10 @@ export function emptyDraft(): MockDraft {
     travelers: [],
     citizenship: "",
     residencyState: "",
+    serviceRateInterest: "",
+    serviceRateTravelerIndex: "",
+    serviceRateCategory: "",
+    serviceRateProofReadiness: "",
     addressLine1: "",
     addressCity: "",
     addressState: "",
@@ -173,6 +186,12 @@ export function buildTaskList(draft: MockDraft): TaskDef[] {
       helper: "The cruise line uses residency for pricing and required documents.",
     },
     {
+      id: "savings_eligibility",
+      section: "Savings check",
+      title: "Could anyone qualify for a military or service-related cruise rate?",
+      helper: "We check age-based rates automatically. Service rules vary by cruise line, so tell us if your agent should check one too.",
+    },
+    {
       id: "address",
       section: "Passenger details",
       title: "Primary traveler's mailing address",
@@ -258,6 +277,22 @@ export function isValidAge(value: string): boolean {
   return Number.isInteger(n) && n >= 18 && n <= 110;
 }
 
+/** MSC-specific Phase 1 mock. Production derives age from DOB and uses the versioned supplier rule registry. */
+export function mockMscSeniorCandidate(draft: MockDraft): boolean {
+  if (draft.travelerCount < 1 || draft.travelers.length < draft.travelerCount) return false;
+  return draft.travelers.slice(0, draft.travelerCount).every((traveler) => Number(traveler.age) >= 65);
+}
+
+export function serviceRateSummary(draft: MockDraft): string {
+  if (draft.serviceRateInterest === "no") return "No military/service claim";
+  if (draft.serviceRateInterest === "not_sure") return "Agent should check military/service eligibility";
+  if (draft.serviceRateInterest !== "yes") return "Not answered";
+  const travelerIndex = Number(draft.serviceRateTravelerIndex);
+  const traveler = draft.travelers[travelerIndex];
+  const travelerLabel = traveler?.firstName || `Traveler ${travelerIndex + 1}`;
+  return `${travelerLabel}: ${draft.serviceRateCategory || "service-related claim"} - verification needed`;
+}
+
 // --- Mock journal ------------------------------------------------------------
 
 /** Event names follow the plan's Section 20.2 registry so the lab exercises the taxonomy from day one. */
@@ -286,6 +321,10 @@ export const SIDE_QUESTIONS: Array<{ q: string; a: string }> = [
   {
     q: "What's included in the fare?",
     a: "Your cabin, meals in the main dining venues, and standard onboard entertainment. Drink packages, excursions, and specialty dining are optional extras.",
+  },
+  {
+    q: "Do you check senior or military discounts?",
+    a: "Yes. We check age-based rates automatically and ask one optional military/service question. Your agent compares any live qualifying rate with the best regular promotion before you choose.",
   },
 ];
 
