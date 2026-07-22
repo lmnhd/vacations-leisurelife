@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { GuestInfoPanel } from './guest-info-panel';
+import { CallChecklist } from './call-checklist';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -83,16 +85,6 @@ interface GuestSignalResult {
 type ApiResult<T> = { success: true; result: T } | { success: false; error: string };
 
 const CALLER_ID_STATES = ['matched', 'different', 'blocked', 'unavailable'] as const;
-const CALL_OUTCOMES = [
-  'no_call_received',
-  'disconnected_call_back',
-  'needs_guest_decision',
-  'material_change',
-  'payment_failed',
-  'declined',
-  'completed_pending_reconciliation',
-  'confirmed',
-] as const;
 
 const OUTCOME_LABELS: Record<string, string> = {
   no_call_received: 'No call received',
@@ -130,8 +122,7 @@ export default function BookingAssistantOperatorConsolePage() {
 
   const [selectedCallerIdState, setSelectedCallerIdState] = useState<string>('matched');
   const [verificationNotes, setVerificationNotes] = useState('');
-  const [selectedOutcome, setSelectedOutcome] = useState<string>('confirmed');
-  const [outcomeNotes, setOutcomeNotes] = useState('');
+  const [outcomeCompleted, setOutcomeCompleted] = useState(false);
 
   // ── Guest Simulator state ──
   const [guestFirstName, setGuestFirstName] = useState('Test');
@@ -259,6 +250,9 @@ export default function BookingAssistantOperatorConsolePage() {
     }
   }, [activeDraftId, log]);
 
+  const [claimed, setClaimed] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
   const handleClaim = useCallback(async () => {
     if (!activeDraftId || activeDraftVersion === null) return;
     setClaimLoading(true);
@@ -271,6 +265,7 @@ export default function BookingAssistantOperatorConsolePage() {
       const data = await res.json() as ApiResult<ClaimResult>;
       if (data.success) {
         setActiveDraftVersion(data.result.newVersion);
+        setClaimed(true);
         log(`Draft claimed, lease expires ${data.result.claimLeaseExpiresAtIso}`);
       } else {
         log(`Claim failed: ${data.error}`);
@@ -294,6 +289,7 @@ export default function BookingAssistantOperatorConsolePage() {
       const data = await res.json() as ApiResult<ProcessingResult>;
       if (data.success) {
         setActiveDraftVersion(data.result.newVersion);
+        setProcessing(true);
         log(`Agent processing started (v${data.result.newVersion})`);
       } else {
         log(`Processing failed: ${data.error}`);
@@ -305,7 +301,7 @@ export default function BookingAssistantOperatorConsolePage() {
     }
   }, [activeDraftId, activeDraftVersion, log]);
 
-  const handleOutcome = useCallback(async () => {
+  const handleOutcome = useCallback(async (outcome: string, notes: string) => {
     if (!activeDraftId || activeDraftVersion === null) return;
     setOutcomeLoading(true);
     try {
@@ -315,14 +311,15 @@ export default function BookingAssistantOperatorConsolePage() {
         body: JSON.stringify({
           draftId: activeDraftId,
           expectedVersion: activeDraftVersion,
-          outcome: selectedOutcome,
-          notes: outcomeNotes,
+          outcome,
+          notes,
         }),
       });
       const data = await res.json() as ApiResult<OutcomeResult>;
       if (data.success) {
         setActiveDraftVersion(data.result.newVersion);
-        log(`Outcome recorded: ${OUTCOME_LABELS[selectedOutcome] ?? selectedOutcome} → ${data.result.newStatus}`);
+        setOutcomeCompleted(true);
+        log(`Outcome recorded: ${OUTCOME_LABELS[outcome] ?? outcome} → ${data.result.newStatus}`);
       } else {
         log(`Outcome failed: ${data.error}`);
       }
@@ -331,7 +328,7 @@ export default function BookingAssistantOperatorConsolePage() {
     } finally {
       setOutcomeLoading(false);
     }
-  }, [activeDraftId, activeDraftVersion, selectedOutcome, outcomeNotes, log]);
+  }, [activeDraftId, activeDraftVersion, log]);
 
   const resetSession = useCallback(() => {
     setActiveDraftId(null);
@@ -341,7 +338,9 @@ export default function BookingAssistantOperatorConsolePage() {
     setLookupResult(null);
     setLookupInput('');
     setVerificationNotes('');
-    setOutcomeNotes('');
+    setClaimed(false);
+    setProcessing(false);
+    setOutcomeCompleted(false);
     log('Session reset');
   }, [log]);
 
@@ -611,8 +610,10 @@ export default function BookingAssistantOperatorConsolePage() {
                       log(`Selected draft: ${card.bookingDraftId}`);
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-slate-300">{card.bookingDraftId.slice(0, 12)}...</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-slate-200">
+                        {card.firstName || 'Unknown guest'}
+                      </span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                         card.urgency === 'urgent' ? 'bg-red-900/50 text-red-300' :
                         card.urgency === 'normal' ? 'bg-amber-900/50 text-amber-300' :
@@ -621,8 +622,13 @@ export default function BookingAssistantOperatorConsolePage() {
                         {card.urgency}
                       </span>
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">{card.status}</div>
-                    <div className="text-[10px] text-slate-600 mt-1">{card.lastActivityIso}</div>
+                    {card.dealSummary && (
+                      <div className="text-xs text-slate-400">{card.dealSummary}</div>
+                    )}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px] text-sky-400 font-medium">{card.status.replace(/_/g, ' ')}</span>
+                      <span className="text-[10px] text-slate-600">{card.lastActivityIso.slice(11, 19)}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -734,25 +740,23 @@ export default function BookingAssistantOperatorConsolePage() {
             {verified && activeDraftId && (
               <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Packet Reveal</h2>
-                <button
-                  onClick={handleReveal}
-                  disabled={revealLoading || !!revealedPacket}
-                  className="w-full px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded text-white font-medium"
-                >
-                  {revealedPacket ? 'Revealed ✓' : revealLoading ? 'Revealing...' : 'Reveal Full Packet'}
-                </button>
+                {!revealedPacket && (
+                  <button
+                    onClick={handleReveal}
+                    disabled={revealLoading}
+                    className="w-full px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded text-white font-medium"
+                  >
+                    {revealLoading ? 'Revealing...' : 'Reveal Full Packet'}
+                  </button>
+                )}
                 {revealedPacket && (
-                  <div className="mt-3 p-3 bg-slate-950/50 rounded border border-slate-800 max-h-64 overflow-y-auto">
-                    <pre className="text-[10px] text-slate-400 font-mono whitespace-pre-wrap">
-                      {JSON.stringify(revealedPacket.draft, null, 2)}
-                    </pre>
-                  </div>
+                  <GuestInfoPanel draft={revealedPacket.draft} />
                 )}
               </div>
             )}
           </div>
 
-          {/* ── Right: Claim, Processing, Outcome ── */}
+          {/* ── Right: Call Checklist ── */}
           <div className="lg:col-span-1 space-y-4">
             {activeDraftId && (
               <>
@@ -764,6 +768,8 @@ export default function BookingAssistantOperatorConsolePage() {
                     <div><dt className="text-slate-500 inline">Version:</dt> <dd className="text-slate-300 inline">{activeDraftVersion ?? '?'}</dd></div>
                     <div><dt className="text-slate-500 inline">Verified:</dt> <dd className={verified ? 'text-green-400 inline' : 'text-slate-500 inline'}>{verified ? 'Yes' : 'No'}</dd></div>
                     <div><dt className="text-slate-500 inline">Revealed:</dt> <dd className={revealedPacket ? 'text-green-400 inline' : 'text-slate-500 inline'}>{revealedPacket ? 'Yes' : 'No'}</dd></div>
+                    <div><dt className="text-slate-500 inline">Claimed:</dt> <dd className={claimed ? 'text-green-400 inline' : 'text-slate-500 inline'}>{claimed ? 'Yes' : 'No'}</dd></div>
+                    <div><dt className="text-slate-500 inline">Processing:</dt> <dd className={processing ? 'text-green-400 inline' : 'text-slate-500 inline'}>{processing ? 'Yes' : 'No'}</dd></div>
                   </dl>
                   <button
                     onClick={resetSession}
@@ -773,59 +779,20 @@ export default function BookingAssistantOperatorConsolePage() {
                   </button>
                 </div>
 
-                {/* Claim */}
-                <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
-                  <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Claim Draft</h2>
-                  <button
-                    onClick={handleClaim}
-                    disabled={claimLoading || activeDraftVersion === null}
-                    className="w-full px-4 py-2 text-sm bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded text-white font-medium"
-                  >
-                    {claimLoading ? 'Claiming...' : 'Claim'}
-                  </button>
-                </div>
-
-                {/* Start Processing */}
-                <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
-                  <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Agent Processing</h2>
-                  <button
-                    onClick={handleProcessing}
-                    disabled={processingLoading || activeDraftVersion === null}
-                    className="w-full px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded text-white font-medium"
-                  >
-                    {processingLoading ? 'Starting...' : 'Start Processing'}
-                  </button>
-                </div>
-
-                {/* Record Outcome */}
-                <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
-                  <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3">Record Outcome</h2>
-                  <div className="space-y-3">
-                    <select
-                      value={selectedOutcome}
-                      onChange={(e) => setSelectedOutcome(e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-slate-950 border border-slate-700 rounded text-slate-100 focus:border-sky-500 focus:outline-none"
-                    >
-                      {CALL_OUTCOMES.map((o) => (
-                        <option key={o} value={o}>{OUTCOME_LABELS[o] ?? o}</option>
-                      ))}
-                    </select>
-                    <textarea
-                      value={outcomeNotes}
-                      onChange={(e) => setOutcomeNotes(e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm bg-slate-950 border border-slate-700 rounded text-slate-100 focus:border-sky-500 focus:outline-none"
-                      placeholder="Outcome notes..."
-                    />
-                    <button
-                      onClick={handleOutcome}
-                      disabled={outcomeLoading || activeDraftVersion === null}
-                      className="w-full px-4 py-2 text-sm bg-rose-600 hover:bg-rose-500 disabled:opacity-50 rounded text-white font-medium"
-                    >
-                      {outcomeLoading ? 'Recording...' : 'Record Outcome'}
-                    </button>
-                  </div>
-                </div>
+                {verified && (
+                  <CallChecklist
+                    draftId={activeDraftId}
+                    onClaim={handleClaim}
+                    onProcessing={handleProcessing}
+                    onOutcome={handleOutcome}
+                    claimLoading={claimLoading}
+                    processingLoading={processingLoading}
+                    outcomeLoading={outcomeLoading}
+                    claimed={claimed}
+                    processing={processing}
+                    completed={outcomeCompleted}
+                  />
+                )}
               </>
             )}
 

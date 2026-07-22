@@ -75,7 +75,22 @@ export async function pollOperatorQueue(
   for (const status of input.statuses) {
     const rows = await queryOperatorQueue(clients, config, status);
     for (const row of rows) {
-      allResults.push(queueRowToCard(row));
+      const card = queueRowToCard(row);
+      // Enrich with contact info (masked) and deal summary
+      try {
+        const draft = await getDraft(clients, config, row.draftId);
+        if (draft) {
+          card.firstName = draft.contact.firstName;
+          card.dealSummary = `${draft.dealSnapshot.cruiseLine} ${draft.dealSnapshot.ship} — ${draft.dealSnapshot.sailingDateIso.slice(0, 10)}`;
+          card.callKeyState = draft.fallbackCallKey?.state;
+          card.assignedOperatorId = draft.metadata.assignedOperatorId;
+          card.activeCallAttemptId = draft.metadata.activeCallAttemptId;
+          card.callIntentExpiresAtIso = draft.metadata.callIntentExpiresAtIso;
+        }
+      } catch {
+        // Skip enrichment if draft can't be loaded
+      }
+      allResults.push(card);
     }
   }
 
