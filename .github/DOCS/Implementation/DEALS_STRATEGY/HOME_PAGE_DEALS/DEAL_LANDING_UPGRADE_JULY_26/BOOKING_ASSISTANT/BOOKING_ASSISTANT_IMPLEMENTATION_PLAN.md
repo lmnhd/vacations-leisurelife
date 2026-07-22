@@ -113,7 +113,7 @@ Do not promise literally that a question can never reappear. Legal-name confirma
 | Existing capability | Reuse | Required correction or limit |
 | --- | --- | --- |
 | `components/cb/deal-cta-actions.tsx` | Reuse Deal context and analytics entry point. | Replace three public actions with one assistant route after prototype approval. Preserve the old actions behind a rollback flag. |
-| `/tests/deals-system` and `/admin/deals-system` | Reuse the shared dashboard component and Deal data. | Add a dedicated Booking Queue. Real PII must be available only in authenticated production admin, not an unprotected test surface. |
+| `/tests/deals-system` | Reuse the shared local Deals workbench and Deal data. | Add a dedicated local-only Booking Queue. Real PII is read server-side only by the loopback operator console using short-lived AWS operator credentials; no production admin route or public operator API is enabled. |
 | Callback request Dynamo store and Pushover | Reuse notification transport and status concepts. | Booking drafts need a richer lifecycle, claim locks, audit events, and PII-minimized notifications. |
 | Klaviyo event integration | Reuse for event-triggered email delivery. | Send secure resume URLs, not sensitive answers or raw Odysseus session links. Add consent, caps, cancellation, and idempotency. |
 | `lib/chat` structured prompt system | Reuse channel parity, skill loading, context, and LLM gateway patterns selectively. | The existing generic `fast_booking` flow searches, selects, and discusses courtesy holds. It is not the Deal booking-completion workflow and must not be reused unchanged. |
@@ -1099,19 +1099,29 @@ Requirements:
 - Allow the guest to request a replacement token; revoke older unused tokens.
 - Do not put email, phone, Deal title, `brn`, or booking data in the token payload or URL.
 
-### 13.3 Operator identity
+### 13.3 Operator identity and local-only access
 
-Real booking drafts cannot launch until the operator surface has actual authentication and authorization.
+The pilot has one operator and no production operator dashboard. Clerk is not required. The operator works only from the local development environment, while the guest funnel and its narrowly scoped public APIs run in production.
 
-Recommended implementation:
+Provisioned local-operator infrastructure (July 20, 2026):
 
-- Clerk authentication for `/admin/deals-system` and all `/api/admin/booking-assistant/**` operations;
-- explicit operator role or email allowlist;
-- server-side authorization on every read/mutation;
-- short session lifetime and reauthentication for Tier C reveal/export;
-- no reliance on `VERCEL_ENV` or hidden routes as authorization.
+- AWS account/region: `622703699030` / `us-east-1`;
+- DynamoDB table: `lll-booking-assistant` with on-demand billing, `GSI1`, `GSI2`, KMS SSE, and point-in-time recovery;
+- KMS alias: `alias/lll-booking-assistant`;
+- one-hour assumable role: `arn:aws:iam::622703699030:role/LeisureLifeBookingAssistantLocalOperator`;
+- reproducible IAM policy documents: `infrastructure/booking-assistant/**`.
+Required implementation:
 
-The current production-block guard for `/api/tests/deals-system/**` is not an authentication system.
+- run the operator console only on the operator's managed computer and bind it to loopback (`localhost`), never `0.0.0.0`, a LAN address, a tunnel, or a public preview deployment;
+- obtain short-lived AWS credentials through the approved AWS SSO/IAM operator role; do not store permanent AWS access keys in `.env.local`;
+- give that role access only to the Booking Assistant table, required indexes, the specific KMS decrypt/encrypt operations, and the journal writes needed for operator actions;
+- perform queue reads, exact fallback-key lookup, caller verification, protected-field reveal, claim/release, edits, and outcome writes server-side from the local process;
+- copy no production draft or decrypted PII into a development database, fixture, browser persistence, analytics payload, terminal output, screenshot, or ordinary application log;
+- require an audited caller-verification action before decrypting or rendering the full packet;
+- use short-lived reveal state and remask the packet when processing ends, the claim expires, or the console is idle;
+- fail closed when the AWS identity, role, KMS grant, table identity, environment marker, or loopback-host check is missing or unexpected.
+
+The three-letter key, caller ID, a hidden route, `NODE_ENV`, and `VERCEL_ENV` are locators or deployment hints, not operator authorization. If the local console is ever replaced by an internet-accessible operator surface, that future surface requires a separately approved identity system and server-side authorization before it may read real drafts.
 
 ## 14. API surface
 
@@ -1153,11 +1163,11 @@ Every mutation accepts `expectedVersion` and `idempotencyKey`. Authoritative com
 - establishes the guest cookie;
 - redirects to the clean draft route.
 
-### 14.3 Operator API handler
+### 14.3 Local operator command adapter
 
-`app/api/admin/booking-assistant/[...action]/route.ts`
+Do not deploy `app/api/admin/booking-assistant/**` for the pilot. The local operator console calls the shared server-side booking service directly from the loopback development process using the short-lived AWS operator role. Production guest handlers never expose operator commands.
 
-Actions:
+Local operator commands:
 
 - `queue`
 - `detail`
@@ -1180,7 +1190,7 @@ Actions:
 - `status`
 - `audit`
 
-Timeline/conversation reads are paginated, role-scoped, and journaled. Protected content reveal requires a separate authorized action; analytics views use only de-identified projections.
+Timeline/conversation reads are paginated and journaled. Protected content reveal requires a separate verified-caller action and an active local operator claim. Analytics views use only de-identified projections. The adapter must refuse to start outside the explicit local-operator mode, refuse non-loopback requests, and verify the active AWS identity before any database read.
 
 ### 14.4 Worker API handler
 
@@ -1388,7 +1398,7 @@ A price decrease is still shown before payment but does not require the same esc
 
 ## 17. Operator Booking Queue
 
-Add a **Bookings** tab to the shared Deals dashboard, but expose real PII only through authenticated `/admin/deals-system`.
+Add a **Bookings** tab to the local Deals workbench. Its browser requests terminate only in the loopback development process; that server-side process reads the protected production table using the short-lived AWS operator role. Do not deploy the queue, its commands, or its protected-data reveal surface to production.
 
 Place a **Calling now** slot above the queue. The latest unexpired call-intent signal pins/opens its draft with a masked expected-caller summary and countdown. If multiple guests initiate close together, show an ordered mini-queue rather than silently replacing one. Beside it, provide exact fallback-key lookup. Key lookup is authenticated, rate-limited, abuse-monitored, and fully journaled. A signal, caller ID, or key is a locator, not authentication: the operator must verify the caller before revealing or using protected values.
 
@@ -1895,7 +1905,7 @@ Deliverables:
 - KMS/envelope encryption helper;
 - typed booking schema and field status model;
 - cryptographically random curated three-letter call-key selector, dedicated HMAC lookup index, collision/idempotency/rotation rules, lookup-abuse rate limits, and protected operator lookup authorization;
-- transactional `begin-call` command, short-lived call-attempt record/signal, authenticated operator delivery, Calling-now pin/mini-queue, acknowledgement-before-dial behavior, and expiry recovery;
+- transactional `begin-call` command, short-lived call-attempt record/signal, delivery through the protected table to the local operator console, Calling-now pin/mini-queue, acknowledgement-before-dial behavior, and expiry recovery;
 - versioned supplier rate-qualification registry, age-at-sailing calculator, qualification-claim model, and normalized rate-candidate schema;
 - deterministic state machine;
 - guest session cookie and resume-token exchange;
@@ -1903,15 +1913,15 @@ Deliverables:
 - versioned event registry and append-only Booking Activity Journal;
 - protected conversation/session/field-revision stores;
 - redaction/quarantine pipeline and PII-free analytics projector;
-- authenticated operator role gate;
+- short-lived AWS SSO/IAM local-operator role gate, loopback-only console guard, identity preflight, reveal audit, and fail-closed KMS/table checks;
 - retention/deletion jobs;
 - privacy and consent updates.
 
 Exit gate:
 
 - security tests pass;
-- no real PII can be read from test routes, logs, URLs, analytics, or push messages;
-- guest and operator authorization tests pass.
+- no real PII can be read from public test routes, client logs, URLs, analytics, push messages, fixtures, or a copied development database;
+- guest authorization and local-operator IAM/loopback/reveal-gate tests pass.
 
 ### Phase 3 - Public guided collection MVP
 
@@ -2211,7 +2221,7 @@ One flag restores the existing three CTA experience without deleting drafts. Exi
 | Resolved for pilot; product capability still open | Raw Odysseus checkout URL is not transferable; post-booking hold, payment, and email features exist but a guest payment URL is unproven. | Use `call_agent_to_finalize_v1` for launch. Treat every self-service mode as disabled research until independently proven. Never transfer cookies or proxy card entry. |
 | Resolved in Phase 0 research | First reservation-like mutation boundary was unknown. | Cabin-selection POST starts the visible 15-minute timer; require explicit operator approval before it. |
 | Resolved for tested flow | MSC checkout and Booking Contact contract required verification. | The trace reached visible payment; Booking Contact requires Email and Phone from the approved operator profile. Stop on new supplier fields. |
-| Blocker | Operator routes are not protected by real auth. | Add Clerk operator authorization before real PII. |
+| Blocker before real PII | Local operator access is not yet protected by a dedicated AWS role, loopback guard, identity preflight, and audited reveal gate. | Do not deploy a production operator route. Add the short-lived AWS SSO/IAM operator role and fail-closed local console controls before connecting the workbench to the real table. |
 | Future automation blocker; not a call-flow launch blocker | Local Windows Chrome engine is not a production worker. | Keep launch manual. Before enabling Phase 5 automation, build explicit task lease, protected auth, and controlled worker deployment. |
 | Resolved for first implementation | Booking completion source was unknown. | Use read-only CBAT Trip reconciliation and `Imported From Odysseus` evidence; do not treat sent/opened links as confirmation. |
 | High | Current generic fast-booking flow assumes search/hold behavior. | Create isolated Deal booking-completion flow. |
@@ -2253,7 +2263,7 @@ Recommended defaults are included so implementation can proceed without broad am
 | Prototype route | `/tests/deals-system/booking-assistant` |
 | Durable store | Dedicated `lll-booking-assistant` single table |
 | Public identity | Anonymous HTTP-only session plus verified email resume; no forced account |
-| Operator identity | Clerk-authenticated operator role on `/admin/deals-system` |
+| Operator identity | Local-only console using a short-lived, least-privilege AWS SSO/IAM role; no Clerk and no production operator route |
 | Voice architecture | Hybrid STT -> common orchestrator -> TTS |
 | AI scope | Side questions and Tier A proposals only |
 | Activity tracking model | Complete structured Booking Activity Journal plus protected conversation content and separate PII-free analytics projection |
@@ -2444,6 +2454,8 @@ Phase 0 is complete for the selected call-agent pilot. Start with two parallel-b
 2. Implement the versioned flow definition, option registry, call-intent/fallback-key contracts, event registry/activity-journal contract, and completion-mode registry with only `call_agent_to_finalize_v1` enabled.
 
 Do not start the durable PII store, production CTA replacement, or future Odysseus worker until the interaction prototype and call-finalization procedure are approved. A later verified Cruise Brothers guest-payment capability changes the post-save completion adapter and feature flags, not the upstream booking draft, task engine, call-intent/fallback-key recovery, or operator workflow.
+
+Implementation status (July 20, 2026): the amended mock Interaction Flow Lab is in progress, and the first shared contract slice now lives under `lib/booking-assistant/**`. It fixes the pilot completion mode, lifecycle transitions, privacy-safe call-intent/acknowledgement shapes, local-only operator surface, and required journal vocabulary. The durable PII store remains disconnected until the local-operator security preflight is implemented and approved.
 
 ## 29. Prototype amendment brief for implementation agents
 

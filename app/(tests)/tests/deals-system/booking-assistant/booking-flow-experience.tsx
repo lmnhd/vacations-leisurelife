@@ -32,6 +32,9 @@ import {
 } from "react";
 
 import {
+  CALL_OUTCOME_LABELS,
+  COMPLETION_MODE,
+  MOCK_AGENT_PHONE,
   MOCK_DEAL,
   SIDE_QUESTIONS,
   US_STATES,
@@ -39,6 +42,7 @@ import {
   digitCount,
   emptyDraft,
   emptyTraveler,
+  fallbackCallKey,
   isValidAge,
   isValidDob,
   isValidEmail,
@@ -46,6 +50,9 @@ import {
   mockMscSeniorCandidate,
   nextTaskId,
   serviceRateSummary,
+  type CallOutcome,
+  type CallSignal,
+  type CallerIdState,
   type MockDraft,
   type MockJournalEvent,
   type TaskDef,
@@ -60,7 +67,7 @@ const MUTED = "#5B6873";
 const BORDER = "#E8E1D5";
 const GOLD = "#8C6A3C";
 
-export type Screen = "landing" | "task" | "paused" | "help" | "handoff";
+export type Screen = "landing" | "task" | "paused" | "help" | "call_finalize";
 
 type Sheet = "none" | "options" | "question" | "progress" | "privacy" | "pause_confirm";
 
@@ -75,6 +82,7 @@ interface PersistedLab {
   seq: number;
   screen: Screen;
   voiceMode: boolean;
+  callSignal: CallSignal | null;
 }
 
 /** Read-only view of flow state streamed to the lab's observer panels. */
@@ -84,12 +92,30 @@ export interface BookingFlowSnapshot {
   screen: Screen;
   tasks: TaskDef[];
   completionPct: number;
+  /** The live call-intent signal, if any (Section 29 operator handoff). */
+  callSignal: CallSignal | null;
+  /** Stable fallback key for the current draft (redacted from event payloads). */
+  fallbackKey: string;
 }
 
 export interface BookingFlowHandle {
   reset: () => void;
   /** Only meaningful while paused: replays the email token-exchange resume. */
   simulateEmailResume: () => void;
+  /** Operator: pin + acknowledge the pending call attempt (Section 29.1.7). */
+  operatorAcknowledgeSignal: () => void;
+  /** Operator: exact fallback-key lookup with privacy-safe journal events. */
+  operatorLookupFallbackKey: (candidate: string) => boolean;
+  /** Operator: record how the incoming caller ID compared (never auth). */
+  operatorSetCallerId: (state: CallerIdState) => void;
+  /** Operator: mark caller verified; gates full-packet reveal (29.2.7). */
+  operatorRecordVerification: () => void;
+  /** Operator: begin the manual processing checklist (29.2.8). */
+  operatorStartProcessing: () => void;
+  /** Operator: record a call outcome; `confirmed` runs reconciliation. */
+  operatorRecordOutcome: (outcome: CallOutcome) => void;
+  /** Operator: expire an unacknowledged/stale signal (29.1.9 / 29.2.4). */
+  operatorExpireSignal: () => void;
 }
 
 function nowIso(): string {
@@ -178,6 +204,12 @@ export const BookingFlowExperience = forwardRef<
   const [savedFlash, setSavedFlash] = useState(false);
   const [questionText, setQuestionText] = useState("");
   const [questionAnswer, setQuestionAnswer] = useState<{ q: string; a: string } | null>(null);
+  const [callSignal, setCallSignal] = useState<CallSignal | null>(null);
+
+  // Stable per-scenario draft id: the mock deal id yields the documented "MAP"
+  // key and survives refresh/resume (the key is derived, never regenerated).
+  const draftId = MOCK_DEAL.dealId;
+  const fallbackKey = fallbackCallKey(draftId);
 
   const tasks = useMemo(() => buildTaskList(draft), [draft]);
   const currentTask: TaskDef | undefined = tasks.find((task) => task.id === currentTaskId);
@@ -206,6 +238,7 @@ export const BookingFlowExperience = forwardRef<
         seqRef.current = saved.seq;
         setScreen(saved.screen === "help" ? "task" : saved.screen);
         setVoiceMode(saved.voiceMode);
+        setCallSignal(saved.callSignal ?? null);
         setWorking(workingForTask(saved.currentTaskId, saved.draft));
       }
     } catch {
@@ -223,19 +256,20 @@ export const BookingFlowExperience = forwardRef<
       seq: seqRef.current,
       screen,
       voiceMode,
+      callSignal,
     };
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
     } catch {
       // Storage full/unavailable: the lab keeps working in-memory.
     }
-  }, [hydrated, draft, currentTaskId, journal, screen, voiceMode]);
+  }, [hydrated, draft, currentTaskId, journal, screen, voiceMode, callSignal]);
 
   // Stream the observable state to the lab wrapper (no-op in production).
   useEffect(() => {
     if (!hydrated) return;
-    onDebug?.({ draft, journal, screen, tasks, completionPct });
-  }, [hydrated, draft, journal, screen, tasks, completionPct, onDebug]);
+    onDebug?.({ draft, journal, screen, tasks, completionPct, callSignal, fallbackKey });
+  }, [hydrated, draft, journal, screen, tasks, completionPct, callSignal, fallbackKey, onDebug]);
 
   // --- Task navigation ------------------------------------------------------
 
@@ -546,19 +580,105 @@ export const BookingFlowExperience = forwardRef<
       setTaskError("Please confirm the accuracy acknowledgement first.");
       return;
     }
-    const next = { ...draft, preparationAuthorized: true, status: "review_ready" as const };
+    // Section 29.1: atomic packet save -> ready_to_call_agent with a stable key.
+    const next = { ...draft, preparationAuthorized: true, status: "ready_to_call_agent" as const };
     setDraft(next);
     emit("guest", "field_confirmed", "Accuracy acknowledged for all travelers", "review");
-    emit("guest", "review_ready", "Guest authorized operator to prepare the live booking");
-    emit("system", "state_transitioned", "collecting -> review_ready");
-    setScreen("handoff");
+    emit("system", "booking_packet_reviewed", "Reviewed packet saved atomically (mock)");
+    emit("system", "state_transitioned", "collecting -> ready_to_call_agent");
+    // Key is derived, not stored per attempt: reuse if the key already existed.
+    emit(
+      "system",
+      callSignal ? "fallback_call_key_reused" : "fallback_call_key_issued",
+      `Fallback call key ready (redacted from payload); mode ${COMPLETION_MODE}`
+    );
+    emit("assistant", "ready_to_call_presented", "Call-agent-to-finalize screen shown");
+    setScreen("call_finalize");
   }
 
-  function simulateOperatorClaim() {
-    const next = { ...draft, status: "agent_claimed" as const };
-    setDraft(next);
-    emit("operator", "operator_claimed", "Operator claimed the draft with a lease (mock)");
-    emit("system", "state_transitioned", "review_ready -> agent_claimed");
+  // --- Section 29 call-agent-to-finalize ------------------------------------
+
+  /**
+   * Guest taps "Call agent to finalize". Sequence (29.1.7): disable duplicate
+   * submit -> disclosure -> publish signal (call_signal_pending) -> WAIT for
+   * the operator panel to pin + acknowledge THIS attempt before "calling_now".
+   * A generic publish success is not enough.
+   */
+  function launchCall() {
+    if (draft.status === "call_signal_pending" || draft.status === "calling_now") return;
+    const callAttemptId = `call-${Date.now().toString(36)}`;
+    emit("assistant", "call_disclosure_presented", "Phone-finalization disclosure shown above the button");
+    setCallSignal({
+      callAttemptId,
+      draftId,
+      fallbackKey,
+      publishedAtIso: nowIso(),
+      acknowledged: false,
+      callerIdState: null,
+      callerVerified: false,
+      outcome: null,
+    });
+    setDraft((prev) => ({ ...prev, status: "call_signal_pending" }));
+    emit("guest", "call_launch_requested", `Attempt ${callAttemptId} (idempotent)`);
+    emit("system", "call_intent_signal_published", "Intent published to operator dashboard (awaiting pin/ack)");
+  }
+
+  function callLater() {
+    emit("guest", "call_later_selected", "Guest chose to call later; key + receipt preserved");
+    // Stays ready_to_call_agent; no real message is sent in the lab.
+  }
+
+  // Operator actions, invoked from the wrapper's mock operator panel.
+  function operatorAcknowledgeSignal() {
+    setCallSignal((prev) => (prev && !prev.acknowledged ? { ...prev, acknowledged: true } : prev));
+    emit("operator", "operator_call_draft_pinned", "Draft pinned in Calling-now slot; attempt acknowledged");
+    // Only now does the guest advance to calling_now and simulate tel:.
+    setDraft((prev) => (prev.status === "call_signal_pending" ? { ...prev, status: "calling_now" } : prev));
+    emit("system", "state_transitioned", "call_signal_pending -> calling_now (ack received; simulating tel:)");
+  }
+
+  function operatorExpireSignal() {
+    emit("system", "call_intent_signal_expired", "Unclaimed signal expired; returned to ready-to-call");
+    setCallSignal(null);
+    setDraft((prev) =>
+      prev.status === "call_signal_pending" || prev.status === "calling_now"
+        ? { ...prev, status: "ready_to_call_agent" }
+        : prev
+    );
+  }
+
+  function operatorLookupFallbackKey(candidate: string): boolean {
+    emit("operator", "fallback_call_key_lookup_attempted", "Exact fallback-key lookup attempted (key redacted)");
+    const matched = candidate.trim().toUpperCase() === fallbackKey;
+    emit("operator", "fallback_call_key_lookup_result", matched ? "Masked draft match" : "No match");
+    return matched;
+  }
+
+  function operatorSetCallerId(state: CallerIdState) {
+    setCallSignal((prev) => (prev ? { ...prev, callerIdState: state } : prev));
+    emit("operator", "caller_id_compared", `Caller ID: ${state} (never authentication)`);
+  }
+
+  function operatorRecordVerification() {
+    setCallSignal((prev) => (prev ? { ...prev, callerVerified: true } : prev));
+    emit("operator", "caller_verification_recorded", "Caller verified; full packet may now be revealed");
+  }
+
+  function operatorStartProcessing() {
+    emit("operator", "operator_claimed", "Operator claimed the draft (post-verification)");
+    emit("operator", "agent_processing_started", "Fresh supplier session + recheck checklist begun (mock)");
+    setDraft((prev) => ({ ...prev, status: "agent_processing" }));
+    emit("system", "state_transitioned", "calling_now -> agent_processing");
+  }
+
+  function operatorRecordOutcome(outcome: CallOutcome) {
+    emit("operator", "call_outcome_recorded", `Outcome: ${CALL_OUTCOME_LABELS[outcome]}`);
+    if (outcome === "confirmed") {
+      // Booking_confirmed only after the separate reconciliation action (29.3).
+      emit("operator", "reconciliation_completed", "CBAT Trip reconciliation matched (mock)");
+      emit("system", "booking_confirmed", "Authoritative confirmation recorded");
+      setDraft((prev) => ({ ...prev, status: "booking_confirmed" }));
+    }
   }
 
   // --- Continue later / resume ---------------------------------------------
@@ -658,6 +778,7 @@ export const BookingFlowExperience = forwardRef<
     setVoiceMode(false);
     setVoiceState("idle");
     setQuestionAnswer(null);
+    setCallSignal(null);
   }
 
   useImperativeHandle(ref, () => ({
@@ -665,6 +786,13 @@ export const BookingFlowExperience = forwardRef<
     simulateEmailResume: () => {
       if (screen === "paused") resume("email_link");
     },
+    operatorAcknowledgeSignal,
+    operatorSetCallerId,
+    operatorRecordVerification,
+    operatorLookupFallbackKey,
+    operatorStartProcessing,
+    operatorRecordOutcome,
+    operatorExpireSignal,
   }));
 
   // --- More Options contents (max 4 contextual before View all) -------------
@@ -762,10 +890,15 @@ export const BookingFlowExperience = forwardRef<
           setDraft((prev) => ({ ...prev, status: "collecting" }));
           setScreen("task");
         }}
-        onSimulateClaim={simulateOperatorClaim}
         onStartVoice={startVoice}
         setDraft={setDraft}
         reminderDate={reminderDateLabel()}
+        fallbackKey={fallbackKey}
+        callSignal={callSignal}
+        onLaunchCall={launchCall}
+        onCallLater={callLater}
+        onOpenQuestionFromCall={() => setSheet("question")}
+        onEmit={emit}
       />
 
       {/* ---- Bottom sheets ---- */}
@@ -837,9 +970,14 @@ interface FlowContentProps {
   onEditFromReview: (taskId: string) => void;
   onResume: () => void;
   onBackFromHelp: () => void;
-  onSimulateClaim: () => void;
   onStartVoice: () => void;
   setDraft: React.Dispatch<React.SetStateAction<MockDraft>>;
+  fallbackKey: string;
+  callSignal: CallSignal | null;
+  onLaunchCall: () => void;
+  onCallLater: () => void;
+  onOpenQuestionFromCall: () => void;
+  onEmit: (actor: MockJournalEvent["actor"], eventType: string, detail: string, taskId?: string) => void;
 }
 
 function FlowContent(props: FlowContentProps) {
@@ -847,7 +985,19 @@ function FlowContent(props: FlowContentProps) {
   if (screen === "landing") return <LandingScreen onStart={props.onStart} />;
   if (screen === "paused") return <PausedScreen draft={props.draft} tasks={props.tasks} completionPct={props.completionPct} reminderDate={props.reminderDate} onResume={props.onResume} />;
   if (screen === "help") return <HelpScreen draft={props.draft} onBack={props.onBackFromHelp} />;
-  if (screen === "handoff") return <HandoffScreen draft={props.draft} onSimulateClaim={props.onSimulateClaim} />;
+  if (screen === "call_finalize")
+    return (
+      <CallFinalizeScreen
+        draft={props.draft}
+        fallbackKey={props.fallbackKey}
+        callSignal={props.callSignal}
+        onLaunchCall={props.onLaunchCall}
+        onCallLater={props.onCallLater}
+        onOpenOptions={props.onOpenOptions}
+        onOpenQuestion={props.onOpenQuestionFromCall}
+        onEmit={props.onEmit}
+      />
+    );
   return <TaskScreen {...props} />;
 }
 
@@ -1347,7 +1497,7 @@ function ReviewCard({
 }) {
   const savingsSummary = `${mockMscSeniorCandidate(draft) ? "MSC 65+ cabin candidate - live rate required" : "Age-based rates checked live"}; ${serviceRateSummary(draft)}`;
   const row = (label: string, value: string, taskId: string) => (
-    <div className="flex items-start justify-between gap-3 border-b py-2.5 last:border-b-0" style={{ borderColor: BORDER }}>
+    <div key={taskId} className="flex items-start justify-between gap-3 border-b py-2.5 last:border-b-0" style={{ borderColor: BORDER }}>
       <div className="min-w-0">
         <p className="text-[11px] font-bold uppercase tracking-[0.08em]" style={{ color: MUTED }}>{label}</p>
         <p className="text-[14px] font-medium" style={{ color: NAVY }}>{value || "-"}</p>
@@ -1461,34 +1611,185 @@ function HelpScreen({ draft, onBack }: { draft: MockDraft; onBack: () => void })
   );
 }
 
-function HandoffScreen({ draft, onSimulateClaim }: { draft: MockDraft; onSimulateClaim: () => void }) {
-  const claimed = draft.status === "agent_claimed";
+/**
+ * Section 29.1 call-agent-to-finalize screen. The end goal: the guest's packet
+ * is saved, and one primary action alerts the agent + hands off to a phone
+ * call. The three-letter key is a de-emphasized fallback, not the main path.
+ */
+function CallFinalizeScreen({
+  draft,
+  fallbackKey,
+  callSignal,
+  onLaunchCall,
+  onCallLater,
+  onOpenOptions,
+  onOpenQuestion,
+  onEmit,
+}: {
+  draft: MockDraft;
+  fallbackKey: string;
+  callSignal: CallSignal | null;
+  onLaunchCall: () => void;
+  onCallLater: () => void;
+  onOpenOptions: () => void;
+  onOpenQuestion: () => void;
+  onEmit: (actor: MockJournalEvent["actor"], eventType: string, detail: string, taskId?: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const status = draft.status;
+  const pending = status === "call_signal_pending";
+  const calling = status === "calling_now";
+  const processing = status === "agent_processing";
+  const confirmed = status === "booking_confirmed";
+  const ackFailed = callSignal === null && (pending || calling); // signal expired mid-attempt
+
+  function copyKey() {
+    const done = () => {
+      setCopied(true);
+      onEmit("guest", "fallback_call_key_copied", "Key copied (redacted from payload)");
+      window.setTimeout(() => setCopied(false), 1800);
+    };
+    try {
+      navigator.clipboard?.writeText(fallbackKey).then(done, done);
+    } catch {
+      done();
+    }
+  }
+
+  function readKeyAloud() {
+    onEmit("guest", "fallback_call_key_read_aloud", "Key read aloud (redacted from payload)");
+    try {
+      const utterance = new SpeechSynthesisUtterance(fallbackKey.split("").join("-"));
+      window.speechSynthesis?.speak(utterance);
+    } catch {
+      // Speech unavailable: the visible key text is the fallback.
+    }
+  }
+
+  // Post-verification states get a distinct, calmer confirmation surface.
+  if (processing || confirmed) {
+    return (
+      <div className="flex h-full flex-col overflow-y-auto p-6" style={{ color: NAVY }}>
+        <div className="my-auto">
+          <p className="text-center text-[13px] font-bold uppercase tracking-[0.14em]" style={{ color: confirmed ? "#047857" : GOLD }}>
+            {confirmed ? "Booking confirmed" : "Your agent is on the line"}
+          </p>
+          <h2 className="mt-2 text-center text-2xl font-bold">
+            {confirmed ? `You're booked, ${draft.firstName || "friend"}!` : "Finalizing with your agent"}
+          </h2>
+          <div className="mt-5 rounded-xl bg-white p-4 text-[13px] leading-6" style={{ border: `1px solid ${BORDER}`, color: MUTED }}>
+            <p className="font-bold" style={{ color: NAVY }}>{confirmed ? "What happened:" : "Happening now with your agent:"}</p>
+            <ol className="mt-2 list-decimal space-y-1.5 pl-5">
+              <li>Your agent opened a fresh cruise session and rechecked live price, cabins, and any qualifying rates.</li>
+              <li>They reviewed the final choices and terms with you.</li>
+              <li>Payment was taken by phone through the cruise line's official system - we never see your card.</li>
+            </ol>
+          </div>
+          {confirmed && (
+            <p className="mt-5 text-center text-[13px] font-semibold" style={{ color: "#047857" }}>
+              A confirmation email is on its way.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-full flex-col overflow-y-auto p-6" style={{ color: NAVY }}>
+    <div className="flex h-full flex-col overflow-y-auto p-5" style={{ color: NAVY }}>
       <div className="my-auto">
         <p className="text-center text-[13px] font-bold uppercase tracking-[0.14em]" style={{ color: GOLD }}>
-          {claimed ? "Your agent is on it" : "All set"}
+          Information saved
         </p>
-        <h2 className="mt-2 text-center text-2xl font-bold">
-          {claimed ? "Your booking is being prepared" : `Thanks, ${draft.firstName || "friend"}!`}
+        <h2 className="mt-2 text-center text-[22px] font-bold leading-snug">
+          Your information is saved. Call your booking agent to finalize.
         </h2>
-        <div className="mt-5 rounded-xl bg-white p-4 text-[13px] leading-6" style={{ border: `1px solid ${BORDER}`, color: MUTED }}>
-          <p className="font-bold" style={{ color: NAVY }}>What happens next:</p>
-          <ol className="mt-2 list-decimal space-y-1.5 pl-5">
-            <li>A booking agent reviews your details and checks live prices, cabins, and every plausible qualifying rate.</li>
-            <li>They confirm the exact cabin and total with you - nothing is charged without your OK.</li>
-            <li>Payment happens with your agent through the cruise line's official system. We never see your card.</li>
-          </ol>
+
+        {/* Disclosure immediately above the primary button (29.1.5). */}
+        <div className="mt-4 rounded-xl bg-white p-4 text-[12px] leading-5" style={{ border: `1px solid ${BORDER}`, color: MUTED }}>
+          When you tap the button, we will alert your agent and place your saved information at the
+          top of the agent&apos;s booking screen before your phone starts the call. The agent will
+          verify who you are, start a new live cruise-booking session, recheck the current price,
+          cabin availability, and any discounts, enter your information, review the final choices and
+          terms with you, take your payment by phone, and complete the booking. If the agent
+          cannot see your information automatically, give the agent your three-letter call key.
+          Nothing is booked, held, or charged yet, and price or availability may change before the
+          agent completes the booking.
         </div>
-        {!claimed ? (
-          <div className="mt-5">
-            <GuestButton primary onClick={onSimulateClaim}>Simulate operator claim (lab only)</GuestButton>
+
+        {/* Pending / calling status banner. */}
+        {(pending || calling || ackFailed) && (
+          <div
+            className="mt-3 rounded-xl px-4 py-3 text-[13px] font-semibold"
+            style={
+              ackFailed
+                ? { background: "#FDECEA", color: "#B3261E" }
+                : calling
+                  ? { background: "#E7F3EC", color: "#047857" }
+                  : { background: "#FBF3E4", color: GOLD }
+            }
+          >
+            {ackFailed
+              ? "We could not alert your agent yet."
+              : calling
+                ? "Your agent has your information. Starting the call..."
+                : "Alerting your agent... placing your information on their screen."}
           </div>
-        ) : (
-          <p className="mt-5 text-center text-[13px] font-semibold" style={{ color: "#047857" }}>
-            Status: agent_claimed - the operator queue owns this draft now.
-          </p>
         )}
+
+        <div className="mt-4">
+          <GuestButton primary onClick={onLaunchCall} disabled={pending || calling}>
+            {ackFailed ? "Try again" : pending ? "Alerting your agent..." : calling ? "Calling now..." : "Call agent to finalize"}
+          </GuestButton>
+        </div>
+        <p className="mt-2 text-center text-[11px]" style={{ color: MUTED }}>
+          We will place your saved information on your agent&apos;s screen before the call starts.
+          {" "}(Prototype: the call is simulated, not dialed.)
+        </p>
+
+        {/* De-emphasized fallback key card (29.1.4). */}
+        <div className="mt-4 rounded-xl border border-dashed p-3 text-center" style={{ borderColor: BORDER }}>
+          <p className="text-[11px]" style={{ color: MUTED }}>
+            If needed, your three-letter call key is
+          </p>
+          <p className="mt-1 text-2xl font-bold tracking-[0.3em]" style={{ color: NAVY }}>{fallbackKey}</p>
+          <p className="mt-1 text-[10px]" style={{ color: MUTED }}>
+            Not a booking, confirmation, or payment number - just helps your agent find you.
+          </p>
+          <div className="mt-2 flex justify-center gap-2">
+            <button
+              type="button"
+              onClick={copyKey}
+              className="rounded-lg px-3 py-2 text-[12px] font-semibold"
+              style={{ border: `1px solid ${BORDER}`, color: NAVY, minHeight: 40 }}
+            >
+              {copied ? "Copied!" : "Copy key"}
+            </button>
+            <button
+              type="button"
+              onClick={readKeyAloud}
+              className="rounded-lg px-3 py-2 text-[12px] font-semibold"
+              style={{ border: `1px solid ${BORDER}`, color: NAVY, minHeight: 40 }}
+            >
+              Read key aloud
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-center gap-5 text-[12px]">
+          <button type="button" onClick={onCallLater} className="font-semibold underline" style={{ color: MUTED }}>
+            Call later
+          </button>
+          <button type="button" onClick={onOpenQuestion} className="font-semibold underline" style={{ color: GOLD }}>
+            Ask a question
+          </button>
+          <button type="button" onClick={onOpenOptions} className="font-semibold underline" style={{ color: MUTED }}>
+            More options
+          </button>
+        </div>
+        <p className="mt-4 text-center text-[11px]" style={{ color: MUTED }}>
+          Agent line: {MOCK_AGENT_PHONE}
+        </p>
       </div>
     </div>
   );

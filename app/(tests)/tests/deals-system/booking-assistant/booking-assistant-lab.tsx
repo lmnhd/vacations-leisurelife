@@ -25,11 +25,27 @@ import {
   type BookingFlowHandle,
   type BookingFlowSnapshot,
 } from "./booking-flow-experience";
-import { mockMscSeniorCandidate, serviceRateSummary, type MockJournalEvent } from "./booking-flow-model";
+import {
+  CALL_OUTCOME_LABELS,
+  mockMscSeniorCandidate,
+  serviceRateSummary,
+  type CallOutcome,
+  type CallerIdState,
+  type MockJournalEvent,
+} from "./booking-flow-model";
 
 const MODE_KEY = "lll-booking-assistant-lab-mode";
 
 type LabMode = "guest" | "lab";
+
+/** Last four digits of a phone string, digits-only (no regex per AI_POLICY). */
+function lastFourDigits(value: string): string {
+  let digits = "";
+  for (const ch of value) {
+    if (ch >= "0" && ch <= "9") digits += ch;
+  }
+  return digits.slice(-4) || "----";
+}
 
 export function BookingAssistantLab() {
   const flowRef = useRef<BookingFlowHandle>(null);
@@ -166,6 +182,7 @@ export function BookingAssistantLab() {
 
           {/* Observer panels: read-only view of the flow's debug snapshot. */}
           <div className="flex w-full min-w-0 flex-col gap-6 lg:max-w-[560px]">
+            <CallIntentPanel snapshot={snapshot} flowRef={flowRef} />
             <OperatorPreview snapshot={snapshot} />
             <JournalPanel journal={snapshot?.journal ?? []} />
           </div>
@@ -178,6 +195,222 @@ export function BookingAssistantLab() {
 // ============================================================================
 // Observer panels (lab-only; never ship to production)
 // ============================================================================
+
+/**
+ * Mock operator "Calling now" panel (Section 29.2). Demonstrates the full
+ * handoff - receive signal, pin the draft, verify the caller, reveal the
+ * packet, run the processing checklist, record an outcome - without opening
+ * Odysseus or touching payment. It never shows the raw fallback key in the
+ * broad card; caller ID is never treated as authentication.
+ */
+function CallIntentPanel({
+  snapshot,
+  flowRef,
+}: {
+  snapshot: BookingFlowSnapshot | null;
+  flowRef: React.RefObject<BookingFlowHandle>;
+}) {
+  const signal = snapshot?.callSignal ?? null;
+  const draft = snapshot?.draft;
+  const status = draft?.status;
+  const [keyInput, setKeyInput] = useState("");
+  const [lookup, setLookup] = useState<"idle" | "match" | "no_match">("idle");
+
+  const maskedCaller = draft?.phone ? `••• ••• ${lastFourDigits(draft.phone)}` : "unknown";
+
+  // Fallback-key lookup for a direct/blocked-caller-id call (29.2.5). Compared
+  // against the snapshot's key; the raw key is never rendered in this card.
+  function runLookup() {
+    const attempt = keyInput.trim().toUpperCase();
+    if (!attempt) return;
+    const matched = flowRef.current?.operatorLookupFallbackKey(attempt) ?? false;
+    setLookup(matched ? "match" : "no_match");
+  }
+
+  if (!signal && status !== "ready_to_call_agent") {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+          Operator - Calling now (mock)
+        </p>
+        <p className="mt-2 text-[13px] text-slate-500">
+          No active call intent. When the guest taps <span className="font-semibold text-slate-300">Call agent to finalize</span>,
+          the signal appears here to pin and acknowledge.
+        </p>
+      </div>
+    );
+  }
+
+  const acknowledged = signal?.acknowledged ?? false;
+  const verified = signal?.callerVerified ?? false;
+
+  return (
+    <div className="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/[0.04] p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-fuchsia-300">
+          Operator - Calling now (mock)
+        </p>
+        <span className="rounded-full border border-fuchsia-400/35 bg-fuchsia-500/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-fuchsia-200">
+          {status}
+        </span>
+      </div>
+
+      {status === "ready_to_call_agent" && !signal && (
+        <p className="mt-3 text-[13px] text-slate-400">
+          Packet saved and ready. Waiting for the guest to place the call.
+        </p>
+      )}
+
+      {signal && (
+        <div className="mt-3 space-y-3">
+          {/* Masked pinned card - never shows raw key (29.2.2). */}
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[12px] text-slate-300">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Expected caller</p>
+                <p>{maskedCaller}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Deal / sailing</p>
+                <p>MSC Seaview - Aug 22</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Attempt</p>
+                <p className="font-mono">{signal.callAttemptId}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Verification</p>
+                <p>{verified ? "verified" : "awaiting caller verification"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 1: pin + acknowledge (gates guest -> calling_now). */}
+          {!acknowledged ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => flowRef.current?.operatorAcknowledgeSignal()}
+                className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-200"
+              >
+                Pin + acknowledge attempt
+              </button>
+              <button
+                type="button"
+                onClick={() => flowRef.current?.operatorExpireSignal()}
+                className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300"
+              >
+                Expire signal (no call received)
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Step 2: caller-ID compare (never authentication). */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Caller ID compare (not auth)</p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {(["matched", "different", "blocked", "unavailable"] as CallerIdState[]).map((state) => (
+                    <button
+                      key={state}
+                      type="button"
+                      onClick={() => flowRef.current?.operatorSetCallerId(state)}
+                      className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+                        signal.callerIdState === state
+                          ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
+                          : "border-white/15 bg-white/5 text-slate-300"
+                      }`}
+                    >
+                      {state}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fallback-key lookup for direct/blocked callers (29.2.5). */}
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                  Fallback key lookup (direct / blocked caller)
+                </p>
+                <div className="mt-1.5 flex gap-2">
+                  <input
+                    value={keyInput}
+                    onChange={(event) => {
+                      setKeyInput(event.target.value);
+                      setLookup("idle");
+                    }}
+                    placeholder="3-letter key"
+                    maxLength={3}
+                    className="w-24 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-xs uppercase tracking-[0.2em] text-slate-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={runLookup}
+                    className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200"
+                  >
+                    Look up
+                  </button>
+                  {lookup === "match" && <span className="self-center text-xs font-semibold text-emerald-300">Match</span>}
+                  {lookup === "no_match" && <span className="self-center text-xs font-semibold text-rose-300">No match</span>}
+                </div>
+              </div>
+
+              {/* Step 3: record verification (gates packet reveal, 29.2.7). */}
+              {!verified ? (
+                <button
+                  type="button"
+                  onClick={() => flowRef.current?.operatorRecordVerification()}
+                  disabled={!signal.callerIdState}
+                  className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-200 disabled:opacity-40"
+                >
+                  Record caller verification
+                </button>
+              ) : status === "calling_now" ? (
+                <button
+                  type="button"
+                  onClick={() => flowRef.current?.operatorStartProcessing()}
+                  className="rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-200"
+                >
+                  Reveal packet + start processing
+                </button>
+              ) : null}
+
+              {/* Step 4: processing checklist + outcomes (29.2.8/9). */}
+              {status === "agent_processing" && (
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                  <p className="text-[11px] font-semibold text-slate-300">
+                    Fresh session - recheck price, taxes/fees, cabin, special rates, schedule, terms - enter data - take payment by phone - submit.
+                  </p>
+                  <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Record outcome</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {(Object.keys(CALL_OUTCOME_LABELS) as CallOutcome[]).map((outcome) => (
+                      <button
+                        key={outcome}
+                        type="button"
+                        onClick={() => flowRef.current?.operatorRecordOutcome(outcome)}
+                        className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+                          outcome === "confirmed"
+                            ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+                            : "border-white/15 bg-white/5 text-slate-300"
+                        }`}
+                      >
+                        {CALL_OUTCOME_LABELS[outcome]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <p className="mt-3 text-[11px] text-slate-500">
+        Caller ID is never authentication. No card fields, no supplier/Voice call, no brn - this
+        panel only demonstrates the handoff shape.
+      </p>
+    </div>
+  );
+}
 
 function OperatorPreview({ snapshot }: { snapshot: BookingFlowSnapshot | null }) {
   const draft = snapshot?.draft;

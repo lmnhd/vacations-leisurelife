@@ -10,6 +10,15 @@
  * string/character checks only.
  */
 
+import {
+  COMPLETION_MODE,
+  callOutcomeLabels,
+  type CallOutcome,
+  type CallerIdState,
+} from "@/lib/booking-assistant/contracts";
+
+export { COMPLETION_MODE, type CallOutcome, type CallerIdState };
+
 export type MockDraftStatus =
   | "started"
   | "collecting"
@@ -293,9 +302,52 @@ export function serviceRateSummary(draft: MockDraft): string {
   return `${travelerLabel}: ${draft.serviceRateCategory || "service-related claim"} - verification needed`;
 }
 
+// --- Call-agent-to-finalize completion (Section 29) --------------------------
+
+/** Simulated agency line. Production reads one config value + real hours. */
+export const MOCK_AGENT_PHONE = "+1 (800) 555-0142";
+
+/**
+ * Three-letter fallback call key. Deterministic from the draft id so refresh,
+ * back/forward, and resume return the SAME key (Section 29.1.3) until the
+ * scenario is deliberately reset. Ambiguous letters (I/O) are excluded so the
+ * key reads cleanly aloud and on a phone. Default mock draft yields "MAP".
+ */
+const KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // no I, no O
+
+export function fallbackCallKey(draftId: string): string {
+  if (draftId === MOCK_DEAL.dealId) return "MAP"; // documented default scenario
+  let hash = 0;
+  for (const ch of draftId) {
+    hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  }
+  let out = "";
+  for (let i = 0; i < 3; i += 1) {
+    out += KEY_ALPHABET[hash % KEY_ALPHABET.length];
+    hash = Math.floor(hash / KEY_ALPHABET.length) + 7;
+  }
+  return out;
+}
+
+/** Shared outcome labels keep the mock lab aligned with the pilot contract. */
+export const CALL_OUTCOME_LABELS = callOutcomeLabels;
+
+/** Ephemeral state of one call-intent signal, held by the lab (not the draft). */
+export interface CallSignal {
+  callAttemptId: string;
+  draftId: string;
+  fallbackKey: string;
+  publishedAtIso: string;
+  /** Operator pinned + acknowledged THIS attempt (Section 29.1.7). */
+  acknowledged: boolean;
+  callerIdState: CallerIdState | null;
+  callerVerified: boolean;
+  outcome: CallOutcome | null;
+}
+
 // --- Mock journal ------------------------------------------------------------
 
-/** Event names follow the plan's Section 20.2 registry so the lab exercises the taxonomy from day one. */
+/** Event names follow the plan's Section 20.2 / 29.3 registry so the lab exercises the taxonomy from day one. */
 export interface MockJournalEvent {
   seq: number;
   atIso: string;

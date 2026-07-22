@@ -1,0 +1,44 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "BookingAssistantTable",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:TransactGetItems",
+        "dynamodb:TransactWriteItems",
+        "dynamodb:UpdateItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:622703699030:table/lll-booking-assistant",
+        "arn:aws:dynamodb:us-east-1:622703699030:table/lll-booking-assistant/index/*"
+      ]
+    },
+    {
+      "Sid": "BookingAssistantKms",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:Encrypt",
+        "kms:GenerateDataKey"
+      ],
+      "Resource": "arn:aws:kms:us-east-1:622703699030:key/46b52934-933f-4c84-8a29-98bbf5c161ea"
+    },
+    {
+      "Sid": "CallerIdentity",
+      "Effect": "Allow",
+      "Action": "sts:GetCallerIdentity",
+      "Resource": "*"
+    }
+  ]
+}
