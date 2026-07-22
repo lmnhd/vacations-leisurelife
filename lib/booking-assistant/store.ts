@@ -362,7 +362,7 @@ export async function updateDraftStatus(
       if (value !== undefined) {
         const attrName = `#${key}`;
         const attrValue = `:${key}`;
-        exprAttrNames[attrName.slice(1)] = key;
+        exprAttrNames[attrName] = key;
         updateExprParts.push(`${attrName} = ${attrValue}`);
         if (typeof value === "number") {
           exprAttrValues[attrValue] = { N: String(value) };
