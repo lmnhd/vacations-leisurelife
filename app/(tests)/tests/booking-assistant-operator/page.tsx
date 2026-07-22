@@ -63,6 +63,23 @@ interface OutcomeResult {
   journalEventId: string;
 }
 
+interface GuestSaveResult {
+  draftId: string;
+  version: number;
+  createdAtIso: string;
+  fallbackCallKey: {
+    rawKey: string;
+    normalizedKey: string;
+    keyVersion: number;
+  };
+}
+
+interface GuestSignalResult {
+  newVersion: number;
+  callAttemptId: string;
+  signalExpiresAtIso: string;
+}
+
 type ApiResult<T> = { success: true; result: T } | { success: false; error: string };
 
 const CALLER_ID_STATES = ['matched', 'different', 'blocked', 'unavailable'] as const;
@@ -115,6 +132,16 @@ export default function BookingAssistantOperatorConsolePage() {
   const [verificationNotes, setVerificationNotes] = useState('');
   const [selectedOutcome, setSelectedOutcome] = useState<string>('confirmed');
   const [outcomeNotes, setOutcomeNotes] = useState('');
+
+  // ── Guest Simulator state ──
+  const [guestFirstName, setGuestFirstName] = useState('Test');
+  const [guestEmail, setGuestEmail] = useState('test@example.com');
+  const [guestPhone, setGuestPhone] = useState('555-123-4567');
+  const [guestSaveLoading, setGuestSaveLoading] = useState(false);
+  const [guestSaveResult, setGuestSaveResult] = useState<GuestSaveResult | null>(null);
+  const [guestError, setGuestError] = useState<string | null>(null);
+  const [guestSignalLoading, setGuestSignalLoading] = useState(false);
+  const [guestReviewLoading, setGuestReviewLoading] = useState(false);
 
   const [actionLog, setActionLog] = useState<string[]>([]);
 
@@ -318,11 +345,226 @@ export default function BookingAssistantOperatorConsolePage() {
     log('Session reset');
   }, [log]);
 
+  // ── Guest Simulator handlers ──
+
+  const handleGuestSave = useCallback(async () => {
+    setGuestSaveLoading(true);
+    setGuestError(null);
+    setGuestSaveResult(null);
+    try {
+      const draftId = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const res = await fetch('/api/booking-assistant/guest/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftId,
+          personId: `person-${Date.now()}`,
+          dealSnapshot: {
+            dealId: 'test-deal-001',
+            packageId: 'pkg-001',
+            siid: 'SI-001',
+            cruiseLine: 'MSC Cruises',
+            ship: 'MSC Seaview',
+            sailingDateIso: '2026-08-22',
+            nights: 7,
+            departurePort: 'Miami',
+            itineraryLabel: '7-Night Caribbean',
+            dealAngle: 'Senior discount',
+            priceDisplay: '$599',
+            currency: 'USD',
+            taxFeeBasis: 'per person',
+            priceCapturedAtIso: new Date().toISOString(),
+            sourceBookingUrl: 'https://example.com/deal/001',
+            linkHealthState: 'unknown',
+          },
+          contact: {
+            firstName: guestFirstName,
+            email: guestEmail,
+            phone: guestPhone,
+            preferredChannel: 'phone',
+            consentToCall: true,
+            consentToEmail: true,
+          },
+          initialStatus: 'ready_to_call_agent',
+        }),
+      });
+      const data = await res.json() as ApiResult<GuestSaveResult>;
+      if (data.success) {
+        setGuestSaveResult(data.result);
+        setActiveDraftId(data.result.draftId);
+        setActiveDraftVersion(data.result.version);
+        log(`Guest save: draft ${data.result.draftId} v${data.result.version}, key=${data.result.fallbackCallKey.rawKey}`);
+      } else {
+        setGuestError(data.error);
+        log(`Guest save failed: ${data.error}`);
+      }
+    } catch (err) {
+      setGuestError(err instanceof Error ? err.message : 'Guest save failed');
+      log(`Guest save error: ${err instanceof Error ? err.message : 'unknown'}`);
+    } finally {
+      setGuestSaveLoading(false);
+    }
+  }, [guestFirstName, guestEmail, guestPhone, log]);
+
+  const handleGuestSignal = useCallback(async () => {
+    if (!guestSaveResult) return;
+    setGuestSignalLoading(true);
+    try {
+      const res = await fetch('/api/booking-assistant/guest/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftId: guestSaveResult.draftId,
+          expectedVersion: guestSaveResult.version,
+        }),
+      });
+      const data = await res.json() as ApiResult<GuestSignalResult>;
+      if (data.success) {
+        setActiveDraftVersion(data.result.newVersion);
+        log(`Call intent signaled: ${data.result.callAttemptId}, expires ${data.result.signalExpiresAtIso}`);
+      } else {
+        log(`Signal failed: ${data.error}`);
+      }
+    } catch (err) {
+      log(`Signal error: ${err instanceof Error ? err.message : 'unknown'}`);
+    } finally {
+      setGuestSignalLoading(false);
+    }
+  }, [guestSaveResult, log]);
+
+  const handleGuestReviewReady = useCallback(async () => {
+    if (!guestSaveResult) return;
+    setGuestReviewLoading(true);
+    try {
+      const res = await fetch('/api/booking-assistant/guest/review-ready', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftId: guestSaveResult.draftId,
+          expectedVersion: guestSaveResult.version,
+        }),
+      });
+      const data = await res.json() as ApiResult<{ newVersion: number }>;
+      if (data.success) {
+        setActiveDraftVersion(data.result.newVersion);
+        log(`Review ready: v${data.result.newVersion}`);
+      } else {
+        log(`Review ready failed: ${data.error}`);
+      }
+    } catch (err) {
+      log(`Review ready error: ${err instanceof Error ? err.message : 'unknown'}`);
+    } finally {
+      setGuestReviewLoading(false);
+    }
+  }, [guestSaveResult, log]);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl font-bold text-slate-100 mb-1">Booking Assistant Operator Console</h1>
         <p className="text-sm text-slate-400 mb-6">Localhost-only operator surface for the booking pilot</p>
+
+        {/* ── Guest Flow Simulator (E2E) ── */}
+        <div className="mb-6 bg-slate-900 rounded-lg border border-slate-800 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Guest Flow Simulator (E2E)</h2>
+            <span className="text-[10px] text-slate-600">Creates real draft in DynamoDB via guest API</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">First Name</label>
+              <input
+                type="text"
+                value={guestFirstName}
+                onChange={(e) => setGuestFirstName(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-slate-950 border border-slate-700 rounded text-slate-100 focus:border-sky-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Email</label>
+              <input
+                type="text"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-slate-950 border border-slate-700 rounded text-slate-100 focus:border-sky-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Phone</label>
+              <input
+                type="text"
+                value={guestPhone}
+                onChange={(e) => setGuestPhone(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-slate-950 border border-slate-700 rounded text-slate-100 focus:border-sky-500 focus:outline-none"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={handleGuestSave}
+                disabled={guestSaveLoading}
+                className="w-full px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded text-white font-medium"
+              >
+                {guestSaveLoading ? 'Creating...' : 'Create Draft'}
+              </button>
+            </div>
+          </div>
+          {guestError && <p className="text-xs text-red-400 mt-2">{guestError}</p>}
+          {guestSaveResult && (
+            <div className="mt-3 p-3 bg-emerald-950/30 rounded border border-emerald-800/50">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <span className="text-slate-500">Draft ID:</span>{' '}
+                  <span className="font-mono text-slate-300">{guestSaveResult.draftId}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Version:</span>{' '}
+                  <span className="text-slate-300">v{guestSaveResult.version}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Fallback Key:</span>{' '}
+                  <span className="font-mono text-lg font-bold text-emerald-300 tracking-wider">{guestSaveResult.fallbackCallKey.rawKey}</span>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={handleGuestSignal}
+                  disabled={guestSignalLoading}
+                  className="px-3 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded text-white font-medium"
+                >
+                  {guestSignalLoading ? 'Signaling...' : 'Signal Call Intent'}
+                </button>
+                <button
+                  onClick={handleGuestReviewReady}
+                  disabled={guestReviewLoading}
+                  className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded text-slate-200 font-medium"
+                >
+                  {guestReviewLoading ? 'Marking...' : 'Mark Review Ready'}
+                </button>
+                <button
+                  onClick={() => {
+                    if (guestSaveResult) {
+                      setLookupInput(guestSaveResult.fallbackCallKey.rawKey);
+                      log('Copied key to lookup input');
+                    }
+                  }}
+                  className="px-3 py-1.5 text-xs bg-sky-700 hover:bg-sky-600 rounded text-white font-medium"
+                >
+                  Copy Key to Lookup
+                </button>
+                <button
+                  onClick={pollQueue}
+                  disabled={queueLoading}
+                  className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded text-slate-200 font-medium"
+                >
+                  Refresh Queue
+                </button>
+              </div>
+              <p className="mt-2 text-[10px] text-slate-600">
+                E2E flow: Create Draft → Copy Key → Lookup → Verify → Reveal → Claim → Process → Outcome
+              </p>
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* ── Left: Queue ── */}
