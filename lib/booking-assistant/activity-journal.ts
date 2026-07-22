@@ -67,8 +67,8 @@ export async function writeJournalEvent(
 
   const serializedPayload = serializePayload(input.payload);
   const item: Record<string, { S?: string; N?: string; M?: Record<string, { S?: string; N?: string }> }> = {
-    pk: { S: pk },
-    sk: { S: sk },
+    PK: { S: pk },
+    SK: { S: sk },
     journalEventId: { S: journalEventId },
     contractVersion: { N: String(BOOKING_CONTRACT_VERSION) },
     eventType: { S: input.eventType },
@@ -108,7 +108,7 @@ export async function queryJournalEvents(
   const result = await dynamo.send(
     new QueryCommand({
       TableName: tableName,
-      KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :prefix)",
       ExpressionAttributeValues: {
         ":pk": { S: pk },
         ":prefix": { S: "EVENT#" },
@@ -148,7 +148,7 @@ function parseJournalItem(item: Record<string, unknown>): JournalEventRecord {
     return val?.S ?? val?.N ?? "";
   };
   return {
-    draftId: get("pk").replace("DRAFT#", ""),
+    draftId: get("PK").replace("DRAFT#", ""),
     eventType: get("eventType") as BookingJournalEventType,
     actorType: get("actorType") as JournalEventInput["actorType"],
     occurredAtIso: get("occurredAtIso"),

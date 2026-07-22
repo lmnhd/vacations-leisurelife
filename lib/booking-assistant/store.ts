@@ -73,6 +73,13 @@ function callKeyLookupPk(hmac: string): string {
   return `CALLKEY#${hmac}`;
 }
 
+const PK = "PK";
+const SK = "SK";
+const GSI1PK = "GSI1PK";
+const GSI1SK = "GSI1SK";
+const GSI2PK = "GSI2PK";
+const GSI2SK = "GSI2SK";
+
 // ── Create draft ────────────────────────────────────────────────────────────
 
 export interface CreateDraftInput {
@@ -128,7 +135,7 @@ export async function createDraft(
     gsi1sk: nowIso,
     gsi2pk: `PERSON#${input.personId}`,
     gsi2sk: nowIso,
-  };
+  } as never;
 
   const encryptedContact = await encryptJson(clients.encryption, input.contact);
 
@@ -138,7 +145,7 @@ export async function createDraft(
     encryptedContact,
     updatedAtIso: nowIso,
     version: 1,
-  };
+  } as never;
 
   await clients.dynamo.send(
     new TransactWriteItemsCommand({
@@ -147,14 +154,14 @@ export async function createDraft(
           Put: {
             TableName: config.tableName,
             Item: serializeMetaItem(metaItem) as never,
-            ConditionExpression: "attribute_not_exists(pk)",
+            ConditionExpression: "attribute_not_exists(PK)",
           },
         },
         {
           Put: {
             TableName: config.tableName,
             Item: serializeContactItem(contactItem) as never,
-            ConditionExpression: "attribute_not_exists(pk)",
+            ConditionExpression: "attribute_not_exists(PK)",
           },
         },
       ],
@@ -185,7 +192,7 @@ export async function getDraft(
   const result = await clients.dynamo.send(
     new QueryCommand({
       TableName: config.tableName,
-      KeyConditionExpression: "pk = :pk",
+      KeyConditionExpression: "PK = :pk",
       ExpressionAttributeValues: { ":pk": { S: pk } },
     })
   );
@@ -200,7 +207,7 @@ export async function getDraft(
   const cabinItems: DraftCabinItem[] = [];
 
   for (const item of result.Items) {
-    const sk = (item.sk as { S?: string })?.S ?? "";
+    const sk = (item[SK] as { S?: string })?.S ?? "";
     if (sk === "META") metaItem = parseMetaItem(item);
     else if (sk === "CONTACT") contactItem = parseContactItem(item);
     else if (sk === "DECISIONS") decisionsItem = parseDecisionsItem(item);
@@ -310,7 +317,7 @@ export async function updateDraftStatus(
   const existing = await clients.dynamo.send(
     new GetItemCommand({
       TableName: config.tableName,
-      Key: { pk: { S: pk }, sk: { S: "META" } },
+      Key: { PK: { S: pk }, SK: { S: "META" } },
       ProjectionExpression: "#status, #version",
       ExpressionAttributeNames: { "#status": "status", "#version": "version" },
     })
@@ -334,8 +341,8 @@ export async function updateDraftStatus(
     "SET #status = :status",
     "#version = :version",
     "updatedAtIso = :now",
-    "gsi1pk = :gsi1pk",
-    "gsi1sk = :now",
+    "GSI1PK = :gsi1pk",
+    "GSI1SK = :now",
     "journalSequence = journalSequence",
   ];
   const exprAttrNames: Record<string, string> = {
@@ -369,7 +376,7 @@ export async function updateDraftStatus(
   await clients.dynamo.send(
     new UpdateItemCommand({
       TableName: config.tableName,
-      Key: { pk: { S: pk }, sk: { S: "META" } },
+      Key: { PK: { S: pk }, SK: { S: "META" } },
       UpdateExpression: updateExprParts.join(", "),
       ConditionExpression: "#version = :expectedVersion",
       ExpressionAttributeNames: exprAttrNames as never,
@@ -432,14 +439,14 @@ export async function saveFallbackCallKey(
           Put: {
             TableName: config.tableName,
             Item: serializeCallKeyItem(callKeyItem) as never,
-            ConditionExpression: "attribute_not_exists(pk)",
+            ConditionExpression: "attribute_not_exists(PK)",
           },
         },
         {
           Put: {
             TableName: config.tableName,
             Item: serializeCallKeyLookupItem(lookupItem) as never,
-            ConditionExpression: "attribute_not_exists(pk)",
+            ConditionExpression: "attribute_not_exists(PK)",
           },
         },
       ],
@@ -458,7 +465,7 @@ export async function lookupDraftByCallKeyHmac(
   const result = await clients.dynamo.send(
     new QueryCommand({
       TableName: config.tableName,
-      KeyConditionExpression: "pk = :pk",
+      KeyConditionExpression: "PK = :pk",
       ExpressionAttributeValues: { ":pk": { S: pk } },
       Limit: 1,
     })
@@ -467,7 +474,7 @@ export async function lookupDraftByCallKeyHmac(
   if (!result.Items || result.Items.length === 0) return null;
 
   const item = result.Items[0];
-  const draftId = (item.sk as { S?: string })?.S?.replace("DRAFT#", "") ?? "";
+  const draftId = (item[SK] as { S?: string })?.S?.replace("DRAFT#", "") ?? "";
   const state = (item.state as { S?: string })?.S as CallKeyState | undefined;
   const issuedAtIso = (item.issuedAtIso as { S?: string })?.S ?? "";
 
@@ -499,7 +506,7 @@ export async function queryOperatorQueue(
     new QueryCommand({
       TableName: config.tableName,
       IndexName: "GSI1",
-      KeyConditionExpression: "gsi1pk = :pk",
+      KeyConditionExpression: "GSI1PK = :pk",
       ExpressionAttributeValues: { ":pk": { S: gsi1pk } },
       ScanIndexForward: false,
       Limit: 20,
@@ -507,10 +514,10 @@ export async function queryOperatorQueue(
   );
 
   return (result.Items ?? []).map((item) => ({
-    draftId: ((item.pk as { S?: string })?.S ?? "").replace("DRAFT#", ""),
+    draftId: ((item[PK] as { S?: string })?.S ?? "").replace("DRAFT#", ""),
     status: (item.status as { S?: string })?.S as BookingDraftStatus,
     urgency: (item.urgency as { S?: string })?.S ?? "informational",
-    updatedAtIso: (item.gsi1sk as { S?: string })?.S ?? "",
+    updatedAtIso: (item[GSI1SK] as { S?: string })?.S ?? "",
     personId: (item.personId as { S?: string })?.S ?? "",
   }));
 }
@@ -541,8 +548,8 @@ function serializeMetaItem(item: DraftMetaItem): Record<string, unknown> {
   const s = (v: string): { S: string } | undefined =>
     v.length > 0 ? { S: v } : undefined;
   return {
-    pk: { S: item.pk },
-    sk: { S: item.sk },
+    PK: { S: item.pk },
+    SK: { S: item.sk },
     status: { S: item.status },
     urgency: { S: item.urgency },
     flowDefinitionVersion: { N: String(item.flowDefinitionVersion) },
@@ -559,10 +566,10 @@ function serializeMetaItem(item: DraftMetaItem): Record<string, unknown> {
     ...(s(item.dealId) && { dealId: s(item.dealId) }),
     ...(s(item.packageId) && { packageId: s(item.packageId) }),
     personId: { S: item.personId },
-    gsi1pk: { S: item.gsi1pk },
-    gsi1sk: { S: item.gsi1sk },
-    gsi2pk: { S: item.gsi2pk },
-    gsi2sk: { S: item.gsi2sk },
+    GSI1PK: { S: item.gsi1pk },
+    GSI1SK: { S: item.gsi1sk },
+    GSI2PK: { S: item.gsi2pk },
+    GSI2SK: { S: item.gsi2sk },
     ...(item.nextTaskId && { nextTaskId: { S: item.nextTaskId } }),
     ...(item.resumeTaskId && { resumeTaskId: { S: item.resumeTaskId } }),
     ...(item.assignedOperatorId && { assignedOperatorId: { S: item.assignedOperatorId } }),
@@ -578,7 +585,7 @@ function parseMetaItem(item: Record<string, unknown>): DraftMetaItem {
   const s = (key: string): string => (item[key] as { S?: string })?.S ?? "";
   const n = (key: string): number => Number((item[key] as { N?: string })?.N ?? "0");
   return {
-    pk: s("pk"),
+    pk: s("PK"),
     sk: "META",
     status: s("status") as BookingDraftStatus,
     urgency: s("urgency"),
@@ -596,10 +603,10 @@ function parseMetaItem(item: Record<string, unknown>): DraftMetaItem {
     dealId: s("dealId"),
     packageId: s("packageId"),
     personId: s("personId"),
-    gsi1pk: s("gsi1pk"),
-    gsi1sk: s("gsi1sk"),
-    gsi2pk: s("gsi2pk"),
-    gsi2sk: s("gsi2sk"),
+    gsi1pk: s("GSI1PK"),
+    gsi1sk: s("GSI1SK"),
+    gsi2pk: s("GSI2PK"),
+    gsi2sk: s("GSI2SK"),
     nextTaskId: s("nextTaskId") || undefined,
     resumeTaskId: s("resumeTaskId") || undefined,
     assignedOperatorId: s("assignedOperatorId") || undefined,
@@ -613,8 +620,8 @@ function parseMetaItem(item: Record<string, unknown>): DraftMetaItem {
 
 function serializeContactItem(item: DraftContactItem): Record<string, unknown> {
   return {
-    pk: { S: item.pk },
-    sk: { S: item.sk },
+    PK: { S: item.pk },
+    SK: { S: item.sk },
     encryptedContact: serializeEncryptedBlob(item.encryptedContact),
     updatedAtIso: { S: item.updatedAtIso },
     version: { N: String(item.version) },
@@ -623,7 +630,7 @@ function serializeContactItem(item: DraftContactItem): Record<string, unknown> {
 
 function parseContactItem(item: Record<string, unknown>): DraftContactItem {
   return {
-    pk: (item.pk as { S?: string })?.S ?? "",
+    pk: (item.PK as { S?: string })?.S ?? "",
     sk: "CONTACT",
     encryptedContact: parseEncryptedBlob(item.encryptedContact as Record<string, unknown>),
     updatedAtIso: (item.updatedAtIso as { S?: string })?.S ?? "",
@@ -633,8 +640,8 @@ function parseContactItem(item: Record<string, unknown>): DraftContactItem {
 
 function serializeTravelerItem(item: DraftTravelerItem): Record<string, unknown> {
   return {
-    pk: { S: item.pk },
-    sk: { S: item.sk },
+    PK: { S: item.pk },
+    SK: { S: item.sk },
     travelerId: { S: item.travelerId },
     isPrimary: { S: String(item.isPrimary) },
     encryptedTraveler: serializeEncryptedBlob(item.encryptedTraveler),
@@ -645,8 +652,8 @@ function serializeTravelerItem(item: DraftTravelerItem): Record<string, unknown>
 
 function parseTravelerItem(item: Record<string, unknown>): DraftTravelerItem {
   return {
-    pk: (item.pk as { S?: string })?.S ?? "",
-    sk: (item.sk as { S?: string })?.S ?? "",
+    pk: (item.PK as { S?: string })?.S ?? "",
+    sk: (item.SK as { S?: string })?.S ?? "",
     travelerId: (item.travelerId as { S?: string })?.S ?? "",
     isPrimary: (item.isPrimary as { S?: string })?.S === "true",
     encryptedTraveler: parseEncryptedBlob(item.encryptedTraveler as Record<string, unknown>),
@@ -657,8 +664,8 @@ function parseTravelerItem(item: Record<string, unknown>): DraftTravelerItem {
 
 function serializeCabinItem(item: DraftCabinItem): Record<string, unknown> {
   return {
-    pk: { S: item.pk },
-    sk: { S: item.sk },
+    PK: { S: item.pk },
+    SK: { S: item.sk },
     cabinId: { S: item.cabinId },
     encryptedCabin: serializeEncryptedBlob(item.encryptedCabin),
     updatedAtIso: { S: item.updatedAtIso },
@@ -668,8 +675,8 @@ function serializeCabinItem(item: DraftCabinItem): Record<string, unknown> {
 
 function parseCabinItem(item: Record<string, unknown>): DraftCabinItem {
   return {
-    pk: (item.pk as { S?: string })?.S ?? "",
-    sk: (item.sk as { S?: string })?.S ?? "",
+    pk: (item.PK as { S?: string })?.S ?? "",
+    sk: (item.SK as { S?: string })?.S ?? "",
     cabinId: (item.cabinId as { S?: string })?.S ?? "",
     encryptedCabin: parseEncryptedBlob(item.encryptedCabin as Record<string, unknown>),
     updatedAtIso: (item.updatedAtIso as { S?: string })?.S ?? "",
@@ -679,8 +686,8 @@ function parseCabinItem(item: Record<string, unknown>): DraftCabinItem {
 
 function serializeDecisionsItem(item: DraftDecisionsItem): Record<string, unknown> {
   return {
-    pk: { S: item.pk },
-    sk: { S: item.sk },
+    PK: { S: item.pk },
+    SK: { S: item.sk },
     encryptedDecisions: serializeEncryptedBlob(item.encryptedDecisions),
     updatedAtIso: { S: item.updatedAtIso },
     version: { N: String(item.version) },
@@ -689,7 +696,7 @@ function serializeDecisionsItem(item: DraftDecisionsItem): Record<string, unknow
 
 function parseDecisionsItem(item: Record<string, unknown>): DraftDecisionsItem {
   return {
-    pk: (item.pk as { S?: string })?.S ?? "",
+    pk: (item.PK as { S?: string })?.S ?? "",
     sk: "DECISIONS",
     encryptedDecisions: parseEncryptedBlob(item.encryptedDecisions as Record<string, unknown>),
     updatedAtIso: (item.updatedAtIso as { S?: string })?.S ?? "",
@@ -699,8 +706,8 @@ function parseDecisionsItem(item: Record<string, unknown>): DraftDecisionsItem {
 
 function serializeCallKeyItem(item: DraftCallKeyItem): Record<string, unknown> {
   return {
-    pk: { S: item.pk },
-    sk: { S: item.sk },
+    PK: { S: item.pk },
+    SK: { S: item.sk },
     keyVersion: { N: String(item.keyVersion) },
     state: { S: item.state },
     issuedAtIso: { S: item.issuedAtIso },
@@ -713,7 +720,7 @@ function serializeCallKeyItem(item: DraftCallKeyItem): Record<string, unknown> {
 
 function parseCallKeyItem(item: Record<string, unknown>): DraftCallKeyItem {
   return {
-    pk: (item.pk as { S?: string })?.S ?? "",
+    pk: (item.PK as { S?: string })?.S ?? "",
     sk: "CALL_KEY",
     keyVersion: Number((item.keyVersion as { N?: string })?.N ?? "0"),
     state: (item.state as { S?: string })?.S as CallKeyState,
@@ -729,8 +736,8 @@ function parseCallKeyItem(item: Record<string, unknown>): DraftCallKeyItem {
 
 function serializeCallKeyLookupItem(item: CallKeyLookupItem): Record<string, unknown> {
   return {
-    pk: { S: item.pk },
-    sk: { S: item.sk },
+    PK: { S: item.pk },
+    SK: { S: item.sk },
     draftId: { S: item.draftId },
     state: { S: item.state },
     issuedAtIso: { S: item.issuedAtIso },
