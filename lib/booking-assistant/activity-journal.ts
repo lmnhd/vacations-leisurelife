@@ -65,6 +65,7 @@ export async function writeJournalEvent(
   const pk = `DRAFT#${input.draftId}`;
   const sk = skForEvent(input.occurredAtIso, journalEventId);
 
+  const serializedPayload = serializePayload(input.payload);
   const item: Record<string, { S?: string; N?: string; M?: Record<string, { S?: string; N?: string }> }> = {
     pk: { S: pk },
     sk: { S: sk },
@@ -78,7 +79,7 @@ export async function writeJournalEvent(
     idempotencyKey: { S: input.idempotencyKey },
     expectedDraftVersion: { N: String(input.expectedDraftVersion) },
     sequence: { N: String(input.sequence) },
-    payload: { M: serializePayload(input.payload) },
+    ...(Object.keys(serializedPayload).length > 0 && { payload: { M: serializedPayload } }),
   };
 
   await dynamo.send(
@@ -128,7 +129,7 @@ export async function queryJournalEvents(
 function serializePayload(payload: JournalPayload): Record<string, { S?: string; N?: string }> {
   const out: Record<string, { S?: string; N?: string }> = {};
   for (const [key, value] of Object.entries(payload)) {
-    if (typeof value === "string") {
+    if (typeof value === "string" && value.length > 0) {
       out[key] = { S: value };
     } else if (typeof value === "number") {
       out[key] = { N: String(value) };

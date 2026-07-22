@@ -538,6 +538,8 @@ export class InvalidTransitionError extends Error {
 // ── Serialization helpers ───────────────────────────────────────────────────
 
 function serializeMetaItem(item: DraftMetaItem): Record<string, unknown> {
+  const s = (v: string): { S: string } | undefined =>
+    v.length > 0 ? { S: v } : undefined;
   return {
     pk: { S: item.pk },
     sk: { S: item.sk },
@@ -554,8 +556,8 @@ function serializeMetaItem(item: DraftMetaItem): Record<string, unknown> {
     updatedAtIso: { S: item.updatedAtIso },
     lastGuestActivityAtIso: { S: item.lastGuestActivityAtIso },
     lastMeaningfulGuestActivityAtIso: { S: item.lastMeaningfulGuestActivityAtIso },
-    dealId: { S: item.dealId },
-    packageId: { S: item.packageId },
+    ...(s(item.dealId) && { dealId: s(item.dealId) }),
+    ...(s(item.packageId) && { packageId: s(item.packageId) }),
     personId: { S: item.personId },
     gsi1pk: { S: item.gsi1pk },
     gsi1sk: { S: item.gsi1sk },
@@ -735,18 +737,21 @@ function serializeCallKeyLookupItem(item: CallKeyLookupItem): Record<string, unk
   };
 }
 
-function serializeEncryptedBlob(blob: EncryptedBlob): Record<string, { S: string }> {
+function serializeEncryptedBlob(blob: EncryptedBlob): { M: Record<string, { S: string }> } {
   return {
-    ciphertext: { S: blob.ciphertext },
-    iv: { S: blob.iv },
-    tag: { S: blob.tag },
-    encryptedDataKey: { S: blob.encryptedDataKey },
-    kmsKeyArn: { S: blob.kmsKeyArn },
+    M: {
+      ciphertext: { S: blob.ciphertext },
+      iv: { S: blob.iv },
+      tag: { S: blob.tag },
+      encryptedDataKey: { S: blob.encryptedDataKey },
+      kmsKeyArn: { S: blob.kmsKeyArn },
+    },
   };
 }
 
 function parseEncryptedBlob(raw: Record<string, unknown>): EncryptedBlob {
-  const s = (key: string): string => (raw[key] as { S?: string })?.S ?? "";
+  const map = (raw.M ?? raw) as Record<string, unknown>;
+  const s = (key: string): string => (map[key] as { S?: string })?.S ?? "";
   return {
     ciphertext: s("ciphertext"),
     iv: s("iv"),
