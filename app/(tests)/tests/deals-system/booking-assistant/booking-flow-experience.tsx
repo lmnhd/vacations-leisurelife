@@ -57,6 +57,12 @@ import {
   type MockJournalEvent,
   type TaskDef,
 } from "./booking-flow-model";
+import {
+  saveDraft as apiSaveDraft,
+  signalCallIntent as apiSignalCallIntent,
+  markReviewReady as apiMarkReviewReady,
+  type GuestSaveResponse,
+} from "./guest-api-client";
 
 const STORAGE_KEY = "lll-booking-assistant-lab-v1";
 
@@ -206,10 +212,16 @@ export const BookingFlowExperience = forwardRef<
   const [questionAnswer, setQuestionAnswer] = useState<{ q: string; a: string } | null>(null);
   const [callSignal, setCallSignal] = useState<CallSignal | null>(null);
 
+  // Server-side draft state (real DynamoDB persistence via guest API).
+  const [serverDraftId, setServerDraftId] = useState<string | null>(null);
+  const [serverDraftVersion, setServerDraftVersion] = useState<number>(0);
+  const [serverFallbackKey, setServerFallbackKey] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+
   // Stable per-scenario draft id: the mock deal id yields the documented "MAP"
   // key and survives refresh/resume (the key is derived, never regenerated).
-  const draftId = MOCK_DEAL.dealId;
-  const fallbackKey = fallbackCallKey(draftId);
+  const draftId = serverDraftId ?? MOCK_DEAL.dealId;
+  const fallbackKey = serverFallbackKey ?? fallbackCallKey(MOCK_DEAL.dealId);
 
   const tasks = useMemo(() => buildTaskList(draft), [draft]);
   const currentTask: TaskDef | undefined = tasks.find((task) => task.id === currentTaskId);
@@ -510,6 +522,51 @@ export const BookingFlowExperience = forwardRef<
     }
     if (id === "phone" && !draft.confirmedTasks.includes("phone")) {
       emit("assistant", "option_menu_opened", "'Get help now' is now available in More Options");
+      // All contact fields captured — persist to real DynamoDB via guest API.
+      if (next.firstName && next.email && next.phone && !serverDraftId) {
+        const realDraftId = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        apiSaveDraft({
+          draftId: realDraftId,
+          personId: `person-${Date.now()}`,
+          dealSnapshot: {
+            dealId: MOCK_DEAL.dealId,
+            packageId: "pkg-mock-001",
+            siid: "SI-MOCK-001",
+            cruiseLine: MOCK_DEAL.line,
+            ship: MOCK_DEAL.ship,
+            sailingDateIso: "2026-08-22",
+            nights: MOCK_DEAL.nights,
+            departurePort: MOCK_DEAL.departure,
+            itineraryLabel: MOCK_DEAL.itinerary,
+            dealAngle: MOCK_DEAL.title,
+            priceDisplay: MOCK_DEAL.priceBasis,
+            currency: "USD",
+            taxFeeBasis: "per person",
+            priceCapturedAtIso: new Date().toISOString(),
+            sourceBookingUrl: "https://example.com/deal/mock-msc-summer",
+            linkHealthState: "unknown",
+          },
+          contact: {
+            firstName: next.firstName,
+            email: next.email,
+            phone: next.phone,
+            preferredChannel: "phone",
+            consentToCall: true,
+            consentToEmail: true,
+          },
+          initialStatus: "collecting",
+        }).then((result) => {
+          if (result.success) {
+            setServerDraftId(result.result.draftId);
+            setServerDraftVersion(result.result.version);
+            setServerFallbackKey(result.result.fallbackCallKey.rawKey);
+            emit("system", "booking_draft_persisted", `Draft saved to DynamoDB: ${result.result.draftId}, key=${result.result.fallbackCallKey.rawKey}`);
+          } else {
+            setServerError(result.error);
+            emit("system", "draft_persist_failed", `Server save failed: ${result.error}`);
+          }
+        });
+      }
     }
 
     // Route: back to review if this was an edit, otherwise the next unconfirmed task.
@@ -594,6 +651,19 @@ export const BookingFlowExperience = forwardRef<
     );
     emit("assistant", "ready_to_call_presented", "Call-agent-to-finalize screen shown");
     setScreen("call_finalize");
+
+    // Persist review-ready status to real DynamoDB.
+    if (serverDraftId && serverDraftVersion > 0) {
+      apiMarkReviewReady(serverDraftId, serverDraftVersion).then((result) => {
+        if (result.success) {
+          setServerDraftVersion(result.result.newVersion);
+          emit("system", "review_ready_persisted", `Server updated: v${result.result.newVersion}`);
+        } else {
+          setServerError(result.error);
+          emit("system", "review_ready_failed", `Server update failed: ${result.error}`);
+        }
+      });
+    }
   }
 
   // --- Section 29 call-agent-to-finalize ------------------------------------
@@ -621,6 +691,19 @@ export const BookingFlowExperience = forwardRef<
     setDraft((prev) => ({ ...prev, status: "call_signal_pending" }));
     emit("guest", "call_launch_requested", `Attempt ${callAttemptId} (idempotent)`);
     emit("system", "call_intent_signal_published", "Intent published to operator dashboard (awaiting pin/ack)");
+
+    // Persist call intent signal to real DynamoDB.
+    if (serverDraftId && serverDraftVersion > 0) {
+      apiSignalCallIntent(serverDraftId, serverDraftVersion).then((result) => {
+        if (result.success) {
+          setServerDraftVersion(result.result.newVersion);
+          emit("system", "call_signal_persisted", `Server: call intent published, attempt ${result.result.callAttemptId}`);
+        } else {
+          setServerError(result.error);
+          emit("system", "call_signal_failed", `Server signal failed: ${result.error}`);
+        }
+      });
+    }
   }
 
   function callLater() {
@@ -777,6 +860,10 @@ export const BookingFlowExperience = forwardRef<
     setTaskError("");
     setVoiceMode(false);
     setVoiceState("idle");
+    setServerDraftId(null);
+    setServerDraftVersion(0);
+    setServerFallbackKey(null);
+    setServerError(null);
     setQuestionAnswer(null);
     setCallSignal(null);
   }
