@@ -131,7 +131,7 @@ export async function createDraft(
     dealId: input.dealSnapshot.dealId,
     packageId: input.dealSnapshot.packageId,
     personId: input.personId,
-    gsi1pk: `STATUS#${input.initialStatus}#URGENCY#informational`,
+    gsi1pk: `STATUS#${input.initialStatus}`,
     gsi1sk: nowIso,
     gsi2pk: `PERSON#${input.personId}`,
     gsi2sk: nowIso,
@@ -450,7 +450,7 @@ export async function updateDraftStatus(
     throw new InvalidTransitionError(currentStatus, input.newStatus);
   }
 
-  const gsi1pk = `STATUS#${input.newStatus}#URGENCY#${input.urgency ?? "informational"}`;
+  const gsi1pk = `STATUS#${input.newStatus}`;
   const newVersion = currentVersion + 1;
 
   const updateExprParts: string[] = [
