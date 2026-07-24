@@ -617,25 +617,43 @@ export async function queryOperatorQueue(
   config: DraftStoreConfig,
   statusPrefix: string
 ): Promise<QueueQueryResult[]> {
-  const gsi1pk = `STATUS#${statusPrefix}`;
-  const result = await clients.dynamo.send(
-    new QueryCommand({
-      TableName: config.tableName,
-      IndexName: "GSI1",
-      KeyConditionExpression: "GSI1PK = :pk",
-      ExpressionAttributeValues: { ":pk": { S: gsi1pk } },
-      ScanIndexForward: false,
-      Limit: 20,
-    })
-  );
+  const keysToQuery = [
+    `STATUS#${statusPrefix}`,
+    `STATUS#${statusPrefix}#URGENCY#informational`,
+    `STATUS#${statusPrefix}#URGENCY#normal`,
+    `STATUS#${statusPrefix}#URGENCY#urgent`,
+  ];
 
-  return (result.Items ?? []).map((item) => ({
-    draftId: ((item[PK] as { S?: string })?.S ?? "").replace("DRAFT#", ""),
-    status: (item.status as { S?: string })?.S as BookingDraftStatus,
-    urgency: (item.urgency as { S?: string })?.S ?? "informational",
-    updatedAtIso: (item[GSI1SK] as { S?: string })?.S ?? "",
-    personId: (item.personId as { S?: string })?.S ?? "",
-  }));
+  const seen = new Set<string>();
+  const allRows: QueueQueryResult[] = [];
+
+  for (const gsi1pk of keysToQuery) {
+    const result = await clients.dynamo.send(
+      new QueryCommand({
+        TableName: config.tableName,
+        IndexName: "GSI1",
+        KeyConditionExpression: "GSI1PK = :pk",
+        ExpressionAttributeValues: { ":pk": { S: gsi1pk } },
+        ScanIndexForward: false,
+        Limit: 20,
+      })
+    );
+
+    for (const item of result.Items ?? []) {
+      const draftId = ((item[PK] as { S?: string })?.S ?? "").replace("DRAFT#", "");
+      if (seen.has(draftId)) continue;
+      seen.add(draftId);
+      allRows.push({
+        draftId,
+        status: (item.status as { S?: string })?.S as BookingDraftStatus,
+        urgency: (item.urgency as { S?: string })?.S ?? "informational",
+        updatedAtIso: (item[GSI1SK] as { S?: string })?.S ?? "",
+        personId: (item.personId as { S?: string })?.S ?? "",
+      });
+    }
+  }
+
+  return allRows;
 }
 
 // ── Errors ──────────────────────────────────────────────────────────────────
