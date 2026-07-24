@@ -89,6 +89,9 @@ interface PersistedLab {
   screen: Screen;
   voiceMode: boolean;
   callSignal: CallSignal | null;
+  serverDraftId: string | null;
+  serverDraftVersion: number;
+  serverFallbackKey: string | null;
 }
 
 /** Read-only view of flow state streamed to the lab's observer panels. */
@@ -216,6 +219,7 @@ export const BookingFlowExperience = forwardRef<
   const [serverDraftId, setServerDraftId] = useState<string | null>(null);
   const [serverDraftVersion, setServerDraftVersion] = useState<number>(0);
   const [serverFallbackKey, setServerFallbackKey] = useState<string | null>(null);
+  const [serverSavePending, setServerSavePending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   // Stable per-scenario draft id: the mock deal id yields the documented "MAP"
@@ -248,9 +252,17 @@ export const BookingFlowExperience = forwardRef<
         setCurrentTaskId(saved.currentTaskId);
         setJournal(saved.journal);
         seqRef.current = saved.seq;
-        setScreen(saved.screen === "help" ? "task" : saved.screen);
+        const restoredScreen = saved.screen === "help"
+          ? "task"
+          : saved.screen === "call_finalize" && !saved.serverDraftId
+            ? "landing"
+            : saved.screen;
+        setScreen(restoredScreen);
         setVoiceMode(saved.voiceMode);
         setCallSignal(saved.callSignal ?? null);
+        setServerDraftId(saved.serverDraftId ?? null);
+        setServerDraftVersion(saved.serverDraftVersion ?? 0);
+        setServerFallbackKey(saved.serverFallbackKey ?? null);
         setWorking(workingForTask(saved.currentTaskId, saved.draft));
       }
     } catch {
@@ -269,13 +281,16 @@ export const BookingFlowExperience = forwardRef<
       screen,
       voiceMode,
       callSignal,
+      serverDraftId,
+      serverDraftVersion,
+      serverFallbackKey,
     };
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
     } catch {
       // Storage full/unavailable: the lab keeps working in-memory.
     }
-  }, [hydrated, draft, currentTaskId, journal, screen, voiceMode, callSignal]);
+  }, [hydrated, draft, currentTaskId, journal, screen, voiceMode, callSignal, serverDraftId, serverDraftVersion, serverFallbackKey]);
 
   // Stream the observable state to the lab wrapper (no-op in production).
   useEffect(() => {
@@ -525,6 +540,7 @@ export const BookingFlowExperience = forwardRef<
       // All contact fields captured — persist to real DynamoDB via guest API.
       if (next.firstName && next.email && next.phone && !serverDraftId) {
         const realDraftId = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        setServerSavePending(true);
         apiSaveDraft({
           draftId: realDraftId,
           personId: `person-${Date.now()}`,
@@ -549,10 +565,14 @@ export const BookingFlowExperience = forwardRef<
           contact: {
             firstName: next.firstName,
             email: next.email,
-            phone: next.phone,
+            phoneE164: next.phone,
             preferredChannel: "phone",
-            consentToCall: true,
-            consentToEmail: true,
+            emailVerified: false,
+            phoneVerified: false,
+            transactionalEmailConsent: true,
+            callbackConsent: true,
+            smsConsent: false,
+            marketingConsent: false,
           },
           initialStatus: "collecting",
         }).then((result) => {
@@ -565,6 +585,7 @@ export const BookingFlowExperience = forwardRef<
             setServerError(result.error);
             emit("system", "draft_persist_failed", `Server save failed: ${result.error}`);
           }
+          setServerSavePending(false);
         });
       }
     }
@@ -635,6 +656,14 @@ export const BookingFlowExperience = forwardRef<
     }
     if (!draft.accuracyAcknowledged) {
       setTaskError("Please confirm the accuracy acknowledgement first.");
+      return;
+    }
+    if (serverSavePending) {
+      setTaskError("Saving your information securely. Please wait a moment and try again.");
+      return;
+    }
+    if (!serverDraftId || !serverFallbackKey || serverDraftVersion <= 0) {
+      setTaskError(serverError ?? "Your information could not be saved securely. Please restart this booking.");
       return;
     }
     // Section 29.1: atomic packet save -> ready_to_call_agent with a stable key.
@@ -863,6 +892,7 @@ export const BookingFlowExperience = forwardRef<
     setServerDraftId(null);
     setServerDraftVersion(0);
     setServerFallbackKey(null);
+    setServerSavePending(false);
     setServerError(null);
     setQuestionAnswer(null);
     setCallSignal(null);

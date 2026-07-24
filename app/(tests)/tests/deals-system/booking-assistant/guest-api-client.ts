@@ -30,10 +30,14 @@ export interface GuestSaveRequest {
   contact: {
     firstName: string;
     email: string;
-    phone: string;
+    phoneE164: string;
     preferredChannel: "email" | "phone" | "sms";
-    consentToCall: boolean;
-    consentToEmail: boolean;
+    emailVerified: boolean;
+    phoneVerified: boolean;
+    transactionalEmailConsent: boolean;
+    callbackConsent: boolean;
+    smsConsent: boolean;
+    marketingConsent: boolean;
   };
   initialStatus: string;
 }

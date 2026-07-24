@@ -83,6 +83,10 @@ interface GuestSignalResult {
 }
 
 type ApiResult<T> = { success: true; result: T } | { success: false; error: string };
+type QueueApiResponse =
+  | { success: true; result: { cards: QueueCard[] } }
+  | { success: true; cards: QueueCard[] }
+  | { success: false; error: string };
 
 const CALLER_ID_STATES = ['matched', 'different', 'blocked', 'unavailable'] as const;
 
@@ -146,10 +150,11 @@ export default function BookingAssistantOperatorConsolePage() {
     setQueueError(null);
     try {
       const res = await fetch('/api/booking-assistant/queue');
-      const data = await res.json() as ApiResult<{ cards: QueueCard[] }>;
+      const data = await res.json() as QueueApiResponse;
       if (data.success) {
-        setQueue(data.result.cards);
-        log(`Queue polled: ${data.result.cards.length} cards`);
+        const cards = 'result' in data ? data.result.cards : data.cards;
+        setQueue(cards);
+        log(`Queue polled: ${cards.length} cards`);
       } else {
         setQueueError(data.error);
       }

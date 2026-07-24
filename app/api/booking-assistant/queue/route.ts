@@ -26,7 +26,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       statuses: statuses as never,
     });
 
-    return NextResponse.json({ success: true, cards: result.cards });
+    return NextResponse.json({ success: true, result });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Queue poll failed";
     return NextResponse.json({ success: false, error: detail }, { status: 500 });
