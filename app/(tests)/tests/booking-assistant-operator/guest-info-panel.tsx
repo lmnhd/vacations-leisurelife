@@ -155,6 +155,28 @@ export function GuestInfoPanel({ draft }: GuestInfoPanelProps) {
         </SectionCard>
       )}
 
+      {/* Insurance Callout — prominent when guest wants to discuss */}
+      {(() => {
+        const insurance = s(decisions.travelInsuranceDecision);
+        if (!insurance) return null;
+        const wantsDiscussion = insurance.toLowerCase().includes("discuss") || insurance.toLowerCase().includes("yes");
+        return (
+          <div className={`rounded-lg border p-4 ${wantsDiscussion ? "border-amber-700/50 bg-amber-950/30" : "border-slate-800 bg-slate-900"}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: wantsDiscussion ? "#fbbf24" : "#94a3b8" }}>
+                Insurance Request
+              </span>
+              {wantsDiscussion && (
+                <span className="text-[10px] bg-amber-900/60 text-amber-300 px-1.5 py-0.5 rounded font-medium">
+                  Ask about this on the call
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-slate-200 font-medium">{insurance}</p>
+          </div>
+        );
+      })()}
+
       {/* Decisions */}
       <SectionCard title="Decisions & Consents">
         <Field label="Packet Storage Consent" value={s(decisions.packetStorageConsent) === "true" ? "Yes" : "No"} />

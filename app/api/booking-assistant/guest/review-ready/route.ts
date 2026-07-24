@@ -20,6 +20,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = await request.json().catch(() => ({})) as {
       draftId?: string;
       expectedVersion?: number;
+      decisions?: Record<string, unknown>;
     };
 
     if (!body.draftId || typeof body.expectedVersion !== "number") {
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const result = await markReviewReady(ctx.clients, operatorService, {
       draftId: body.draftId,
       expectedVersion: body.expectedVersion,
+      decisions: body.decisions as never,
     });
 
     return NextResponse.json({ success: true, result });

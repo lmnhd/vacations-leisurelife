@@ -171,6 +171,44 @@ export async function createDraft(
   return { draftId: input.draftId, version: 1, createdAtIso: nowIso };
 }
 
+// ── Save decisions (encrypted) ──────────────────────────────────────────────
+
+export interface SaveDecisionsInput {
+  draftId: string;
+  expectedVersion: number;
+  decisions: DecisionsAndConsents;
+}
+
+/**
+ * Saves or replaces the encrypted DECISIONS item for a draft.
+ * Uses PutItem with condition_not_exists for initial creation,
+ * or PutItem unconditionally for updates (version is bumped in META).
+ */
+export async function saveDecisions(
+  clients: DraftStoreClients,
+  config: DraftStoreConfig,
+  input: SaveDecisionsInput
+): Promise<void> {
+  const pk = draftPk(input.draftId);
+  const nowIso = new Date().toISOString();
+  const encryptedDecisions = await encryptJson(clients.encryption, input.decisions);
+
+  const decisionsItem: DraftDecisionsItem = {
+    pk,
+    sk: "DECISIONS",
+    encryptedDecisions,
+    updatedAtIso: nowIso,
+    version: input.expectedVersion,
+  };
+
+  await clients.dynamo.send(
+    new PutItemCommand({
+      TableName: config.tableName,
+      Item: serializeDecisionsItem(decisionsItem) as never,
+    })
+  );
+}
+
 // ── Get draft (metadata + contact, not encrypted sub-items by default) ──────
 
 export interface DraftSnapshot {

@@ -575,6 +575,11 @@ export const BookingFlowExperience = forwardRef<
             marketingConsent: false,
           },
           initialStatus: "collecting",
+          decisions: {
+            travelInsuranceDecision: next.insuranceInterest || undefined,
+            passengerDataReviewConfirmed: false,
+            packetStorageConsent: false,
+          },
         }).then((result) => {
           if (result.success) {
             setServerDraftId(result.result.draftId);
@@ -683,10 +688,14 @@ export const BookingFlowExperience = forwardRef<
 
     // Persist review-ready status to real DynamoDB.
     if (serverDraftId && serverDraftVersion > 0) {
-      apiMarkReviewReady(serverDraftId, serverDraftVersion).then((result) => {
+      apiMarkReviewReady(serverDraftId, serverDraftVersion, {
+        travelInsuranceDecision: next.insuranceInterest || undefined,
+        passengerDataReviewConfirmed: next.accuracyAcknowledged,
+        packetStorageConsent: next.preparationAuthorized,
+      }).then((result) => {
         if (result.success) {
           setServerDraftVersion(result.result.newVersion);
-          emit("system", "review_ready_persisted", `Server updated: v${result.result.newVersion}`);
+          emit("system", "review_ready_persisted", `Server updated: v${result.result.newVersion}, insurance=${next.insuranceInterest || "none"}`);
         } else {
           setServerError(result.error);
           emit("system", "review_ready_failed", `Server update failed: ${result.error}`);

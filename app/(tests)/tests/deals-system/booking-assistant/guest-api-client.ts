@@ -40,6 +40,11 @@ export interface GuestSaveRequest {
     marketingConsent: boolean;
   };
   initialStatus: string;
+  decisions?: {
+    travelInsuranceDecision?: string;
+    passengerDataReviewConfirmed?: boolean;
+    packetStorageConsent?: boolean;
+  };
 }
 
 export interface GuestSaveResponse {
@@ -96,12 +101,17 @@ export async function signalCallIntent(
 
 export async function markReviewReady(
   draftId: string,
-  expectedVersion: number
+  expectedVersion: number,
+  decisions?: {
+    travelInsuranceDecision?: string;
+    passengerDataReviewConfirmed?: boolean;
+    packetStorageConsent?: boolean;
+  }
 ): Promise<ApiResult<GuestReviewReadyResponse>> {
   return callApi<GuestReviewReadyResponse>("/api/booking-assistant/guest/review-ready", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ draftId, expectedVersion }),
+    body: JSON.stringify({ draftId, expectedVersion, decisions }),
   });
 }
 

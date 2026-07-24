@@ -14,6 +14,7 @@ import { createEncryptionHelper, type EncryptionHelper } from "@/lib/booking-ass
 import {
   createDraft,
   getDraft,
+  saveDecisions,
   saveFallbackCallKey,
   updateDraftStatus,
   type DraftStoreClients,
@@ -27,7 +28,7 @@ import {
   writeJournalEvent,
 } from "@/lib/booking-assistant/activity-journal";
 import type { BookingDraftStatus } from "@/lib/booking-assistant/contracts";
-import type { ContactRecord, DealPriceSnapshot } from "@/lib/booking-assistant/types";
+import type { ContactRecord, DealPriceSnapshot, DecisionsAndConsents } from "@/lib/booking-assistant/types";
 
 export interface GuestStoreClients {
   dynamo: DynamoDBClient;
@@ -52,6 +53,7 @@ export interface SaveDraftInput {
   personId: string;
   dealSnapshot: DealPriceSnapshot;
   contact: ContactRecord;
+  decisions?: Partial<DecisionsAndConsents>;
   initialStatus: BookingDraftStatus;
   flowDefinitionVersion: number;
   bookingFlowVersion: number;
@@ -92,6 +94,18 @@ export async function saveDraft(
   });
 
   const callKey = selectRandomCallKey();
+
+  if (input.decisions) {
+    await saveDecisions(clients as DraftStoreClients, config, {
+      draftId: input.draftId,
+      expectedVersion: draftResult.version,
+      decisions: {
+        passengerDataReviewConfirmed: false,
+        packetStorageConsent: false,
+        ...input.decisions,
+      },
+    });
+  }
 
   await saveFallbackCallKey(clients as DraftStoreClients, config, {
     draftId: input.draftId,
@@ -208,6 +222,7 @@ export async function signalCallIntent(
 export interface MarkReviewReadyInput {
   draftId: string;
   expectedVersion: number;
+  decisions?: Partial<DecisionsAndConsents>;
 }
 
 export interface MarkReviewReadyResult {
@@ -222,6 +237,18 @@ export async function markReviewReady(
   config: GuestStoreConfig,
   input: MarkReviewReadyInput
 ): Promise<MarkReviewReadyResult> {
+  if (input.decisions) {
+    await saveDecisions(clients as DraftStoreClients, config, {
+      draftId: input.draftId,
+      expectedVersion: input.expectedVersion,
+      decisions: {
+        passengerDataReviewConfirmed: false,
+        packetStorageConsent: false,
+        ...input.decisions,
+      },
+    });
+  }
+
   const updateResult = await updateDraftStatus(clients as DraftStoreClients, config, {
     draftId: input.draftId,
     expectedVersion: input.expectedVersion,

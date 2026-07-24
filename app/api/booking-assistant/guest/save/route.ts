@@ -31,6 +31,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       personId: body.personId,
       dealSnapshot: body.dealSnapshot,
       contact: body.contact,
+      decisions: body.decisions,
       initialStatus: body.initialStatus ?? "collecting",
       flowDefinitionVersion: body.flowDefinitionVersion ?? 1,
       bookingFlowVersion: body.bookingFlowVersion ?? 1,
