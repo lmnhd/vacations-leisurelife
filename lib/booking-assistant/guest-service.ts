@@ -14,8 +14,10 @@ import { createEncryptionHelper, type EncryptionHelper } from "@/lib/booking-ass
 import {
   createDraft,
   getDraft,
+  saveCabin,
   saveDecisions,
   saveFallbackCallKey,
+  saveTravelers,
   updateDraftStatus,
   type DraftStoreClients,
   type DraftStoreConfig,
@@ -28,7 +30,7 @@ import {
   writeJournalEvent,
 } from "@/lib/booking-assistant/activity-journal";
 import type { BookingDraftStatus } from "@/lib/booking-assistant/contracts";
-import type { ContactRecord, DealPriceSnapshot, DecisionsAndConsents } from "@/lib/booking-assistant/types";
+import type { CabinRecord, ContactRecord, DealPriceSnapshot, DecisionsAndConsents, TravelerRecord } from "@/lib/booking-assistant/types";
 
 export interface GuestStoreClients {
   dynamo: DynamoDBClient;
@@ -53,6 +55,8 @@ export interface SaveDraftInput {
   personId: string;
   dealSnapshot: DealPriceSnapshot;
   contact: ContactRecord;
+  travelers?: TravelerRecord[];
+  cabin?: CabinRecord;
   decisions?: Partial<DecisionsAndConsents>;
   initialStatus: BookingDraftStatus;
   flowDefinitionVersion: number;
@@ -104,6 +108,22 @@ export async function saveDraft(
         packetStorageConsent: false,
         ...input.decisions,
       },
+    });
+  }
+
+  if (input.travelers && input.travelers.length > 0) {
+    await saveTravelers(clients as DraftStoreClients, config, {
+      draftId: input.draftId,
+      expectedVersion: draftResult.version,
+      travelers: input.travelers,
+    });
+  }
+
+  if (input.cabin) {
+    await saveCabin(clients as DraftStoreClients, config, {
+      draftId: input.draftId,
+      expectedVersion: draftResult.version,
+      cabin: input.cabin,
     });
   }
 
@@ -222,6 +242,8 @@ export async function signalCallIntent(
 export interface MarkReviewReadyInput {
   draftId: string;
   expectedVersion: number;
+  travelers?: TravelerRecord[];
+  cabin?: CabinRecord;
   decisions?: Partial<DecisionsAndConsents>;
 }
 
@@ -237,6 +259,22 @@ export async function markReviewReady(
   config: GuestStoreConfig,
   input: MarkReviewReadyInput
 ): Promise<MarkReviewReadyResult> {
+  if (input.travelers && input.travelers.length > 0) {
+    await saveTravelers(clients as DraftStoreClients, config, {
+      draftId: input.draftId,
+      expectedVersion: input.expectedVersion,
+      travelers: input.travelers,
+    });
+  }
+
+  if (input.cabin) {
+    await saveCabin(clients as DraftStoreClients, config, {
+      draftId: input.draftId,
+      expectedVersion: input.expectedVersion,
+      cabin: input.cabin,
+    });
+  }
+
   if (input.decisions) {
     await saveDecisions(clients as DraftStoreClients, config, {
       draftId: input.draftId,

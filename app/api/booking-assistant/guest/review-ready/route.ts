@@ -20,6 +20,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = await request.json().catch(() => ({})) as {
       draftId?: string;
       expectedVersion?: number;
+      travelers?: unknown[];
+      cabin?: unknown;
       decisions?: Record<string, unknown>;
     };
 
@@ -33,6 +35,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const result = await markReviewReady(ctx.clients, operatorService, {
       draftId: body.draftId,
       expectedVersion: body.expectedVersion,
+      travelers: body.travelers as never,
+      cabin: body.cabin as never,
       decisions: body.decisions as never,
     });
 

@@ -62,6 +62,8 @@ import {
   signalCallIntent as apiSignalCallIntent,
   markReviewReady as apiMarkReviewReady,
   type GuestSaveResponse,
+  type GuestTravelerPayload,
+  type GuestCabinPayload,
 } from "./guest-api-client";
 
 const STORAGE_KEY = "lll-booking-assistant-lab-v1";
@@ -92,6 +94,44 @@ interface PersistedLab {
   serverDraftId: string | null;
   serverDraftVersion: number;
   serverFallbackKey: string | null;
+}
+
+function buildTravelerPayloads(draft: MockDraft): GuestTravelerPayload[] {
+  return draft.travelers.slice(0, draft.travelerCount).map((t, i) => ({
+    travelerId: `traveler-${i + 1}`,
+    isPrimary: i === 0,
+    classification: "adult" as const,
+    title: t.title || undefined,
+    supplierGender: t.gender || undefined,
+    legalFirstName: t.firstName || undefined,
+    legalMiddleName: t.middleName || undefined,
+    legalLastName: t.lastName || undefined,
+    dateOfBirth: t.dob || undefined,
+    ageAtSailing: t.age ? Number(t.age) : undefined,
+    nationality: draft.citizenship || undefined,
+    residencyCountry: "US",
+    residencyStateProvince: draft.residencyState || undefined,
+    addressLine1: draft.addressLine1 || undefined,
+    addressCity: draft.addressCity || undefined,
+    addressState: draft.addressState || undefined,
+    addressPostalCode: draft.addressZip || undefined,
+    addressCountry: "US",
+    accessibilityNeeds: i === 0 ? (draft.accessibility || undefined) : undefined,
+    rateQualificationClaims: [],
+    fieldStatuses: {},
+  }));
+}
+
+function buildCabinPayload(draft: MockDraft): GuestCabinPayload {
+  const travelerIds = draft.travelers.slice(0, draft.travelerCount).map((_, i) => `traveler-${i + 1}`);
+  return {
+    cabinId: "cabin-1",
+    assignedTravelerIds: travelerIds,
+    categoryPreference: draft.cabinPreference || undefined,
+    accessibilityRequirement: draft.accessibility || undefined,
+    qualifyingTravelerIds: travelerIds,
+    rateCandidates: [],
+  };
 }
 
 /** Read-only view of flow state streamed to the lab's observer panels. */
@@ -689,13 +729,17 @@ export const BookingFlowExperience = forwardRef<
     // Persist review-ready status to real DynamoDB.
     if (serverDraftId && serverDraftVersion > 0) {
       apiMarkReviewReady(serverDraftId, serverDraftVersion, {
-        travelInsuranceDecision: next.insuranceInterest || undefined,
-        passengerDataReviewConfirmed: next.accuracyAcknowledged,
-        packetStorageConsent: next.preparationAuthorized,
+        travelers: buildTravelerPayloads(next),
+        cabin: buildCabinPayload(next),
+        decisions: {
+          travelInsuranceDecision: next.insuranceInterest || undefined,
+          passengerDataReviewConfirmed: next.accuracyAcknowledged,
+          packetStorageConsent: next.preparationAuthorized,
+        },
       }).then((result) => {
         if (result.success) {
           setServerDraftVersion(result.result.newVersion);
-          emit("system", "review_ready_persisted", `Server updated: v${result.result.newVersion}, insurance=${next.insuranceInterest || "none"}`);
+          emit("system", "review_ready_persisted", `Server updated: v${result.result.newVersion}, insurance=${next.insuranceInterest || "none"}, travelers=${next.travelerCount}`);
         } else {
           setServerError(result.error);
           emit("system", "review_ready_failed", `Server update failed: ${result.error}`);

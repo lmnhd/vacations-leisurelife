@@ -209,6 +209,84 @@ export async function saveDecisions(
   );
 }
 
+// ── Save travelers (encrypted) ──────────────────────────────────────────────
+
+export interface SaveTravelersInput {
+  draftId: string;
+  expectedVersion: number;
+  travelers: TravelerRecord[];
+}
+
+/**
+ * Saves all traveler records for a draft as encrypted items.
+ * Each traveler is stored as a separate DynamoDB item with SK = TRAVELER#{travelerId}.
+ */
+export async function saveTravelers(
+  clients: DraftStoreClients,
+  config: DraftStoreConfig,
+  input: SaveTravelersInput
+): Promise<void> {
+  const pk = draftPk(input.draftId);
+  const nowIso = new Date().toISOString();
+
+  for (const traveler of input.travelers) {
+    const encryptedTraveler = await encryptJson(clients.encryption, traveler);
+    const item: DraftTravelerItem = {
+      pk,
+      sk: travelerSk(traveler.travelerId),
+      travelerId: traveler.travelerId,
+      isPrimary: traveler.isPrimary,
+      encryptedTraveler,
+      updatedAtIso: nowIso,
+      version: input.expectedVersion,
+    };
+
+    await clients.dynamo.send(
+      new PutItemCommand({
+        TableName: config.tableName,
+        Item: serializeTravelerItem(item) as never,
+      })
+    );
+  }
+}
+
+// ── Save cabin (encrypted) ──────────────────────────────────────────────────
+
+export interface SaveCabinInput {
+  draftId: string;
+  expectedVersion: number;
+  cabin: CabinRecord;
+}
+
+/**
+ * Saves a single cabin record for a draft as an encrypted item.
+ */
+export async function saveCabin(
+  clients: DraftStoreClients,
+  config: DraftStoreConfig,
+  input: SaveCabinInput
+): Promise<void> {
+  const pk = draftPk(input.draftId);
+  const nowIso = new Date().toISOString();
+  const encryptedCabin = await encryptJson(clients.encryption, input.cabin);
+
+  const item: DraftCabinItem = {
+    pk,
+    sk: cabinSk(input.cabin.cabinId),
+    cabinId: input.cabin.cabinId,
+    encryptedCabin,
+    updatedAtIso: nowIso,
+    version: input.expectedVersion,
+  };
+
+  await clients.dynamo.send(
+    new PutItemCommand({
+      TableName: config.tableName,
+      Item: serializeCabinItem(item) as never,
+    })
+  );
+}
+
 // ── Get draft (metadata + contact, not encrypted sub-items by default) ──────
 
 export interface DraftSnapshot {

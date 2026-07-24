@@ -40,11 +40,52 @@ export interface GuestSaveRequest {
     marketingConsent: boolean;
   };
   initialStatus: string;
+  travelers?: GuestTravelerPayload[];
+  cabin?: GuestCabinPayload;
   decisions?: {
     travelInsuranceDecision?: string;
     passengerDataReviewConfirmed?: boolean;
     packetStorageConsent?: boolean;
   };
+}
+
+export interface GuestTravelerPayload {
+  travelerId: string;
+  isPrimary: boolean;
+  classification: "adult" | "minor";
+  title?: string;
+  supplierGender?: string;
+  legalFirstName?: string;
+  legalMiddleName?: string;
+  legalLastName?: string;
+  legalSuffix?: string;
+  dateOfBirth?: string;
+  ageAtSailing?: number;
+  nationality?: string;
+  residencyCountry?: string;
+  residencyStateProvince?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  addressCity?: string;
+  addressState?: string;
+  addressPostalCode?: string;
+  addressCountry?: string;
+  email?: string;
+  phone?: string;
+  accessibilityNeeds?: string;
+  dietaryNeeds?: string;
+  rateQualificationClaims: never[];
+  fieldStatuses: Record<string, unknown>;
+}
+
+export interface GuestCabinPayload {
+  cabinId: string;
+  assignedTravelerIds: string[];
+  categoryPreference?: string;
+  cabinPreference?: string;
+  accessibilityRequirement?: string;
+  qualifyingTravelerIds: string[];
+  rateCandidates: never[];
 }
 
 export interface GuestSaveResponse {
@@ -102,16 +143,20 @@ export async function signalCallIntent(
 export async function markReviewReady(
   draftId: string,
   expectedVersion: number,
-  decisions?: {
-    travelInsuranceDecision?: string;
-    passengerDataReviewConfirmed?: boolean;
-    packetStorageConsent?: boolean;
+  payload?: {
+    travelers?: GuestTravelerPayload[];
+    cabin?: GuestCabinPayload;
+    decisions?: {
+      travelInsuranceDecision?: string;
+      passengerDataReviewConfirmed?: boolean;
+      packetStorageConsent?: boolean;
+    };
   }
 ): Promise<ApiResult<GuestReviewReadyResponse>> {
   return callApi<GuestReviewReadyResponse>("/api/booking-assistant/guest/review-ready", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ draftId, expectedVersion, decisions }),
+    body: JSON.stringify({ draftId, expectedVersion, ...payload }),
   });
 }
 
