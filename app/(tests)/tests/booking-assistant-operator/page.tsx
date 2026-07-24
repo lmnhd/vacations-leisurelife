@@ -137,6 +137,7 @@ export default function BookingAssistantOperatorConsolePage() {
   const [guestError, setGuestError] = useState<string | null>(null);
   const [guestSignalLoading, setGuestSignalLoading] = useState(false);
   const [guestReviewLoading, setGuestReviewLoading] = useState(false);
+  const [guestQuickSendLoading, setGuestQuickSendLoading] = useState(false);
 
   const [actionLog, setActionLog] = useState<string[]>([]);
 
@@ -351,6 +352,204 @@ export default function BookingAssistantOperatorConsolePage() {
 
   // ── Guest Simulator handlers ──
 
+  const handleQuickSend = useCallback(async () => {
+    setGuestQuickSendLoading(true);
+    setGuestError(null);
+    setGuestSaveResult(null);
+    try {
+      const draftId = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const nowIso = new Date().toISOString();
+
+      // Step 1: Create draft with full packet (travelers + cabin + decisions)
+      const saveRes = await fetch('/api/booking-assistant/guest/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftId,
+          personId: `person-${Date.now()}`,
+          dealSnapshot: {
+            dealId: 'test-deal-001',
+            packageId: 'pkg-001',
+            siid: 'SI-001',
+            cruiseLine: 'MSC Cruises',
+            ship: 'MSC Seaview',
+            sailingDateIso: '2026-08-22',
+            nights: 7,
+            departurePort: 'Miami',
+            itineraryLabel: '7-Night Caribbean',
+            dealAngle: 'Senior discount',
+            priceDisplay: '$599',
+            currency: 'USD',
+            taxFeeBasis: 'per person',
+            priceCapturedAtIso: nowIso,
+            sourceBookingUrl: 'https://example.com/deal/001',
+            linkHealthState: 'unknown',
+          },
+          contact: {
+            firstName: guestFirstName,
+            email: guestEmail,
+            phoneE164: `+1${guestPhone.replace(/\D/g, '')}`,
+            preferredChannel: 'phone',
+            emailVerified: true,
+            phoneVerified: true,
+            transactionalEmailConsent: true,
+            callbackConsent: true,
+            smsConsent: false,
+            marketingConsent: false,
+          },
+          travelers: [
+            {
+              travelerId: 'traveler-1',
+              isPrimary: true,
+              classification: 'adult',
+              title: 'Mr',
+              supplierGender: 'M',
+              legalFirstName: guestFirstName,
+              legalLastName: 'Testerson',
+              dateOfBirth: '1965-03-15',
+              ageAtSailing: 61,
+              nationality: 'US',
+              residencyCountry: 'US',
+              residencyStateProvince: 'FL',
+              accessibilityNeeds: 'none',
+              rateQualificationClaims: [],
+              fieldStatuses: {},
+            },
+            {
+              travelerId: 'traveler-2',
+              isPrimary: false,
+              classification: 'adult',
+              title: 'Mrs',
+              supplierGender: 'F',
+              legalFirstName: 'Jane',
+              legalLastName: 'Testerson',
+              dateOfBirth: '1968-07-22',
+              ageAtSailing: 58,
+              nationality: 'US',
+              residencyCountry: 'US',
+              residencyStateProvince: 'FL',
+              rateQualificationClaims: [],
+              fieldStatuses: {},
+            },
+          ],
+          cabin: {
+            cabinId: 'cabin-1',
+            assignedTravelerIds: ['traveler-1', 'traveler-2'],
+            categoryPreference: 'Balcony',
+            cabinPreference: 'Mid-ship',
+            accessibilityRequirement: 'none',
+            qualifyingTravelerIds: ['traveler-1', 'traveler-2'],
+            rateCandidates: [],
+          },
+          decisions: {
+            travelInsuranceDecision: 'Yes, I would like to discuss travel insurance options with the agent',
+            passengerDataReviewConfirmed: true,
+            packetStorageConsent: true,
+          },
+          initialStatus: 'collecting',
+        }),
+      });
+      const saveData = await saveRes.json() as ApiResult<GuestSaveResult>;
+      if (!saveData.success) {
+        setGuestError(saveData.error);
+        log(`Quick send save failed: ${saveData.error}`);
+        return;
+      }
+      setGuestSaveResult(saveData.result);
+      setActiveDraftId(saveData.result.draftId);
+      setActiveDraftVersion(saveData.result.version);
+      log(`Quick send: draft created ${saveData.result.draftId} v${saveData.result.version}, key=${saveData.result.fallbackCallKey.rawKey}`);
+
+      // Step 2: Mark review ready (transitions to review_ready)
+      const reviewRes = await fetch('/api/booking-assistant/guest/review-ready', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftId: saveData.result.draftId,
+          expectedVersion: saveData.result.version,
+          travelers: [
+            {
+              travelerId: 'traveler-1',
+              isPrimary: true,
+              classification: 'adult',
+              title: 'Mr',
+              supplierGender: 'M',
+              legalFirstName: guestFirstName,
+              legalLastName: 'Testerson',
+              dateOfBirth: '1965-03-15',
+              ageAtSailing: 61,
+              nationality: 'US',
+              residencyCountry: 'US',
+              residencyStateProvince: 'FL',
+              accessibilityNeeds: 'none',
+              rateQualificationClaims: [],
+              fieldStatuses: {},
+            },
+            {
+              travelerId: 'traveler-2',
+              isPrimary: false,
+              classification: 'adult',
+              title: 'Mrs',
+              supplierGender: 'F',
+              legalFirstName: 'Jane',
+              legalLastName: 'Testerson',
+              dateOfBirth: '1968-07-22',
+              ageAtSailing: 58,
+              nationality: 'US',
+              residencyCountry: 'US',
+              residencyStateProvince: 'FL',
+              rateQualificationClaims: [],
+              fieldStatuses: {},
+            },
+          ],
+          cabin: {
+            cabinId: 'cabin-1',
+            assignedTravelerIds: ['traveler-1', 'traveler-2'],
+            categoryPreference: 'Balcony',
+            cabinPreference: 'Mid-ship',
+            accessibilityRequirement: 'none',
+            qualifyingTravelerIds: ['traveler-1', 'traveler-2'],
+            rateCandidates: [],
+          },
+          decisions: {
+            travelInsuranceDecision: 'Yes, I would like to discuss travel insurance options with the agent',
+            passengerDataReviewConfirmed: true,
+            packetStorageConsent: true,
+          },
+        }),
+      });
+      const reviewData = await reviewRes.json() as ApiResult<{ newVersion: number }>;
+      if (!reviewData.success) {
+        log(`Quick send review-ready failed: ${reviewData.error}`);
+        return;
+      }
+      setActiveDraftVersion(reviewData.result.newVersion);
+      log(`Quick send: review ready v${reviewData.result.newVersion}`);
+
+      // Step 3: Signal call intent (transitions to call_signal_pending)
+      const signalRes = await fetch('/api/booking-assistant/guest/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftId: saveData.result.draftId,
+          expectedVersion: reviewData.result.newVersion,
+        }),
+      });
+      const signalData = await signalRes.json() as ApiResult<GuestSignalResult>;
+      if (signalData.success) {
+        setActiveDraftVersion(signalData.result.newVersion);
+        log(`Quick send: call intent signaled v${signalData.result.newVersion} — draft should appear in queue now`);
+      } else {
+        log(`Quick send signal failed: ${signalData.error}`);
+      }
+    } catch (err) {
+      setGuestError(err instanceof Error ? err.message : 'Quick send failed');
+      log(`Quick send error: ${err instanceof Error ? err.message : 'unknown'}`);
+    } finally {
+      setGuestQuickSendLoading(false);
+    }
+  }, [guestFirstName, guestEmail, guestPhone, log]);
+
   const handleGuestSave = useCallback(async () => {
     setGuestSaveLoading(true);
     setGuestError(null);
@@ -474,7 +673,7 @@ export default function BookingAssistantOperatorConsolePage() {
             <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Guest Flow Simulator (E2E)</h2>
             <span className="text-[10px] text-slate-600">Creates real draft in DynamoDB via guest API</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div>
               <label className="text-xs text-slate-400 block mb-1">First Name</label>
               <input
@@ -509,6 +708,15 @@ export default function BookingAssistantOperatorConsolePage() {
                 className="w-full px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded text-white font-medium"
               >
                 {guestSaveLoading ? 'Creating...' : 'Create Draft'}
+              </button>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={handleQuickSend}
+                disabled={guestQuickSendLoading}
+                className="w-full px-4 py-2 text-sm bg-sky-600 hover:bg-sky-500 disabled:opacity-50 rounded text-white font-medium"
+              >
+                {guestQuickSendLoading ? 'Sending...' : 'Quick Send Full Packet'}
               </button>
             </div>
           </div>
