@@ -60,7 +60,7 @@ export const bookingStatusTransitions = {
   paused_by_guest: ["collecting", "needs_guest", "human_requested", "review_ready", "reconciliation_review", "cancelled", "abandoned"],
   needs_guest: ["paused_by_guest", "collecting", "human_requested", "review_ready", "reconciliation_review"],
   human_requested: ["agent_claimed", "collecting", "cancelled"],
-  review_ready: ["ready_to_call_agent", "paused_by_guest", "needs_guest", "human_requested", "cancelled"],
+  review_ready: ["ready_to_call_agent", "call_signal_pending", "paused_by_guest", "needs_guest", "human_requested", "cancelled"],
   ready_to_call_agent: ["call_signal_pending", "agent_claimed", "needs_guest", "cancelled", "abandoned"],
   call_signal_pending: ["calling_now", "ready_to_call_agent", "cancelled"],
   calling_now: ["agent_claimed", "ready_to_call_agent", "needs_guest", "cancelled"],
