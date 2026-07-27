@@ -11,8 +11,10 @@
 
 import type { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
+  GetItemCommand,
   PutItemCommand,
   QueryCommand,
+  TransactWriteItemsCommand,
 } from "@aws-sdk/client-dynamodb";
 
 import {
@@ -43,6 +45,11 @@ export interface JournalEventRecord extends JournalEventInput {
   receivedAtIso: string;
 }
 
+export interface BuiltJournalEvent {
+  item: Record<string, { S?: string; N?: string; M?: Record<string, { S?: string; N?: string }> }>;
+  record: JournalEventRecord;
+}
+
 function generateEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -51,17 +58,12 @@ function skForEvent(occurredAtIso: string, eventId: string): string {
   return `EVENT#${occurredAtIso}#${eventId}`;
 }
 
-/**
- * Write a single journal event. This is the atomic unit — callers
- * must ensure this succeeds before considering a state mutation complete.
- */
-export async function writeJournalEvent(
-  dynamo: DynamoDBClient,
-  tableName: string,
-  input: JournalEventInput
-): Promise<JournalEventRecord> {
-  const journalEventId = generateEventId();
-  const receivedAtIso = new Date().toISOString();
+export function buildJournalEvent(
+  input: JournalEventInput,
+  overrides?: { journalEventId?: string; receivedAtIso?: string }
+): BuiltJournalEvent {
+  const journalEventId = overrides?.journalEventId ?? generateEventId();
+  const receivedAtIso = overrides?.receivedAtIso ?? new Date().toISOString();
   const pk = `DRAFT#${input.draftId}`;
   const sk = skForEvent(input.occurredAtIso, journalEventId);
 
@@ -82,19 +84,90 @@ export async function writeJournalEvent(
     ...(Object.keys(serializedPayload).length > 0 && { payload: { M: serializedPayload } }),
   };
 
+  return {
+    item,
+    record: {
+      ...input,
+      contractVersion: BOOKING_CONTRACT_VERSION,
+      journalEventId,
+      receivedAtIso,
+    },
+  };
+}
+
+/**
+ * Write a single journal event. This is the atomic unit — callers
+ * must ensure this succeeds before considering a state mutation complete.
+ */
+export async function writeJournalEvent(
+  dynamo: DynamoDBClient,
+  tableName: string,
+  input: JournalEventInput
+): Promise<JournalEventRecord> {
+  const built = buildJournalEvent(input);
+
   await dynamo.send(
     new PutItemCommand({
       TableName: tableName,
-      Item: item as never,
+      Item: built.item as never,
     })
   );
 
-  return {
+  return built.record;
+}
+
+export async function appendJournalObservation(
+  dynamo: DynamoDBClient,
+  tableName: string,
+  input: Omit<JournalEventInput, "expectedDraftVersion" | "sequence">
+): Promise<JournalEventRecord> {
+  const pk = `DRAFT#${input.draftId}`;
+  const meta = await dynamo.send(
+    new GetItemCommand({
+      TableName: tableName,
+      Key: { PK: { S: pk }, SK: { S: "META" } },
+      ProjectionExpression: "#version, journalSequence",
+      ExpressionAttributeNames: { "#version": "version" },
+    })
+  );
+  const version = Number((meta.Item?.version as { N?: string })?.N ?? "0");
+  const priorSequence = Number((meta.Item?.journalSequence as { N?: string })?.N ?? "0");
+  if (version < 1) throw new Error("Draft metadata was not found for journal observation");
+  const sequence = priorSequence + 1;
+  const built = buildJournalEvent({
     ...input,
-    contractVersion: BOOKING_CONTRACT_VERSION,
-    journalEventId,
-    receivedAtIso,
-  };
+    expectedDraftVersion: version,
+    sequence,
+  });
+  await dynamo.send(
+    new TransactWriteItemsCommand({
+      TransactItems: [
+        {
+          Update: {
+            TableName: tableName,
+            Key: { PK: { S: pk }, SK: { S: "META" } },
+            UpdateExpression: "SET journalSequence = :sequence, lastJournalEventAtIso = :occurredAtIso",
+            ConditionExpression: "#version = :version AND journalSequence = :priorSequence",
+            ExpressionAttributeNames: { "#version": "version" },
+            ExpressionAttributeValues: {
+              ":version": { N: String(version) },
+              ":priorSequence": { N: String(priorSequence) },
+              ":sequence": { N: String(sequence) },
+              ":occurredAtIso": { S: input.occurredAtIso },
+            },
+          },
+        },
+        {
+          Put: {
+            TableName: tableName,
+            Item: built.item as never,
+            ConditionExpression: "attribute_not_exists(PK)",
+          },
+        },
+      ],
+    })
+  );
+  return built.record;
 }
 
 /** Query journal events for a draft, ordered by SK (chronological). */
@@ -147,6 +220,23 @@ function parseJournalItem(item: Record<string, unknown>): JournalEventRecord {
     const val = item[key] as { S?: string; N?: string } | undefined;
     return val?.S ?? val?.N ?? "";
   };
+  const payloadMap = (item.payload as { M?: Record<string, { S?: string; N?: string }> } | undefined)?.M ?? {};
+  const payload: JournalPayload = {};
+  for (const [key, value] of Object.entries(payloadMap)) {
+    if (value.N !== undefined) {
+      payload[key] = Number(value.N);
+    } else if (value.S !== undefined) {
+      if (value.S === "true") payload[key] = true;
+      else if (value.S === "false") payload[key] = false;
+      else {
+        try {
+          payload[key] = JSON.parse(value.S) as unknown;
+        } catch {
+          payload[key] = value.S;
+        }
+      }
+    }
+  }
   return {
     draftId: get("PK").replace("DRAFT#", ""),
     eventType: get("eventType") as BookingJournalEventType,
@@ -156,7 +246,7 @@ function parseJournalItem(item: Record<string, unknown>): JournalEventRecord {
     idempotencyKey: get("idempotencyKey"),
     expectedDraftVersion: Number(get("expectedDraftVersion")),
     sequence: Number(get("sequence")),
-    payload: {},
+    payload,
     contractVersion: Number(get("contractVersion")) as typeof BOOKING_CONTRACT_VERSION,
     journalEventId: get("journalEventId"),
     receivedAtIso: get("receivedAtIso"),

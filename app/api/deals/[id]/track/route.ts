@@ -4,7 +4,10 @@
  * Anonymous reach/engagement beacon for a public Deal page — the Deals-side
  * analog of `/api/groups/campaign/[slug]/analytics/page-view`. Records a
  * `deal_page_view`, `deal_engaged`, or `book_now_click` event against the deal's
- * events partition so the operator dashboard can show per-deal traffic.
+ * events partition so the operator dashboard can show per-deal traffic. Also
+ * carries the booking portal's client-side milestones: `booking_portal_entered`
+ * (anonymous) and `booking_contact_captured` (guest-supplied name+email, so the
+ * dashboard can surface partial leads who never completed a server save).
  *
  * Only publicly eligible Deals are tracked (isPublicDealAvailableById gates on
  * bookable + approved + valid link). Tracking is best-effort and never fails
@@ -46,7 +49,17 @@ const AttributionSchema = z.object({
 const TrackSchema = z.object({
   attribution: AttributionSchema.optional(),
   metadata: z.record(z.string().trim(), z.string().trim()).optional(),
-  eventType: z.enum(["deal_page_view", "deal_engaged", "book_now_click"]).optional(),
+  eventType: z
+    .enum([
+      "deal_page_view",
+      "deal_engaged",
+      "book_now_click",
+      "booking_portal_entered",
+      "booking_contact_captured",
+    ])
+    .optional(),
+  /** Only honored for booking_contact_captured — the guest supplied it in the flow. */
+  email: z.string().trim().email().max(254).optional(),
 });
 
 function truncate(value: string | null, maxLength: number): string | undefined {
@@ -83,10 +96,19 @@ export async function POST(
   const attribution = normalizeAttribution(parsed.data.attribution ?? {});
   const userAgent = truncate(request.headers.get("user-agent"), 180);
   const eventType = parsed.data.eventType ?? "deal_page_view";
+  const isBookingEvent =
+    eventType === "booking_portal_entered" || eventType === "booking_contact_captured";
   const metadata = {
     ...(parsed.data.metadata ?? {}),
-    eventFamily: "deal_traffic",
+    eventFamily: isBookingEvent ? "booking_flow" : "deal_traffic",
     ...(userAgent ? { userAgent } : {}),
+  };
+
+  const NOTES: Record<string, string> = {
+    deal_engaged: "Anonymous one-time deal engagement.",
+    book_now_click: "Visitor clicked the booking handoff.",
+    booking_portal_entered: "Guest entered the booking portal.",
+    booking_contact_captured: "Guest confirmed contact details in the booking flow.",
   };
 
   const event = await appendDealEvent({
@@ -94,12 +116,8 @@ export async function POST(
     eventType,
     attribution,
     metadata,
-    notes:
-      eventType === "deal_engaged"
-        ? "Anonymous one-time deal engagement."
-        : eventType === "book_now_click"
-          ? "Visitor clicked the booking handoff."
-          : "Anonymous deal page view.",
+    email: eventType === "booking_contact_captured" ? parsed.data.email : undefined,
+    notes: NOTES[eventType] ?? "Anonymous deal page view.",
   });
 
   return NextResponse.json({ success: true, tracked: Boolean(event), eventId: event?.eventId });

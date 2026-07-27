@@ -18,6 +18,7 @@ import {
   buildTripManifestId,
   defaultDealExpiresOnIso,
   evaluateApprovalGates,
+  hasDealEnteredInventoryCutoffWindow,
   hasDealSailed,
   isDealExpired,
   isDealHomepageEligible,
@@ -280,11 +281,11 @@ const deal = await assembleCuratedDeal({ ...baseInput, promoRecords: [promoRecor
 
 console.log("Assembly:");
 check("deal id carried through", deal.id === baseInput.dealId);
-// The fixture's expiry (2999-01-01) is later than the sail date, so assembly
-// caps it: a deal can never be sold after its own departure.
+// The fixture's expiry (2999-01-01) is later than the pre-sail inventory cutoff,
+// so assembly caps it to 45 days before departure.
 check(
-  "expiration later than the sail date is capped at the sail date",
-  deal.expiresOnIso === baseInput.cruiseFacts.sailDateIso,
+  "expiration later than the inventory cutoff is capped to 45 days before sailing",
+  deal.expiresOnIso === "2026-09-24",
   deal.expiresOnIso
 );
 {
@@ -443,6 +444,21 @@ const expiredApprovedDeal: CuratedOdysseusDeal = {
 };
 check("expired approved deal is not homepage eligible", !isDealHomepageEligible(expiredApprovedDeal));
 check("missing expiration keeps legacy approved deal eligible", isDealHomepageEligible({ ...approved.deal, expiresOnIso: undefined }));
+check(
+  "deal stays visible before the 45-day inventory cutoff",
+  !hasDealEnteredInventoryCutoffWindow(approved.deal, new Date("2026-09-23T23:59:59.999Z"))
+);
+check(
+  "deal drops once the 45-day inventory cutoff window begins",
+  hasDealEnteredInventoryCutoffWindow(approved.deal, new Date("2026-09-25T00:00:00.000Z"))
+);
+check(
+  "within-cutoff deal is not homepage eligible even with valid link and approval",
+  !isDealHomepageEligible({
+    ...approved.deal,
+    cruiseFacts: { ...approved.deal.cruiseFacts, sailDateIso: "2026-08-20" },
+  })
+);
 
 // Sailed-departure guard: independent of expiresOnIso, so legacy deals whose
 // stored expiry outlives the departure (pre-cap assemblies) still drop off.

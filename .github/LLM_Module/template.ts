@@ -1,11 +1,11 @@
 /**
- * LLM GATEWAY v2.6 (Updated: March 2026)
+ * LLM GATEWAY v2.7 (Updated: July 2026)
  * Centralized Model Orchestrator for Next.js Projects
  */
 
 export enum ModelName {
   // --- TIER 1: HEAVY REASONING & ARCHITECTURE ---
-  GPT_5_HIGH = 'gpt-5.2-high',          // Benchmark: 93.2% GPQA | SOTA Logic
+  GPT_5_HIGH = 'gpt-5.6-sol',           // Frontier reasoning and tool use
   CLAUDE_4_OPUS = 'claude-4.6-opus',    // Benchmark: 80.8% SWE-bench | SOTA Agentic Coding
   GEMINI_3_PRO = 'gemini-3.1-pro',      // Benchmark: 77.1% ARC-AGI-2 | Best Multimodal/Context
 
@@ -36,10 +36,10 @@ export interface ModelConfig {
 export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
   [ModelName.GPT_5_HIGH]: {
     provider: 'openai',
-    maxTokens: 16384,
-    defaultTemp: 0.7,
-    contextWindow: 128000,
-    scores: { coding: 80, logic: 93, speed: 40, context: 85 }
+    maxTokens: 128000,
+    defaultTemp: 0.4,
+    contextWindow: 1050000,
+    scores: { coding: 98, logic: 99, speed: 45, context: 99 }
   },
   [ModelName.CLAUDE_4_OPUS]: {
     provider: 'anthropic',

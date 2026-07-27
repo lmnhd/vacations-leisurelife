@@ -11,8 +11,8 @@
  */
 
 import { getModelConfig, ModelName } from './models';
-import type { LLMCallOptions, LLMResponse } from './types';
-import { callOpenAI }    from './providers/openai';
+import type { LLMCallOptions, LLMResponse, ToolAgentOptions, ToolAgentResult } from './types';
+import { callOpenAI, runOpenAIResponsesToolAgent } from './providers/openai';
 import { callAnthropic } from './providers/anthropic';
 import { callGoogle }    from './providers/google';
 import { callGroq }      from './providers/groq';
@@ -75,6 +75,21 @@ export async function callLLM(
     default:
       throw new Error(`[AI Gateway] Unsupported provider: "${config.provider}" for model "${model}"`);
   }
+}
+
+export async function runToolAgent(
+  model: ModelName,
+  prompt: string,
+  options: ToolAgentOptions
+): Promise<ToolAgentResult> {
+  const config = getModelConfig(model);
+  if (config.provider !== "openai") {
+    throw new Error(`[AI Gateway] Tool agents currently require an OpenAI model; received "${model}".`);
+  }
+
+  const apiId = config.apiId ?? model;
+  log(model, config.provider, apiId, config.scores);
+  return runOpenAIResponsesToolAgent(apiId, prompt, options);
 }
 
 // ─── Streaming ───────────────────────────────────────────────────────────────

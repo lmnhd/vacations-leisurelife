@@ -30,6 +30,9 @@ export async function createOperatorRouteContext(
   return {
     clients,
     operatorClients,
-    operatorSessionId: `local-operator-${Date.now()}`,
+    // The pilot has one localhost-only operator. This stable identifier lets a
+    // claim lease survive the separate verification/reveal/processing requests.
+    // A multi-operator deployment must replace it with authenticated identity.
+    operatorSessionId: "local-operator-console",
   };
 }

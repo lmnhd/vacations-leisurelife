@@ -1,0 +1,1 @@
+While I'm thinking about it, when the landing page comes up on a desktop computer, the call agent button should pop up the phone number and tell the person to call instead of trying to trigger the call. This should follow the same rules as the call flow, considering the agent mode. 

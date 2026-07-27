@@ -58,9 +58,31 @@ export function GuestInfoPanel({ draft }: GuestInfoPanelProps) {
   const firstName = s(contact.firstName);
   const email = s(contact.email);
   const phone = s(contact.phoneE164) || s(contact.phone);
+  const bookingLink = s(deal.sourceBookingUrl);
 
   return (
     <div className="space-y-4">
+      <div className="rounded-lg border border-sky-700/70 bg-sky-950/40 p-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-sky-200">Start the live booking</h3>
+        <p className="mt-1 text-[11px] text-slate-400">
+          Open a fresh Odysseus session from the same booking link the guest used. Do not reuse an expired supplier session.
+        </p>
+        {bookingLink ? (
+          <a
+            href={bookingLink}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 block rounded bg-sky-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-sky-500"
+          >
+            Open booking link in new tab
+          </a>
+        ) : (
+          <p className="mt-3 text-xs text-amber-300">
+            No booking link was stored with this older draft. Create a new packet from the funnel after this update.
+          </p>
+        )}
+      </div>
+
       {/* Contact Info */}
       <SectionCard title="Guest Contact">
         <Field label="Name" value={firstName} />
@@ -142,6 +164,60 @@ export function GuestInfoPanel({ draft }: GuestInfoPanelProps) {
           })}
         </SectionCard>
       )}
+
+      <SectionCard title="Qualification and proof readiness">
+        {travelers.every((traveler) => !Array.isArray(traveler.rateQualificationClaims) || traveler.rateQualificationClaims.length === 0) ? (
+          <p className="text-slate-500">No qualification claims are stored.</p>
+        ) : (
+          travelers.flatMap((traveler, travelerIndex) => {
+            const claims = Array.isArray(traveler.rateQualificationClaims)
+              ? traveler.rateQualificationClaims as Array<Record<string, unknown>>
+              : [];
+            return claims.map((claim, claimIndex) => (
+              <div
+                key={`${travelerIndex}-${claimIndex}`}
+                className="border-b border-slate-800 py-2 last:border-0"
+              >
+                <Field label="Traveler" value={s(traveler.travelerId) || `Traveler ${travelerIndex + 1}`} />
+                <Field label="Qualification" value={s(claim.qualificationType) || s(claim.claimType)} />
+                <Field label="Status" value={s(claim.status) || s(claim.verificationStatus)} />
+                <Field label="Proof" value={s(claim.proofType) || s(claim.proofRequirement)} />
+              </div>
+            ));
+          })
+        )}
+      </SectionCard>
+
+      <SectionCard title="Exact rate comparison">
+        {draft.cabins.every((cabin) => !Array.isArray(cabin.rateCandidates) || cabin.rateCandidates.length === 0) ? (
+          <p className="text-slate-500">
+            No verified supplier rate candidates are stored. Compare exact live totals before selecting.
+          </p>
+        ) : (
+          draft.cabins.flatMap((cabin, cabinIndex) => {
+            const candidates = Array.isArray(cabin.rateCandidates)
+              ? cabin.rateCandidates as Array<Record<string, unknown>>
+              : [];
+            return candidates.map((candidate, candidateIndex) => (
+              <div
+                key={`${cabinIndex}-${candidateIndex}`}
+                className="border-b border-slate-800 py-2 last:border-0"
+              >
+                <Field label="Cabin" value={s(cabin.cabinId) || `Cabin ${cabinIndex + 1}`} />
+                <Field label="Rate" value={s(candidate.rateLabel)} />
+                <Field label="Supplier code" value={s(candidate.supplierRateCode)} />
+                <Field label="Candidate total" value={s(candidate.totalIncludingTaxesFees)} />
+                <Field label="Ordinary baseline" value={s(candidate.ordinaryRateBaselineTotal)} />
+                <Field label="Proof status" value={s(candidate.verificationStatus)} />
+                <Field label="Combinability" value={s(candidate.combinabilityResult)} />
+              </div>
+            ));
+          })
+        )}
+        <p className="mt-2 text-[10px] text-amber-300">
+          Candidate display only. Never auto-select a rate; confirm the guest choice against current inventory and rules.
+        </p>
+      </SectionCard>
 
       {/* Address (from primary traveler or metadata) */}
       {travelers.length > 0 && (

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createGuestRouteContext } from "@/lib/booking-assistant/guest-route-context";
+import { ensureGuestDraftIsActive } from "@/lib/booking-assistant/guest-service";
 import { readBookingAssistantEnvConfig } from "@/lib/booking-assistant/operator-config";
 import { signalCallIntent } from "@/lib/booking-assistant/guest-service";
+import { requireGuestDraftSession } from "@/lib/booking-assistant/guest-authorization";
+import { BOOKING_GUEST_SESSION_COOKIE } from "@/lib/booking-assistant/resume-tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -28,15 +31,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 400 }
       );
     }
+    const session = requireGuestDraftSession(
+      request.cookies.get(BOOKING_GUEST_SESSION_COOKIE)?.value,
+      body.draftId
+    );
+    const activeDraft = await ensureGuestDraftIsActive(
+      ctx.clients,
+      operatorService,
+      body.draftId,
+      session.personId,
+      "call_signal"
+    );
 
     const result = await signalCallIntent(ctx.clients, operatorService, {
       draftId: body.draftId,
-      expectedVersion: body.expectedVersion,
+      expectedVersion: activeDraft.metadata.version,
     });
 
     return NextResponse.json({ success: true, result });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Call intent signal failed";
+    console.error("[booking-assistant] Guest call signal failed:", detail);
     return NextResponse.json({ success: false, error: detail }, { status: 500 });
   }
 }

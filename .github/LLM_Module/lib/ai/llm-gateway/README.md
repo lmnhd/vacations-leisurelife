@@ -42,12 +42,12 @@ scripts/
 
 ---
 
-## Model Tiers (March 2026)
+## Model Tiers (July 2026)
 
 | Tier | Model | Best For | Coding | Logic |
 |------|-------|----------|--------|-------|
 | 1 | `CLAUDE_4_OPUS` | Code fixes, SWE tasks | 95 | 91 |
-| 1 | `GPT_5_HIGH` | Complex reasoning | 80 | 93 |
+| 1 | `GPT_5_HIGH` (`gpt-5.6-sol`) | Frontier reasoning and tool use | 98 | 99 |
 | 1 | `GEMINI_3_PRO` | 2M-token analysis | 85 | 88 |
 | 2 | `CLAUDE_4_SONNET` | Agentic workflows | 88 | 85 |
 | 2 | `GPT_5_MEDIUM` | Balanced general use | 75 | 82 |

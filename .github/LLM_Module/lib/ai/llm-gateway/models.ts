@@ -1,5 +1,5 @@
 /**
- * LLM GATEWAY - MODEL REGISTRY  (Updated: March 2026)
+ * LLM GATEWAY - MODEL REGISTRY  (Updated: July 2026)
  * ─────────────────────────────────────────────────────
  * Single source of truth for every model the app can use.
  * Run `scripts/update-model-specs.ts` to refresh scores.
@@ -14,7 +14,7 @@ import type { ModelConfig } from './types';
 
 export enum ModelName {
   // TIER 1 · Heavy Reasoning & Architecture
-  GPT_5_HIGH          = 'gpt-5.2-high',
+  GPT_5_HIGH          = 'gpt-5.6-sol',
   CLAUDE_4_OPUS       = 'claude-4.6-opus',
   GEMINI_3_PRO        = 'gemini-3.1-pro',
 
@@ -70,12 +70,12 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
 
   [ModelName.GPT_5_HIGH]: {
     provider:      'openai',
-    apiId:         'gpt-5',         // map to actual OpenAI API id
-    maxTokens:     16_384,
-    defaultTemp:   0.7,
-    contextWindow: 128_000,
-    lastVerified:  '2026-03-01',
-    scores:        { coding: 80, logic: 93, speed: 40, context: 85 },
+    apiId:         'gpt-5.6-sol',
+    maxTokens:     128_000,
+    defaultTemp:   0.4,
+    contextWindow: 1_050_000,
+    lastVerified:  '2026-07-26',
+    scores:        { coding: 98, logic: 99, speed: 45, context: 99 },
   },
 
   [ModelName.CLAUDE_4_OPUS]: {

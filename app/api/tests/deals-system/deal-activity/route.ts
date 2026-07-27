@@ -13,6 +13,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   computeDealActivitySummary,
+  computeDealBookingFunnel,
+  computeDealBookingLeads,
   computeDealDailyActivity,
   listDealEvents,
 } from "@/lib/cb/deals-system/deal-events-store";
@@ -35,9 +37,18 @@ export async function GET(request: NextRequest) {
   const events = await listDealEvents(dealId);
   const summary = computeDealActivitySummary(dealId, events);
   const daily = computeDealDailyActivity(events);
+  const bookingFunnel = computeDealBookingFunnel(events);
+  const bookingLeads = computeDealBookingLeads(events);
 
   // Most-recent-first, capped — the timeline is a glance, not an export.
   const recent = [...events].reverse().slice(0, RECENT_EVENT_LIMIT);
 
-  return NextResponse.json({ ok: true, summary, daily, events: recent });
+  return NextResponse.json({
+    ok: true,
+    summary,
+    daily,
+    bookingFunnel,
+    bookingLeads,
+    events: recent,
+  });
 }

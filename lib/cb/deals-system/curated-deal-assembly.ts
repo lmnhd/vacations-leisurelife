@@ -628,6 +628,8 @@ export function rejectCuratedDeal(
 
 /** Default public-visibility window: a deal expires 90 days after it is assembled. */
 export const DEFAULT_DEAL_EXPIRY_DAYS = 90;
+/** Homepage Deals should drop out before the common late-inventory crunch. */
+export const HOMEPAGE_INVENTORY_CUTOFF_LEAD_DAYS = 45;
 
 /**
  * The expiration a deal gets when the operator does not supply one: exactly
@@ -642,32 +644,20 @@ export function defaultDealExpiresOnIso(fromIso: string = new Date().toISOString
   return expires.toISOString().slice(0, 10);
 }
 
-/**
- * A deal can never be sold after its own departure: when the sail date is known
- * and earlier than the proposed expiry, the sail date wins. Dates compare as
- * plain YYYY-MM-DD strings (both sides are date-only), and an absent/unparseable
- * sail date leaves the expiry untouched.
- */
-export function capExpiryAtSailDate(
-  expiresOnIso: string,
-  sailDateIso: string | undefined
-): string {
-  const sail = sailDateIso?.trim();
-  if (!sail || !/^\d{4}-\d{2}-\d{2}$/.test(sail)) return expiresOnIso;
-  const expiry = expiresOnIso.slice(0, 10);
-  return sail < expiry ? sail : expiresOnIso;
-}
-
-function dealExpiryDate(expiresOnIso: string | undefined): Date | undefined {
-  const trimmed = expiresOnIso?.trim();
+function parseDateOnlyParts(
+  dateIso: string | undefined
+): { year: number; month: number; day: number } | undefined {
+  const trimmed = dateIso?.trim();
   if (!trimmed) return undefined;
 
-  if (trimmed.includes("T")) {
-    const exactDate = new Date(trimmed);
-    return Number.isNaN(exactDate.getTime()) ? undefined : exactDate;
+  const parts = trimmed.split("-");
+  if (parts.length !== 3) return undefined;
+
+  const [yearRaw, monthRaw, dayRaw] = parts;
+  if (yearRaw.length !== 4 || monthRaw.length !== 2 || dayRaw.length !== 2) {
+    return undefined;
   }
 
-  const [yearRaw, monthRaw, dayRaw] = trimmed.split("-");
   const year = Number(yearRaw);
   const month = Number(monthRaw);
   const day = Number(dayRaw);
@@ -683,15 +673,60 @@ function dealExpiryDate(expiresOnIso: string | undefined): Date | undefined {
     return undefined;
   }
 
-  const date = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+  const candidate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
   if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
+    candidate.getUTCFullYear() !== year ||
+    candidate.getUTCMonth() !== month - 1 ||
+    candidate.getUTCDate() !== day
   ) {
     return undefined;
   }
-  return date;
+
+  return { year, month, day };
+}
+
+function dateOnlyToUtcEnd(parts: { year: number; month: number; day: number }): Date {
+  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 23, 59, 59, 999));
+}
+
+function homepageInventoryCutoffDateOnly(
+  sailDateIso: string | undefined
+): string | undefined {
+  const sailParts = parseDateOnlyParts(sailDateIso);
+  if (!sailParts) return undefined;
+
+  const cutoff = new Date(Date.UTC(sailParts.year, sailParts.month - 1, sailParts.day, 0, 0, 0, 0));
+  cutoff.setUTCDate(cutoff.getUTCDate() - HOMEPAGE_INVENTORY_CUTOFF_LEAD_DAYS);
+
+  return cutoff.toISOString().slice(0, 10);
+}
+
+/**
+ * Homepage Deals should never outlive the pre-sail inventory cutoff window:
+ * when the sail date is known and the proposed expiry runs later than
+ * sailDate - HOMEPAGE_INVENTORY_CUTOFF_LEAD_DAYS, the cutoff date wins.
+ */
+export function capExpiryAtSailDate(
+  expiresOnIso: string,
+  sailDateIso: string | undefined
+): string {
+  const cutoffIso = homepageInventoryCutoffDateOnly(sailDateIso);
+  if (!cutoffIso) return expiresOnIso;
+  const expiry = expiresOnIso.slice(0, 10);
+  return cutoffIso < expiry ? cutoffIso : expiresOnIso;
+}
+
+function dealExpiryDate(expiresOnIso: string | undefined): Date | undefined {
+  const trimmed = expiresOnIso?.trim();
+  if (!trimmed) return undefined;
+
+  if (trimmed.includes("T")) {
+    const exactDate = new Date(trimmed);
+    return Number.isNaN(exactDate.getTime()) ? undefined : exactDate;
+  }
+
+  const parts = parseDateOnlyParts(trimmed);
+  return parts ? dateOnlyToUtcEnd(parts) : undefined;
 }
 
 export function isDealExpired(
@@ -718,6 +753,21 @@ export function hasDealSailed(
 }
 
 /**
+ * True once the sailing enters the late-inventory risk window. This is the
+ * simple homepage safety rule: when we are within
+ * HOMEPAGE_INVENTORY_CUTOFF_LEAD_DAYS of departure, hide the Deal even if a
+ * stored expiry is later.
+ */
+export function hasDealEnteredInventoryCutoffWindow(
+  deal: Pick<CuratedOdysseusDeal, "cruiseFacts">,
+  now = new Date()
+): boolean {
+  const cutoffIso = homepageInventoryCutoffDateOnly(deal.cruiseFacts.sailDateIso);
+  const cutoffDate = dealExpiryDate(cutoffIso);
+  return cutoffDate ? now.getTime() > cutoffDate.getTime() : false;
+}
+
+/**
  * Single source of truth for homepage eligibility. The homepage filter must use
  * this; never re-derive the rule inline.
  */
@@ -727,6 +777,7 @@ export function isDealHomepageEligible(deal: CuratedOdysseusDeal): boolean {
     deal.operatorApproval?.status === "approved" &&
     deal.linkHealth.status === "valid" &&
     !isDealExpired(deal) &&
+    !hasDealEnteredInventoryCutoffWindow(deal) &&
     !hasDealSailed(deal) &&
     !deal.operatorVisibility?.hidden
   );

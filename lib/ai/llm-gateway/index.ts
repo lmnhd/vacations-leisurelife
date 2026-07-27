@@ -10,7 +10,7 @@
  */
 
 // Core call function + streaming
-export { callLLM, streamLLM } from './gateway';
+export { callLLM, runToolAgent, streamLLM } from './gateway';
 export { generateStructuredObject } from './structured';
 
 // Model enum, task map, config helpers
@@ -25,6 +25,11 @@ export type {
   AgentInput,
   AgentResult,
   ProviderName,
+  ToolAgentFunctionDefinition,
+  ToolAgentOptions,
+  ToolAgentResult,
+  ToolAgentSource,
+  ToolAgentExecution,
 } from './types';
 export type { StructuredObjectOptions, StructuredObjectResult } from './structured';
 

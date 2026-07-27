@@ -68,6 +68,7 @@ export function CallChecklist({
   const [checkedSteps, setCheckedSteps] = useState<Set<string>>(new Set());
   const [selectedOutcome, setSelectedOutcome] = useState("confirmed");
   const [outcomeNotes, setOutcomeNotes] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const toggleStep = useCallback((id: string) => {
     setCheckedSteps((prev) => {
@@ -79,18 +80,33 @@ export function CallChecklist({
   }, []);
 
   const handleClaim = useCallback(async () => {
-    await onClaim();
-    setCheckedSteps((prev) => new Set(prev).add("claim"));
+    setActionError(null);
+    try {
+      await onClaim();
+      setCheckedSteps((prev) => new Set(prev).add("claim"));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Claim failed");
+    }
   }, [onClaim]);
 
   const handleProcessing = useCallback(async () => {
-    await onProcessing();
-    setCheckedSteps((prev) => new Set(prev).add("start_processing"));
+    setActionError(null);
+    try {
+      await onProcessing();
+      setCheckedSteps((prev) => new Set(prev).add("start_processing"));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Processing start failed");
+    }
   }, [onProcessing]);
 
   const handleOutcome = useCallback(async () => {
-    await onOutcome(selectedOutcome, outcomeNotes);
-    setCheckedSteps((prev) => new Set(prev).add("record_outcome"));
+    setActionError(null);
+    try {
+      await onOutcome(selectedOutcome, outcomeNotes);
+      setCheckedSteps((prev) => new Set(prev).add("record_outcome"));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Outcome recording failed");
+    }
   }, [onOutcome, selectedOutcome, outcomeNotes]);
 
   const phases = ["pre_call", "on_call", "post_call"] as const;
@@ -100,6 +116,7 @@ export function CallChecklist({
       <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
         <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-1">Booking Call Checklist</h3>
         <p className="text-[11px] text-slate-500 mb-4">Follow these steps in order. Check off each step as you complete it.</p>
+        {actionError && <p className="mb-3 text-[11px] text-rose-300">Action failed: {actionError}</p>}
 
         {phases.map((phase) => {
           const phaseSteps = STEPS.filter((s) => s.phase === phase);

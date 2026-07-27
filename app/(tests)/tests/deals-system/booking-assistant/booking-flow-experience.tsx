@@ -49,6 +49,7 @@ import {
   isValidPhone,
   mockMscSeniorCandidate,
   nextTaskId,
+  rateQualificationClaimsForTraveler,
   serviceRateSummary,
   type CallOutcome,
   type CallSignal,
@@ -60,13 +61,55 @@ import {
 import {
   saveDraft as apiSaveDraft,
   signalCallIntent as apiSignalCallIntent,
+  requestBookingCallback as apiRequestBookingCallback,
+  requestHumanHelp as apiRequestHumanHelp,
+  chooseNoAgentsTryLater as apiChooseNoAgentsTryLater,
+  cancelCallIntentSignal as apiCancelCallIntentSignal,
   markReviewReady as apiMarkReviewReady,
+  confirmDraftField as apiConfirmDraftField,
+  continueDraftLater as apiContinueDraftLater,
+  resumeCurrentDraft as apiResumeCurrentDraft,
+  resumeDraft as apiResumeDraft,
   type GuestSaveResponse,
   type GuestTravelerPayload,
   type GuestCabinPayload,
 } from "./guest-api-client";
+import { postBookingContactCaptured } from "@/components/cb/deal-analytics";
+import { askBookingQuestion } from "./guest-api-client";
 
 const STORAGE_KEY = "lll-booking-assistant-lab-v1";
+
+export interface BookingAssistantDealContext {
+  dealId: string;
+  packageId: string;
+  siid: string;
+  line: string;
+  ship: string;
+  title: string;
+  nights: number;
+  sailDateIso: string;
+  sailDateLabel: string;
+  departure: string;
+  itinerary: string;
+  priceBasis: string;
+  sourceBookingUrl: string;
+}
+
+const DEFAULT_DEAL_CONTEXT: BookingAssistantDealContext = {
+  dealId: MOCK_DEAL.dealId,
+  packageId: "pkg-mock-001",
+  siid: "SI-MOCK-001",
+  line: MOCK_DEAL.line,
+  ship: MOCK_DEAL.ship,
+  title: MOCK_DEAL.title,
+  nights: MOCK_DEAL.nights,
+  sailDateIso: "2026-08-22",
+  sailDateLabel: MOCK_DEAL.sailDate,
+  departure: MOCK_DEAL.departure,
+  itinerary: MOCK_DEAL.itinerary,
+  priceBasis: MOCK_DEAL.priceBasis,
+  sourceBookingUrl: "https://example.com/deal/mock-msc-summer",
+};
 
 // Public deal palette (matches components/cb/deal-cta-actions.tsx).
 export const NAVY = "#0F3042";
@@ -117,7 +160,7 @@ function buildTravelerPayloads(draft: MockDraft): GuestTravelerPayload[] {
     addressPostalCode: draft.addressZip || undefined,
     addressCountry: "US",
     accessibilityNeeds: i === 0 ? (draft.accessibility || undefined) : undefined,
-    rateQualificationClaims: [],
+    rateQualificationClaims: rateQualificationClaimsForTraveler(draft, i),
     fieldStatuses: {},
   }));
 }
@@ -204,12 +247,15 @@ function workingForTask(taskId: string, draft: MockDraft): WorkingState {
   if (taskId === "citizenship_residency")
     return { citizenship: draft.citizenship || "United States", residencyState: draft.residencyState };
   if (taskId === "savings_eligibility")
-    return {
-      interest: draft.serviceRateInterest,
-      travelerIndex: draft.serviceRateTravelerIndex,
-      category: draft.serviceRateCategory,
-      proofReadiness: draft.serviceRateProofReadiness,
-    };
+    return draft.serviceRateClaims.reduce<WorkingState>(
+      (values, claim) => ({
+        ...values,
+        [`claimEnabled${claim.travelerIndex}`]: "yes",
+        [`claimCategory${claim.travelerIndex}`]: claim.category,
+        [`claimProof${claim.travelerIndex}`]: claim.proofReadiness,
+      }),
+      { interest: draft.serviceRateInterest }
+    );
   if (taskId === "address")
     return {
       line1: draft.addressLine1,
@@ -233,10 +279,146 @@ function voiceValueForTask(taskId: string): { field: string; value: string } | n
   return null;
 }
 
+function persistedFieldForTask(
+  taskId: string,
+  draft: MockDraft
+): { fieldId: string; value: unknown } | null {
+  if (taskId === "first_name") return { fieldId: "contact.first_name", value: draft.firstName };
+  if (taskId === "email") return { fieldId: "contact.email", value: draft.email };
+  if (taskId === "phone") return { fieldId: "contact.phone", value: draft.phone };
+  if (taskId === "party_size") return { fieldId: "party.size", value: draft.travelerCount };
+  if (taskId === "ages") {
+    return { fieldId: "travelers.ages", value: { ages: draft.travelers.map((traveler) => traveler.age) } };
+  }
+  if (taskId.startsWith("legal_identity_")) {
+    const index = Number(taskId.slice("legal_identity_".length));
+    return {
+      fieldId: `travelers.legal_identity.${index}`,
+      value: { travelerIndex: index, ...draft.travelers[index] },
+    };
+  }
+  if (taskId === "citizenship_residency") {
+    return {
+      fieldId: "travelers.citizenship_residency",
+      value: { citizenship: draft.citizenship, residencyState: draft.residencyState },
+    };
+  }
+  if (taskId === "savings_eligibility") {
+    return {
+      fieldId: "savings.qualification_claims",
+      value: {
+        interest: draft.serviceRateInterest,
+        claims: draft.serviceRateClaims,
+      },
+    };
+  }
+  if (taskId === "address") {
+    return {
+      fieldId: "contact.address",
+      value: {
+        line1: draft.addressLine1,
+        city: draft.addressCity,
+        state: draft.addressState,
+        postalCode: draft.addressZip,
+      },
+    };
+  }
+  if (taskId === "accessibility") return { fieldId: "preferences.accessibility", value: draft.accessibility };
+  if (taskId === "cabin_preference") return { fieldId: "preferences.cabin", value: draft.cabinPreference };
+  if (taskId === "celebration") return { fieldId: "preferences.celebration", value: draft.celebration };
+  if (taskId === "insurance_interest") return { fieldId: "preferences.insurance", value: draft.insuranceInterest };
+  return null;
+}
+
+function draftFromConfirmedFields(
+  fields: Record<string, { value: unknown }>
+): MockDraft {
+  const restored = emptyDraft();
+  restored.status = "collecting";
+  const confirm = (taskId: string) => {
+    if (!restored.confirmedTasks.includes(taskId)) restored.confirmedTasks.push(taskId);
+  };
+  const text = (fieldId: string): string =>
+    typeof fields[fieldId]?.value === "string" ? fields[fieldId].value as string : "";
+
+  restored.firstName = text("contact.first_name");
+  if (restored.firstName) confirm("first_name");
+  restored.email = text("contact.email");
+  if (restored.email) confirm("email");
+  restored.phone = text("contact.phone");
+  if (restored.phone) confirm("phone");
+  const partySize = fields["party.size"]?.value;
+  if (Number.isInteger(partySize) && Number(partySize) >= 1) {
+    restored.travelerCount = Number(partySize);
+    restored.travelers = Array.from({ length: restored.travelerCount }, () => emptyTraveler());
+    confirm("party_size");
+  }
+  const ages = fields["travelers.ages"]?.value as { ages?: unknown[] } | undefined;
+  if (Array.isArray(ages?.ages)) {
+    for (let index = 0; index < restored.travelers.length; index += 1) {
+      restored.travelers[index].age = String(ages.ages[index] ?? "");
+    }
+    confirm("ages");
+  }
+  for (const [fieldId, record] of Object.entries(fields)) {
+    if (!fieldId.startsWith("travelers.legal_identity.")) continue;
+    const value = record.value as Partial<{
+      travelerIndex: number;
+      title: string;
+      gender: string;
+      firstName: string;
+      middleName: string;
+      lastName: string;
+      dob: string;
+      age: string;
+    }>;
+    const index = Number(value.travelerIndex);
+    if (!Number.isInteger(index) || index < 0 || index >= restored.travelers.length) continue;
+    restored.travelers[index] = { ...restored.travelers[index], ...value };
+    confirm(`legal_identity_${index}`);
+  }
+  const residency = fields["travelers.citizenship_residency"]?.value as { citizenship?: string; residencyState?: string } | undefined;
+  if (residency) {
+    restored.citizenship = residency.citizenship ?? "";
+    restored.residencyState = residency.residencyState ?? "";
+    confirm("citizenship_residency");
+  }
+  const savings = fields["savings.qualification_claims"]?.value as {
+    interest?: MockDraft["serviceRateInterest"];
+    claims?: MockDraft["serviceRateClaims"];
+  } | undefined;
+  if (savings) {
+    restored.serviceRateInterest = savings.interest ?? "";
+    restored.serviceRateClaims = savings.claims ?? [];
+    confirm("savings_eligibility");
+  }
+  const address = fields["contact.address"]?.value as { line1?: string; city?: string; state?: string; postalCode?: string } | undefined;
+  if (address) {
+    restored.addressLine1 = address.line1 ?? "";
+    restored.addressCity = address.city ?? "";
+    restored.addressState = address.state ?? "";
+    restored.addressZip = address.postalCode ?? "";
+    confirm("address");
+  }
+  restored.accessibility = text("preferences.accessibility");
+  if (fields["preferences.accessibility"]) confirm("accessibility");
+  restored.cabinPreference = text("preferences.cabin");
+  if (restored.cabinPreference) confirm("cabin_preference");
+  restored.celebration = text("preferences.celebration");
+  if (fields["preferences.celebration"]) confirm("celebration");
+  restored.insuranceInterest = text("preferences.insurance");
+  if (restored.insuranceInterest) confirm("insurance_interest");
+  return restored;
+}
+
 export const BookingFlowExperience = forwardRef<
   BookingFlowHandle,
-  { onDebug?: (snapshot: BookingFlowSnapshot) => void }
->(function BookingFlowExperience({ onDebug }, ref) {
+  { onDebug?: (snapshot: BookingFlowSnapshot) => void; deal?: BookingAssistantDealContext }
+>(function BookingFlowExperience({ onDebug, deal }, ref) {
+  const activeDeal = deal ?? DEFAULT_DEAL_CONTEXT;
+  const isPrototype = !deal;
+  const configuredAgentPhone = process.env.NEXT_PUBLIC_BOOKING_ASSISTANT_AGENCY_PHONE?.trim() ?? "";
+  const storageKey = `${STORAGE_KEY}-${activeDeal.dealId}`;
   const [hydrated, setHydrated] = useState(false);
   const [draft, setDraft] = useState<MockDraft>(emptyDraft);
   const [screen, setScreen] = useState<Screen>("landing");
@@ -253,7 +435,16 @@ export const BookingFlowExperience = forwardRef<
   const [savedFlash, setSavedFlash] = useState(false);
   const [questionText, setQuestionText] = useState("");
   const [questionAnswer, setQuestionAnswer] = useState<{ q: string; a: string } | null>(null);
+  const [questionPending, setQuestionPending] = useState(false);
   const [callSignal, setCallSignal] = useState<CallSignal | null>(null);
+  const [noAgentsMode, setNoAgentsMode] = useState(false);
+  const [callLaterNotice, setCallLaterNotice] = useState(false);
+  // Desktop guests can't place a tel: call. On the real (non-prototype) path we
+  // still run the full signal/pin/agent-mode flow, then - instead of dialing -
+  // surface the number and ask them to call it. Default false (assume dialable)
+  // so SSR + first paint match; corrected on mount. Holds the number to show.
+  const [isDialableDevice, setIsDialableDevice] = useState(true);
+  const [desktopCallPrompt, setDesktopCallPrompt] = useState<string | null>(null);
 
   // Server-side draft state (real DynamoDB persistence via guest API).
   const [serverDraftId, setServerDraftId] = useState<string | null>(null);
@@ -261,16 +452,20 @@ export const BookingFlowExperience = forwardRef<
   const [serverFallbackKey, setServerFallbackKey] = useState<string | null>(null);
   const [serverSavePending, setServerSavePending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const serverDraftVersionRef = useRef(0);
+  const fieldSaveChainRef = useRef<Promise<void>>(Promise.resolve());
 
-  // Stable per-scenario draft id: the mock deal id yields the documented "MAP"
-  // key and survives refresh/resume (the key is derived, never regenerated).
-  const draftId = serverDraftId ?? MOCK_DEAL.dealId;
-  const fallbackKey = serverFallbackKey ?? fallbackCallKey(MOCK_DEAL.dealId);
+  const draftId = serverDraftId ?? activeDeal.dealId;
+  const fallbackKey = serverFallbackKey ?? fallbackCallKey(activeDeal.dealId);
 
   const tasks = useMemo(() => buildTaskList(draft), [draft]);
   const currentTask: TaskDef | undefined = tasks.find((task) => task.id === currentTaskId);
   const confirmedCount = tasks.filter((task) => draft.confirmedTasks.includes(task.id)).length;
   const completionPct = tasks.length > 0 ? Math.round((confirmedCount / tasks.length) * 100) : 0;
+
+  useEffect(() => {
+    serverDraftVersionRef.current = serverDraftVersion;
+  }, [serverDraftVersion]);
 
   const emit = useCallback(
     (actor: MockJournalEvent["actor"], eventType: string, detail: string, taskId?: string) => {
@@ -284,11 +479,20 @@ export const BookingFlowExperience = forwardRef<
   // --- Persistence (sessionStorage; survives refresh, cleared by Reset) -----
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+    let cancelled = false;
+    async function hydrate() {
+      let restoredLocally = false;
+      try {
+      const raw = sessionStorage.getItem(storageKey);
       if (raw) {
+        restoredLocally = true;
         const saved = JSON.parse(raw) as PersistedLab;
-        setDraft(saved.draft);
+        const restoredDraft: MockDraft = {
+          ...emptyDraft(),
+          ...saved.draft,
+          serviceRateClaims: saved.draft.serviceRateClaims ?? [],
+        };
+        setDraft(restoredDraft);
         setCurrentTaskId(saved.currentTaskId);
         setJournal(saved.journal);
         seqRef.current = saved.seq;
@@ -303,12 +507,48 @@ export const BookingFlowExperience = forwardRef<
         setServerDraftId(saved.serverDraftId ?? null);
         setServerDraftVersion(saved.serverDraftVersion ?? 0);
         setServerFallbackKey(saved.serverFallbackKey ?? null);
-        setWorking(workingForTask(saved.currentTaskId, saved.draft));
+        setWorking(workingForTask(saved.currentTaskId, restoredDraft));
       }
-    } catch {
-      // Corrupt lab state: start fresh.
+      } catch {
+        // Corrupt lab state: try the protected server session.
+      }
+      if (!restoredLocally) {
+        const current = await apiResumeCurrentDraft();
+        if (!cancelled && current.success) {
+          const restoredDraft = draftFromConfirmedFields(current.result.fields);
+          const metadata = current.result.draft.metadata;
+          restoredDraft.status = metadata.status as MockDraft["status"];
+          restoredDraft.resumeTaskId = metadata.resumeTaskId ?? null;
+          const target = metadata.resumeTaskId ?? metadata.nextTaskId ?? nextTaskId(restoredDraft);
+          setDraft(restoredDraft);
+          setCurrentTaskId(target);
+          setWorking(workingForTask(target, restoredDraft));
+          setServerDraftId(metadata.bookingDraftId);
+          setServerDraftVersion(metadata.version);
+          serverDraftVersionRef.current = metadata.version;
+          setServerFallbackKey(current.result.fallbackCallKey);
+          setScreen(metadata.status === "ready_to_call_agent" ? "call_finalize" : "task");
+        }
+      }
+      if (!cancelled) setHydrated(true);
     }
-    setHydrated(true);
+    void hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [storageKey]);
+
+  // Detect whether this device can place a phone call, on mount only (window is
+  // unavailable during SSR). Prefer the UA-Client-Hints `mobile` flag; fall back
+  // to a coarse UA-string check. A desktop guest gets the "call this number"
+  // prompt instead of a tel: dial - the signal/agent-mode flow is unchanged.
+  useEffect(() => {
+    const uaData = (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData;
+    const dialable =
+      typeof uaData?.mobile === "boolean"
+        ? uaData.mobile
+        : /android|iphone|ipad|ipod|iemobile|blackberry|windows phone/i.test(navigator.userAgent);
+    setIsDialableDevice(dialable);
   }, []);
 
   useEffect(() => {
@@ -326,17 +566,100 @@ export const BookingFlowExperience = forwardRef<
       serverFallbackKey,
     };
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
+      sessionStorage.setItem(storageKey, JSON.stringify(persisted));
     } catch {
       // Storage full/unavailable: the lab keeps working in-memory.
     }
-  }, [hydrated, draft, currentTaskId, journal, screen, voiceMode, callSignal, serverDraftId, serverDraftVersion, serverFallbackKey]);
+  }, [hydrated, draft, currentTaskId, journal, screen, voiceMode, callSignal, serverDraftId, serverDraftVersion, serverFallbackKey, storageKey]);
 
   // Stream the observable state to the lab wrapper (no-op in production).
   useEffect(() => {
     if (!hydrated) return;
     onDebug?.({ draft, journal, screen, tasks, completionPct, callSignal, fallbackKey });
   }, [hydrated, draft, journal, screen, tasks, completionPct, callSignal, fallbackKey, onDebug]);
+
+  // Auto-expire a stale call signal (mirrors the server's 120s call-intent TTL
+  // in guest-service.ts). Without this, a guest who leaves the tab open on
+  // "Alerting your agent..."/"Calling now..." mid-attempt - because the call
+  // never connected, or they just navigated away - would return to a screen
+  // frozen on a dead signal with the primary button disabled and no way out.
+  // Checked on mount/hydration and every 15s while pending/calling so it
+  // self-heals even if the guest never touches the tab again.
+  //
+  // Also persists to the server (same call as the guest's manual "Cancel and
+  // go back") - a client-only reset would leave the server's draft version
+  // stranded, 500ing the guest's next real signal attempt on a version
+  // conflict. This is exactly the bug the manual cancel button had until it
+  // was wired to apiCancelCallIntentSignal; the auto-expiry path needs the
+  // same fix since it does the identical local reset.
+  useEffect(() => {
+    if (!hydrated) return;
+    if (draft.status !== "call_signal_pending" && draft.status !== "calling_now") return;
+    const CALL_SIGNAL_TTL_MS = 120_000;
+
+    function expireIfStale() {
+      const publishedAt = callSignal ? Date.parse(callSignal.publishedAtIso) : NaN;
+      const isStale = Number.isNaN(publishedAt) || Date.now() - publishedAt > CALL_SIGNAL_TTL_MS;
+      if (!isStale) return;
+
+      setCallSignal(null);
+      setDesktopCallPrompt(null);
+      setDraft((prev) =>
+        prev.status === "call_signal_pending" || prev.status === "calling_now"
+          ? { ...prev, status: "ready_to_call_agent" as const }
+          : prev
+      );
+      emit(
+        "system",
+        "call_intent_signal_expired",
+        "Signal auto-expired client-side (stale on return); returned to ready-to-call"
+      );
+
+      if (serverDraftId && serverDraftVersion > 0) {
+        apiCancelCallIntentSignal(serverDraftId, serverDraftVersion).then((result) => {
+          if (result.success) {
+            setServerDraftVersion(result.result.newVersion);
+            emit("system", "call_signal_cancel_persisted", "Server: stale call intent signal auto-expired");
+          } else {
+            setServerError(result.error);
+            emit("system", "call_signal_cancel_failed", `Server auto-expire cancel failed: ${result.error}`);
+          }
+        });
+      }
+    }
+
+    expireIfStale();
+    const interval = window.setInterval(expireIfStale, 15_000);
+    return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, draft.status, callSignal, serverDraftId, serverDraftVersion, emit]);
+
+  useEffect(() => {
+    if (!serverDraftId || draft.status !== "call_signal_pending") return;
+    let stopped = false;
+    async function checkAcknowledgement() {
+      const result = await apiResumeDraft(serverDraftId as string);
+      if (stopped || !result.success) return;
+      const metadata = (result.result.draft as {
+        metadata?: { status?: string; version?: number };
+      }).metadata;
+      if (metadata?.status !== "calling_now") return;
+      const acknowledgedVersion = metadata.version ?? serverDraftVersionRef.current;
+      serverDraftVersionRef.current = acknowledgedVersion;
+      setServerDraftVersion(acknowledgedVersion);
+      setDraft((current) => ({ ...current, status: "calling_now" }));
+      setCallSignal((current) => current ? { ...current, acknowledged: true } : current);
+      emit("system", "call_signal_acknowledged", "Operator dashboard acknowledged this call attempt");
+    }
+    void checkAcknowledgement();
+    const interval = window.setInterval(() => {
+      void checkAcknowledgement();
+    }, 2000);
+    return () => {
+      stopped = true;
+      window.clearInterval(interval);
+    };
+  }, [draft.status, emit, serverDraftId]);
 
   // --- Task navigation ------------------------------------------------------
 
@@ -354,13 +677,66 @@ export const BookingFlowExperience = forwardRef<
     [draft, emit]
   );
 
+  const goBackOneTask = useCallback(() => {
+    const orderedTasks = buildTaskList(draft);
+    const currentIndex = orderedTasks.findIndex((task) => task.id === currentTaskId);
+    if (currentIndex <= 0) return;
+
+    const previousTask = orderedTasks[currentIndex - 1];
+    setCurrentTaskId(previousTask.id);
+    setWorking(workingForTask(previousTask.id, draft));
+    setTaskError("");
+    setVoiceState("idle");
+    setReturnToReview(false);
+    setScreen("task");
+    emit("guest", "navigation_performed", `Back to ${previousTask.title}`, previousTask.id);
+    emit("assistant", "task_presented", previousTask.title, previousTask.id);
+  }, [currentTaskId, draft, emit]);
+
   const flashSaved = useCallback(() => {
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 1600);
   }, []);
 
+  const persistConfirmedTask = useCallback(
+    (taskId: string, confirmedDraft: MockDraft) => {
+      if (!serverDraftId || taskId === "review") return;
+      const field = persistedFieldForTask(taskId, confirmedDraft);
+      if (!field) return;
+      const upcoming = nextTaskId(confirmedDraft);
+      const confirmed = buildTaskList(confirmedDraft).filter((task) =>
+        confirmedDraft.confirmedTasks.includes(task.id)
+      ).length;
+      const pct = Math.round((confirmed / Math.max(buildTaskList(confirmedDraft).length, 1)) * 100);
+      setServerSavePending(true);
+      fieldSaveChainRef.current = fieldSaveChainRef.current
+        .then(async () => {
+          const result = await apiConfirmDraftField(
+            serverDraftId,
+            serverDraftVersionRef.current,
+            field.fieldId,
+            field.value,
+            upcoming,
+            pct,
+            `${taskId}:${Date.now()}`
+          );
+          if (!result.success) throw new Error(result.error);
+          serverDraftVersionRef.current = result.result.newVersion;
+          setServerDraftVersion(result.result.newVersion);
+          emit("system", "task_completed", `Confirmed answer saved securely: ${taskId}`, taskId);
+        })
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : "Answer save failed";
+          setServerError(message);
+          emit("system", "draft_persist_failed", message, taskId);
+        })
+        .finally(() => setServerSavePending(false));
+    },
+    [emit, serverDraftId]
+  );
+
   function startBooking() {
-    emit("guest", "booking_assistant_opened", `Start booking tapped for ${MOCK_DEAL.title}`);
+    emit("guest", "booking_assistant_opened", `Start booking tapped for ${activeDeal.title}`);
     emit("system", "booking_draft_started", "Anonymous draft created with deal attribution (mock)");
     goToTask("first_name");
   }
@@ -411,9 +787,7 @@ export const BookingFlowExperience = forwardRef<
         (taskId) => !taskId.startsWith("legal_identity_") && taskId !== "ages" && taskId !== "savings_eligibility"
       );
       next.serviceRateInterest = "";
-      next.serviceRateTravelerIndex = "";
-      next.serviceRateCategory = "";
-      next.serviceRateProofReadiness = "";
+      next.serviceRateClaims = [];
       detail = `${count} traveler(s) confirmed`;
     } else if (id === "ages") {
       for (let i = 0; i < next.travelerCount; i += 1) {
@@ -472,30 +846,41 @@ export const BookingFlowExperience = forwardRef<
       }
       next.serviceRateInterest = interest;
       if (interest === "yes") {
-        const travelerIndex = working.travelerIndex ?? "";
-        const category = (working.category ?? "").trim();
-        const proofReadiness = working.proofReadiness ?? "";
-        const numericIndex = Number(travelerIndex);
-        if (travelerIndex === "" || !Number.isInteger(numericIndex) || numericIndex < 0 || numericIndex >= next.travelerCount) {
-          setTaskError("Choose the traveler who may qualify.");
+        const selectedClaims = next.travelers
+          .slice(0, next.travelerCount)
+          .map((_, travelerIndex) => ({
+            travelerIndex,
+            enabled: working[`claimEnabled${travelerIndex}`] === "yes",
+            category: (working[`claimCategory${travelerIndex}`] ?? "").trim(),
+            proofReadiness: working[`claimProof${travelerIndex}`] ?? "",
+          }))
+          .filter((claim) => claim.enabled);
+        if (selectedClaims.length === 0) {
+          setTaskError("Choose each traveler who may qualify.");
           return false;
         }
-        if (!category) {
-          setTaskError("Choose the closest service category - 'Other or not sure' is fine.");
-          return false;
+        for (const claim of selectedClaims) {
+          if (!claim.category) {
+            setTaskError(`Choose the closest service category for traveler ${claim.travelerIndex + 1}.`);
+            return false;
+          }
+          if (
+            claim.proofReadiness !== "available_later" &&
+            claim.proofReadiness !== "need_help" &&
+            claim.proofReadiness !== "not_sure"
+          ) {
+            setTaskError(`Tell us about proof readiness for traveler ${claim.travelerIndex + 1}.`);
+            return false;
+          }
         }
-        if (!proofReadiness) {
-          setTaskError("Tell us whether proof is available later - no document is needed here.");
-          return false;
-        }
-        next.serviceRateTravelerIndex = travelerIndex;
-        next.serviceRateCategory = category;
-        next.serviceRateProofReadiness = proofReadiness;
-        detail = "Military/service rate claimed - operator verification required";
+        next.serviceRateClaims = selectedClaims.map((claim) => ({
+          travelerIndex: claim.travelerIndex,
+          category: claim.category,
+          proofReadiness: claim.proofReadiness as "available_later" | "need_help" | "not_sure",
+        }));
+        detail = `${next.serviceRateClaims.length} military/service rate claim(s) recorded - operator verification required`;
       } else {
-        next.serviceRateTravelerIndex = "";
-        next.serviceRateCategory = "";
-        next.serviceRateProofReadiness = "";
+        next.serviceRateClaims = [];
         detail = interest === "no" ? "No military/service rate claimed" : "Military/service eligibility needs operator review";
       }
     } else if (id === "address") {
@@ -571,9 +956,20 @@ export const BookingFlowExperience = forwardRef<
       );
     }
     flashSaved();
+    if (id !== "phone") persistConfirmedTask(id, next);
 
     if (id === "email" && !draft.confirmedTasks.includes("email")) {
       emit("system", "resume_email_sent", `Secure resume link emailed to ${next.email} (mock - nothing sent)`);
+      // Partial-lead capture: the guest is now identifiable (name + email) but
+      // the durable server save is still phone-gated — surface them to the
+      // dashboard's booking leads even if they never finish. Best-effort
+      // beacon; the track route's public-deal gate filters lab/mock deal ids.
+      if (next.email) {
+        postBookingContactCaptured(activeDeal.dealId, {
+          email: next.email,
+          firstName: next.firstName || undefined,
+        });
+      }
     }
     if (id === "phone" && !draft.confirmedTasks.includes("phone")) {
       emit("assistant", "option_menu_opened", "'Get help now' is now available in More Options");
@@ -585,21 +981,21 @@ export const BookingFlowExperience = forwardRef<
           draftId: realDraftId,
           personId: `person-${Date.now()}`,
           dealSnapshot: {
-            dealId: MOCK_DEAL.dealId,
-            packageId: "pkg-mock-001",
-            siid: "SI-MOCK-001",
-            cruiseLine: MOCK_DEAL.line,
-            ship: MOCK_DEAL.ship,
-            sailingDateIso: "2026-08-22",
-            nights: MOCK_DEAL.nights,
-            departurePort: MOCK_DEAL.departure,
-            itineraryLabel: MOCK_DEAL.itinerary,
-            dealAngle: MOCK_DEAL.title,
-            priceDisplay: MOCK_DEAL.priceBasis,
+            dealId: activeDeal.dealId,
+            packageId: activeDeal.packageId,
+            siid: activeDeal.siid,
+            cruiseLine: activeDeal.line,
+            ship: activeDeal.ship,
+            sailingDateIso: activeDeal.sailDateIso,
+            nights: activeDeal.nights,
+            departurePort: activeDeal.departure,
+            itineraryLabel: activeDeal.itinerary,
+            dealAngle: activeDeal.title,
+            priceDisplay: activeDeal.priceBasis,
             currency: "USD",
             taxFeeBasis: "per person",
             priceCapturedAtIso: new Date().toISOString(),
-            sourceBookingUrl: "https://example.com/deal/mock-msc-summer",
+            sourceBookingUrl: activeDeal.sourceBookingUrl,
             linkHealthState: "unknown",
           },
           contact: {
@@ -620,10 +1016,30 @@ export const BookingFlowExperience = forwardRef<
             passengerDataReviewConfirmed: false,
             packetStorageConsent: false,
           },
-        }).then((result) => {
+        }).then(async (result) => {
           if (result.success) {
             setServerDraftId(result.result.draftId);
-            setServerDraftVersion(result.result.version);
+            let seededVersion = result.result.version;
+            for (const taskId of ["first_name", "email", "phone"]) {
+              const field = persistedFieldForTask(taskId, next);
+              if (!field) continue;
+              const seeded = await apiConfirmDraftField(
+                result.result.draftId,
+                seededVersion,
+                field.fieldId,
+                field.value,
+                nextTaskId(next),
+                completionPct,
+                `contact-bootstrap:${taskId}:${result.result.draftId}`
+              );
+              if (!seeded.success) {
+                setServerError(seeded.error);
+                break;
+              }
+              seededVersion = seeded.result.newVersion;
+            }
+            serverDraftVersionRef.current = seededVersion;
+            setServerDraftVersion(seededVersion);
             setServerFallbackKey(result.result.fallbackCallKey.rawKey);
             emit("system", "booking_draft_persisted", `Draft saved to DynamoDB: ${result.result.draftId}, key=${result.result.fallbackCallKey.rawKey}`);
           } else {
@@ -690,7 +1106,7 @@ export const BookingFlowExperience = forwardRef<
     }
   }
 
-  function submitReview() {
+  async function submitReview() {
     const missingTask = buildTaskList(draft).find(
       (task) => task.id !== "review" && !draft.confirmedTasks.includes(task.id)
     );
@@ -711,24 +1127,10 @@ export const BookingFlowExperience = forwardRef<
       setTaskError(serverError ?? "Your information could not be saved securely. Please restart this booking.");
       return;
     }
-    // Section 29.1: atomic packet save -> ready_to_call_agent with a stable key.
     const next = { ...draft, preparationAuthorized: true, status: "ready_to_call_agent" as const };
-    setDraft(next);
-    emit("guest", "field_confirmed", "Accuracy acknowledged for all travelers", "review");
-    emit("system", "booking_packet_reviewed", "Reviewed packet saved atomically (mock)");
-    emit("system", "state_transitioned", "collecting -> ready_to_call_agent");
-    // Key is derived, not stored per attempt: reuse if the key already existed.
-    emit(
-      "system",
-      callSignal ? "fallback_call_key_reused" : "fallback_call_key_issued",
-      `Fallback call key ready (redacted from payload); mode ${COMPLETION_MODE}`
-    );
-    emit("assistant", "ready_to_call_presented", "Call-agent-to-finalize screen shown");
-    setScreen("call_finalize");
-
-    // Persist review-ready status to real DynamoDB.
-    if (serverDraftId && serverDraftVersion > 0) {
-      apiMarkReviewReady(serverDraftId, serverDraftVersion, {
+    setServerSavePending(true);
+    try {
+      const result = await apiMarkReviewReady(serverDraftId, serverDraftVersion, {
         travelers: buildTravelerPayloads(next),
         cabin: buildCabinPayload(next),
         decisions: {
@@ -736,15 +1138,28 @@ export const BookingFlowExperience = forwardRef<
           passengerDataReviewConfirmed: next.accuracyAcknowledged,
           packetStorageConsent: next.preparationAuthorized,
         },
-      }).then((result) => {
-        if (result.success) {
-          setServerDraftVersion(result.result.newVersion);
-          emit("system", "review_ready_persisted", `Server updated: v${result.result.newVersion}, insurance=${next.insuranceInterest || "none"}, travelers=${next.travelerCount}`);
-        } else {
-          setServerError(result.error);
-          emit("system", "review_ready_failed", `Server update failed: ${result.error}`);
-        }
       });
+      if (!result.success) {
+        setServerError(result.error);
+        setTaskError(result.error);
+        emit("system", "review_ready_failed", `Server update failed: ${result.error}`);
+        return;
+      }
+
+      setServerDraftVersion(result.result.newVersion);
+      setDraft(next);
+      emit("guest", "field_confirmed", "Accuracy acknowledged for all travelers", "review");
+      emit("system", "booking_packet_reviewed", "Reviewed packet saved in the booking draft");
+      emit("system", "state_transitioned", "collecting -> ready_to_call_agent");
+      emit(
+        "system",
+        callSignal ? "fallback_call_key_reused" : "fallback_call_key_issued",
+        `Fallback call key ready (redacted from payload); mode ${COMPLETION_MODE}`
+      );
+      emit("assistant", "ready_to_call_presented", "Call-agent-to-finalize screen shown");
+      setScreen("call_finalize");
+    } finally {
+      setServerSavePending(false);
     }
   }
 
@@ -779,18 +1194,85 @@ export const BookingFlowExperience = forwardRef<
       apiSignalCallIntent(serverDraftId, serverDraftVersion).then((result) => {
         if (result.success) {
           setServerDraftVersion(result.result.newVersion);
+          if (result.result.outcome === "no_agents") {
+            setCallSignal(null);
+            setDesktopCallPrompt(null);
+            setDraft((prev) => ({ ...prev, status: "ready_to_call_agent" }));
+            setNoAgentsMode(true);
+            emit("system", "no_agents_mode_presented", "No agents are currently available; callback choices shown");
+            return;
+          }
           emit("system", "call_signal_persisted", `Server: call intent published, attempt ${result.result.callAttemptId}`);
+          if (!isPrototype) {
+            if (configuredAgentPhone) {
+              if (isDialableDevice) {
+                window.location.href = `tel:${configuredAgentPhone}`;
+              } else {
+                // Desktop: signal/pin already happened (same rules). We can't
+                // dial, so surface the number and ask the guest to call it.
+                setDesktopCallPrompt(configuredAgentPhone);
+                emit("system", "call_number_displayed", "Desktop device: showed agent number to dial manually");
+              }
+            } else {
+              const message = "Calling is not available right now. Please ask for help or try again later.";
+              setServerError(message);
+              emit("system", "call_launch_failed", message);
+            }
+          }
         } else {
           setServerError(result.error);
+          setCallSignal(null);
+          setDraft((prev) => (
+            prev.status === "call_signal_pending"
+              ? { ...prev, status: "ready_to_call_agent" }
+              : prev
+          ));
           emit("system", "call_signal_failed", `Server signal failed: ${result.error}`);
         }
       });
+    } else if (!isPrototype) {
+      const message = "Your saved booking session is unavailable. Restart this booking before calling.";
+      setServerError(message);
+      emit("system", "call_launch_failed", message);
     }
   }
 
   function callLater() {
+    setCallLaterNotice(true);
     emit("guest", "call_later_selected", "Guest chose to call later; key + receipt preserved");
     // Stays ready_to_call_agent; no real message is sent in the lab.
+  }
+
+  /**
+   * Guest-initiated escape hatch from a stuck call-signal-pending/calling_now
+   * state - the call didn't connect, or they're returning to a stale signal
+   * from an earlier visit. Same end state as the operator's expire action
+   * (ready_to_call_agent, signal cleared) but guest-triggered and immediate,
+   * not dependent on the auto-expiry timer or an operator noticing.
+   *
+   * Must also persist server-side (mirrors launchCall's apiSignalCallIntent
+   * call): a client-only reset leaves the server's draft version stranded at
+   * whatever launchCall bumped it to, so the guest's *next* real signal
+   * attempt sends a stale expectedVersion and 500s on a version conflict.
+   */
+  function cancelCallSignal() {
+    if (draft.status !== "call_signal_pending" && draft.status !== "calling_now") return;
+    emit("guest", "call_intent_signal_cancelled_by_guest", "Guest cancelled a stuck/unconnected call signal");
+    setCallSignal(null);
+    setDesktopCallPrompt(null);
+    setDraft((prev) => ({ ...prev, status: "ready_to_call_agent" }));
+
+    if (serverDraftId && serverDraftVersion > 0) {
+      apiCancelCallIntentSignal(serverDraftId, serverDraftVersion).then((result) => {
+        if (result.success) {
+          setServerDraftVersion(result.result.newVersion);
+          emit("system", "call_signal_cancel_persisted", "Server: call intent signal cancelled");
+        } else {
+          setServerError(result.error);
+          emit("system", "call_signal_cancel_failed", `Server cancel failed: ${result.error}`);
+        }
+      });
+    }
   }
 
   // Operator actions, invoked from the wrapper's mock operator panel.
@@ -805,6 +1287,7 @@ export const BookingFlowExperience = forwardRef<
   function operatorExpireSignal() {
     emit("system", "call_intent_signal_expired", "Unclaimed signal expired; returned to ready-to-call");
     setCallSignal(null);
+    setDesktopCallPrompt(null);
     setDraft((prev) =>
       prev.status === "call_signal_pending" || prev.status === "calling_now"
         ? { ...prev, status: "ready_to_call_agent" }
@@ -858,9 +1341,39 @@ export const BookingFlowExperience = forwardRef<
     return false;
   }
 
-  function pause(saveWorking: boolean) {
+  async function pause(saveWorking: boolean) {
     const pausedAtTask = currentTaskId;
     if (saveWorking) confirmCurrentTask();
+    if (serverDraftId) {
+      await fieldSaveChainRef.current;
+      const currentIndex = tasks.findIndex((task) => task.id === pausedAtTask);
+      const resumeAt = saveWorking
+        ? tasks[currentIndex + 1]?.id ?? "review"
+        : pausedAtTask;
+      setServerSavePending(true);
+      const result = await apiContinueDraftLater(
+        serverDraftId,
+        serverDraftVersionRef.current,
+        resumeAt,
+        resumeAt,
+        `continue-later:${serverDraftId}:${Date.now()}`
+      );
+      setServerSavePending(false);
+      if (!result.success) {
+        setServerError(result.error);
+        setTaskError(result.error);
+        return;
+      }
+      serverDraftVersionRef.current = result.result.newVersion;
+      setServerDraftVersion(result.result.newVersion);
+      emit(
+        "system",
+        result.result.notificationAccepted ? "continue_later_receipt_sent" : "continue_later_receipt_queued",
+        result.result.notificationAccepted
+          ? "Secure save receipt accepted by the email provider"
+          : "Progress saved; email delivery needs retry"
+      );
+    }
     // Functional update: confirmCurrentTask queued its own setDraft, and a
     // plain object here would clobber the answer it just saved.
     setDraft((prev) => ({
@@ -871,8 +1384,37 @@ export const BookingFlowExperience = forwardRef<
     setSheet("none");
     setScreen("paused");
     emit("guest", "continue_later_selected", `Paused at '${currentTask?.title ?? currentTaskId}'`);
-    emit("system", "reminder_program_armed", "continue_later_v1 armed: every 3 days, capped (mock)");
-    emit("system", "continue_later_receipt_sent", "Save receipt emailed with secure resume link (mock)");
+    emit("system", "reminder_program_armed", "continue_later_v1 armed: every 3 days, capped");
+  }
+
+  async function requestNoAgentsCallback(input: {
+    preference: "as_soon_as_available" | "preferred_window";
+    windowStartIso?: string;
+    windowEndIso?: string;
+    timeZone: string;
+  }): Promise<boolean> {
+    if (!serverDraftId || serverDraftVersion <= 0) return false;
+    const result = await apiRequestBookingCallback(serverDraftId, serverDraftVersion, input);
+    if (!result.success) {
+      setServerError(result.error);
+      throw new Error(result.error);
+    }
+    setServerDraftVersion(result.result.newVersion);
+    setDraft((prev) => ({ ...prev, status: "human_requested" }));
+    emit("guest", "callback_requested", `Callback preference: ${input.preference}`);
+    return result.result.notificationAccepted;
+  }
+
+  async function chooseNoAgentsTryLater(): Promise<boolean> {
+    if (!serverDraftId || serverDraftVersion <= 0) return false;
+    const result = await apiChooseNoAgentsTryLater(serverDraftId, serverDraftVersion);
+    if (!result.success) {
+      setServerError(result.error);
+      throw new Error(result.error);
+    }
+    setServerDraftVersion(result.result.newVersion);
+    emit("guest", "no_agents_try_later_selected", "Guest chose to return by secure resume link");
+    return result.result.notificationAccepted;
   }
 
   function resume(via: "continue_now" | "email_link") {
@@ -904,31 +1446,80 @@ export const BookingFlowExperience = forwardRef<
 
   // --- Side questions -------------------------------------------------------
 
-  function askQuestion(picked?: { q: string; a: string }) {
+  async function askQuestion(picked?: { q: string; a: string }) {
     const q = picked?.q ?? questionText.trim();
-    if (!q) return;
-    const canned = picked ?? SIDE_QUESTIONS.find((entry) => entry.q === q);
-    const answer = canned?.a ??
-      "(Mock assistant) Great question - in the real flow I'd answer from approved deal facts, and offer a human agent if I wasn't sure.";
-    setQuestionAnswer({ q, a: answer });
-    setQuestionText("");
+    if (!q || questionPending) return;
     emit("guest", "side_question_asked", q, currentTaskId);
-    emit("assistant", "assistant_response_presented", "Short grounded answer shown; task and input preserved", currentTaskId);
+
+    // Suggestion chips carry an approved answer — show it instantly, no round-trip.
+    const canned = picked ?? SIDE_QUESTIONS.find((entry) => entry.q === q);
+    if (canned) {
+      setQuestionAnswer({ q, a: canned.a });
+      setQuestionText("");
+      emit("assistant", "assistant_response_presented", "Approved answer shown; task and input preserved", currentTaskId);
+      return;
+    }
+
+    // Free-text question → the real grounded assistant (cheap Claude tier).
+    setQuestionText("");
+    setQuestionPending(true);
+    setQuestionAnswer({ q, a: "" }); // renders the "thinking" state under the question
+    const result = await askBookingQuestion(activeDeal.dealId, q, {
+      line: activeDeal.line,
+      ship: activeDeal.ship,
+      title: activeDeal.title,
+      nights: activeDeal.nights,
+      sailDateLabel: activeDeal.sailDateLabel,
+      departure: activeDeal.departure,
+      itinerary: activeDeal.itinerary,
+      priceBasis: activeDeal.priceBasis,
+    });
+    const answer = result.success ? result.answer : result.error;
+    setQuestionAnswer({ q, a: answer });
+    setQuestionPending(false);
+    emit(
+      "assistant",
+      "assistant_response_presented",
+      result.success ? "Grounded assistant answer shown" : "Assistant unavailable; fallback shown",
+      currentTaskId
+    );
   }
 
   function requestHelp() {
+    const taskId = currentTask?.id;
+    if (serverDraftId && serverDraftVersionRef.current > 0) {
+      setServerSavePending(true);
+      apiRequestHumanHelp(serverDraftId, serverDraftVersionRef.current, taskId).then((result) => {
+        setServerSavePending(false);
+        if (!result.success) {
+          setServerError(result.error);
+          emit("system", "human_help_request_failed", `Server help request failed: ${result.error}`);
+          return;
+        }
+        serverDraftVersionRef.current = result.result.newVersion;
+        setServerDraftVersion(result.result.newVersion);
+        const next = { ...draft, status: "human_requested" as const };
+        setDraft(next);
+        setSheet("none");
+        setScreen("help");
+        emit("guest", "human_help_requested", "'Get help now' tapped");
+        emit("system", "state_transitioned", `${draft.status} -> human_requested`);
+        emit("operator", "operator_claimed", "Urgent Pushover sent to operator");
+      });
+      return;
+    }
     const next = { ...draft, status: "human_requested" as const };
     setDraft(next);
     setSheet("none");
     setScreen("help");
     emit("guest", "human_help_requested", "'Get help now' tapped");
-    emit("system", "state_transitioned", "collecting -> human_requested");
+    emit("system", "state_transitioned", `${draft.status} -> human_requested`);
     emit("operator", "operator_claimed", "Urgent Pushover sent to operator (mock)");
   }
 
   function resetFlow() {
     try {
-      sessionStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(storageKey);
     } catch {
       // ignore
     }
@@ -949,6 +1540,14 @@ export const BookingFlowExperience = forwardRef<
     setServerError(null);
     setQuestionAnswer(null);
     setCallSignal(null);
+  }
+
+  function confirmRestartFlow() {
+    const confirmed = window.confirm(
+      "Restart this booking on this device? Your answers on this screen will be cleared so a new secure booking session can be created."
+    );
+    if (!confirmed) return;
+    resetFlow();
   }
 
   useImperativeHandle(ref, () => ({
@@ -1034,6 +1633,7 @@ export const BookingFlowExperience = forwardRef<
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden" style={{ background: CREAM }}>
       <FlowContent
         screen={screen}
+        deal={activeDeal}
         draft={draft}
         tasks={tasks}
         currentTask={currentTask}
@@ -1049,11 +1649,13 @@ export const BookingFlowExperience = forwardRef<
         heardText={heardText}
         onStart={startBooking}
         onContinue={confirmCurrentTask}
+        onBackStep={goBackOneTask}
         onDefer={deferCurrentTask}
         onOpenOptions={() => setSheet("options")}
         onOpenQuestion={() => setSheet("question")}
         onOpenPause={() => setSheet("pause_confirm")}
         onSubmitReview={submitReview}
+        onRestart={confirmRestartFlow}
         onEditFromReview={(taskId) => goToTask(taskId, { fromReview: true })}
         onResume={() => resume("continue_now")}
         onBackFromHelp={() => {
@@ -1066,9 +1668,20 @@ export const BookingFlowExperience = forwardRef<
         fallbackKey={fallbackKey}
         callSignal={callSignal}
         onLaunchCall={launchCall}
+        noAgentsMode={noAgentsMode}
+        onRequestCallback={requestNoAgentsCallback}
+        onNoAgentsTryLater={chooseNoAgentsTryLater}
         onCallLater={callLater}
+        callLaterNotice={callLaterNotice}
+        desktopCallPrompt={desktopCallPrompt}
+        onCancelSignal={cancelCallSignal}
+        onReviewAnswers={() => {
+          emit("guest", "navigation_performed", "Returned to review from call-finalization screen", "review");
+          goToReview();
+        }}
         onOpenQuestionFromCall={() => setSheet("question")}
         onEmit={emit}
+        isPrototype={isPrototype}
       />
 
       {/* ---- Bottom sheets ---- */}
@@ -1087,6 +1700,7 @@ export const BookingFlowExperience = forwardRef<
                 questionText={questionText}
                 setQuestionText={setQuestionText}
                 answer={questionAnswer}
+                pending={questionPending}
                 onAsk={askQuestion}
                 onClose={() => {
                   setQuestionAnswer(null);
@@ -1095,7 +1709,7 @@ export const BookingFlowExperience = forwardRef<
               />
             )}
             {sheet === "progress" && <ProgressSheet tasks={tasks} draft={draft} onClose={() => setSheet("none")} />}
-            {sheet === "privacy" && <PrivacySheet onClose={() => setSheet("none")} />}
+            {sheet === "privacy" && <PrivacySheet isPrototype={isPrototype} onClose={() => setSheet("none")} />}
             {sheet === "pause_confirm" && (
               <PauseConfirmSheet
                 saveable={currentWorkingIsSaveable()}
@@ -1116,6 +1730,7 @@ export const BookingFlowExperience = forwardRef<
 
 interface FlowContentProps {
   screen: Screen;
+  deal: BookingAssistantDealContext;
   draft: MockDraft;
   tasks: TaskDef[];
   currentTask?: TaskDef;
@@ -1132,11 +1747,13 @@ interface FlowContentProps {
   reminderDate: string;
   onStart: () => void;
   onContinue: () => void;
+  onBackStep: () => void;
   onDefer: () => void;
   onOpenOptions: () => void;
   onOpenQuestion: () => void;
   onOpenPause: () => void;
   onSubmitReview: () => void;
+  onRestart: () => void;
   onEditFromReview: (taskId: string) => void;
   onResume: () => void;
   onBackFromHelp: () => void;
@@ -1145,28 +1762,49 @@ interface FlowContentProps {
   fallbackKey: string;
   callSignal: CallSignal | null;
   onLaunchCall: () => void;
+  noAgentsMode: boolean;
+  onRequestCallback: (input: {
+    preference: "as_soon_as_available" | "preferred_window";
+    windowStartIso?: string;
+    windowEndIso?: string;
+    timeZone: string;
+  }) => Promise<boolean>;
+  onNoAgentsTryLater: () => Promise<boolean>;
   onCallLater: () => void;
+  callLaterNotice: boolean;
+  desktopCallPrompt: string | null;
+  onCancelSignal: () => void;
+  onReviewAnswers: () => void;
   onOpenQuestionFromCall: () => void;
   onEmit: (actor: MockJournalEvent["actor"], eventType: string, detail: string, taskId?: string) => void;
+  isPrototype: boolean;
 }
 
 function FlowContent(props: FlowContentProps) {
   const { screen } = props;
-  if (screen === "landing") return <LandingScreen onStart={props.onStart} />;
+  if (screen === "landing") return <LandingScreen deal={props.deal} onStart={props.onStart} />;
   if (screen === "paused") return <PausedScreen draft={props.draft} tasks={props.tasks} completionPct={props.completionPct} reminderDate={props.reminderDate} onResume={props.onResume} />;
-  if (screen === "help") return <HelpScreen draft={props.draft} onBack={props.onBackFromHelp} />;
+  if (screen === "help") return <HelpScreen onBack={props.onBackFromHelp} isPrototype={props.isPrototype} />;
   if (screen === "call_finalize")
     return (
-      <CallFinalizeScreen
-        draft={props.draft}
-        fallbackKey={props.fallbackKey}
+        <CallFinalizeScreen
+          draft={props.draft}
+          fallbackKey={props.fallbackKey}
         callSignal={props.callSignal}
         onLaunchCall={props.onLaunchCall}
+        noAgentsMode={props.noAgentsMode}
+        onRequestCallback={props.onRequestCallback}
+        onNoAgentsTryLater={props.onNoAgentsTryLater}
         onCallLater={props.onCallLater}
+        callLaterNotice={props.callLaterNotice}
+        desktopCallPrompt={props.desktopCallPrompt}
+        onCancelSignal={props.onCancelSignal}
+        onReviewAnswers={props.onReviewAnswers}
         onOpenOptions={props.onOpenOptions}
-        onOpenQuestion={props.onOpenQuestionFromCall}
-        onEmit={props.onEmit}
-      />
+          onOpenQuestion={props.onOpenQuestionFromCall}
+          onEmit={props.onEmit}
+          isPrototype={props.isPrototype}
+        />
     );
   return <TaskScreen {...props} />;
 }
@@ -1203,22 +1841,22 @@ function GuestButton({
   );
 }
 
-function LandingScreen({ onStart }: { onStart: () => void }) {
+function LandingScreen({ deal, onStart }: { deal: BookingAssistantDealContext; onStart: () => void }) {
   return (
     <div className="flex h-full flex-col overflow-y-auto p-5" style={{ color: NAVY }}>
       <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: GOLD }}>
-        Curated Deal - mock landing entry
+        Curated Deal
       </p>
-      <h2 className="mt-2 text-2xl font-bold leading-tight">{MOCK_DEAL.title}</h2>
+      <h2 className="mt-2 text-2xl font-bold leading-tight">{deal.title}</h2>
       <div className="mt-4 rounded-xl bg-white p-4" style={{ border: `1px solid ${BORDER}` }}>
-        <p className="text-sm font-semibold">{MOCK_DEAL.line} - {MOCK_DEAL.ship}</p>
+        <p className="text-sm font-semibold">{deal.line} - {deal.ship}</p>
         <p className="mt-1 text-sm" style={{ color: MUTED }}>
-          {MOCK_DEAL.nights} nights - {MOCK_DEAL.itinerary}
+          {deal.nights} nights - {deal.itinerary}
         </p>
-        <p className="text-sm" style={{ color: MUTED }}>{MOCK_DEAL.departure} - {MOCK_DEAL.sailDate}</p>
-        <p className="mt-2 text-sm font-semibold">{MOCK_DEAL.priceBasis}</p>
+        <p className="text-sm" style={{ color: MUTED }}>{deal.departure} - {deal.sailDateLabel}</p>
+        <p className="mt-2 text-sm font-semibold">{deal.priceBasis}</p>
         <p className="text-[11px]" style={{ color: MUTED }}>
-          {MOCK_DEAL.capturedAt}. Final price and availability are confirmed with you before payment.
+          Final price and availability are confirmed with you before payment.
         </p>
       </div>
       <div className="mt-auto pt-6">
@@ -1239,9 +1877,9 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
 
 function TaskScreen(props: FlowContentProps) {
   const {
-    draft, tasks, currentTask, confirmedCount, working, setWorking, taskError, savedFlash,
-    emailConfirmed, voiceMode, voiceState, heardText, onContinue, onDefer, onOpenOptions,
-    onOpenQuestion, onOpenPause, onSubmitReview, onEditFromReview, onStartVoice, setDraft,
+    deal, draft, tasks, currentTask, confirmedCount, working, setWorking, taskError, savedFlash,
+    emailConfirmed, voiceMode, voiceState, heardText, onContinue, onBackStep, onDefer, onOpenOptions,
+    onOpenQuestion, onOpenPause, onSubmitReview, onRestart, onEditFromReview, onStartVoice, setDraft,
   } = props;
 
   if (!currentTask) return null;
@@ -1250,16 +1888,31 @@ function TaskScreen(props: FlowContentProps) {
     (task) => task.section === currentTask.section && !draft.confirmedTasks.includes(task.id)
   ).length;
   const supportsVoice = voiceValueForTask(currentTask.id) !== null;
+  const currentTaskIndex = tasks.findIndex((task) => task.id === currentTask.id);
+  const canGoBack = currentTaskIndex > 0;
 
   return (
     <div className="flex h-full flex-col" style={{ color: NAVY }}>
       {/* Sticky header */}
-      <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: BORDER, background: "#FFFFFF" }}>
-        <div className="min-w-0">
-          <p className="truncate text-[12px] font-bold">{MOCK_DEAL.title}</p>
-          <p className="text-[10px]" style={{ color: MUTED }}>
-            {MOCK_DEAL.ship} - {MOCK_DEAL.sailDate}
-          </p>
+      <div className="flex items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: BORDER, background: "#FFFFFF" }}>
+        <div className="flex min-w-0 items-center gap-3">
+          {canGoBack && (
+            <button
+              type="button"
+              onClick={onBackStep}
+              className="shrink-0 rounded-lg px-3 py-2 text-[12px] font-bold"
+              style={{ border: `1px solid ${BORDER}`, background: "#FFFFFF", minHeight: 44 }}
+              aria-label="Go back to the previous booking step"
+            >
+              &larr; Back
+            </button>
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-[12px] font-bold">{deal.title}</p>
+            <p className="text-[10px]" style={{ color: MUTED }}>
+              {deal.ship} - {deal.sailDateLabel}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <span
@@ -1332,9 +1985,19 @@ function TaskScreen(props: FlowContentProps) {
         </div>
 
         {taskError && (
-          <p className="mt-3 rounded-lg bg-[#FDECEA] px-3 py-2 text-[13px] font-medium text-[#B3261E]">
-            {taskError}
-          </p>
+          <div className="mt-3 rounded-lg bg-[#FDECEA] px-3 py-2 text-[13px] font-medium text-[#B3261E]">
+            <p>{taskError}</p>
+            {isReview && (
+              <button
+                type="button"
+                onClick={onRestart}
+                className="mt-2 rounded-lg bg-white px-3 py-2 text-[12px] font-bold"
+                style={{ border: "1px solid #B3261E", color: "#B3261E", minHeight: 40 }}
+              >
+                Restart this booking
+              </button>
+            )}
+          </div>
         )}
 
         {currentTask.deferrable && !isReview && (
@@ -1376,10 +2039,15 @@ function TaskScreen(props: FlowContentProps) {
             More options
           </button>
         </div>
-        {emailConfirmed && (
-          <p className="mt-1.5 text-center text-[10px]" style={{ color: MUTED }}>
-            We'll save your confirmed answers and email you a secure link every 3 days.
-          </p>
+        {isReview && (
+          <button
+            type="button"
+            onClick={onRestart}
+            className="mt-2 w-full py-2 text-[12px] font-semibold underline"
+            style={{ color: MUTED, minHeight: 40 }}
+          >
+            Restart this booking
+          </button>
         )}
       </div>
     </div>
@@ -1543,37 +2211,68 @@ function TaskInputs({
           <Chip label="Not sure - ask my agent" active={working.interest === "not_sure"} onClick={() => setValue("interest", "not_sure")} />
         </div>
         {working.interest === "yes" && (
-          <div className="flex flex-col gap-3 rounded-xl bg-white p-3" style={{ border: `1px solid ${BORDER}` }}>
-            <Field label="Who may qualify?">
-              <select style={guestInput} value={working.travelerIndex ?? ""} onChange={set("travelerIndex")}>
-                <option value="">Select traveler...</option>
-                {draft.travelers.slice(0, draft.travelerCount).map((traveler, i) => (
-                  <option key={i} value={String(i)}>{traveler.firstName || `Traveler ${i + 1}`}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Closest category">
-              <select style={guestInput} value={working.category ?? ""} onChange={set("category")}>
-                <option value="">Select...</option>
-                <option value="Active duty">Active duty</option>
-                <option value="Retired military">Retired military</option>
-                <option value="Veteran or honorably discharged">Veteran or honorably discharged</option>
-                <option value="Reserve or National Guard">Reserve or National Guard</option>
-                <option value="Canadian Armed Forces">Canadian Armed Forces</option>
-                <option value="Government, civil service, or Department of Defense">Government, civil service, or Department of Defense</option>
-                <option value="First responder - police, fire, or EMS">First responder - police, fire, or EMS</option>
-                <option value="Airline or interline personnel">Airline or interline personnel</option>
-                <option value="Eligible family member">Eligible family member</option>
-                <option value="Other or not sure">Other or not sure</option>
-              </select>
-            </Field>
-            <Field label="Could you provide proof later if the cruise line asks?">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <Chip label="Yes, later" active={working.proofReadiness === "available_later"} onClick={() => setValue("proofReadiness", "available_later")} />
-                <Chip label="I need help" active={working.proofReadiness === "need_help"} onClick={() => setValue("proofReadiness", "need_help")} />
-                <Chip label="Not sure" active={working.proofReadiness === "not_sure"} onClick={() => setValue("proofReadiness", "not_sure")} />
-              </div>
-            </Field>
+          <div className="flex flex-col gap-3">
+            <p className="text-[12px] leading-5" style={{ color: MUTED }}>
+              Select every traveler who may qualify. Each claim is saved on that traveler&apos;s record.
+            </p>
+            {draft.travelers.slice(0, draft.travelerCount).map((traveler, travelerIndex) => {
+              const enabled = working[`claimEnabled${travelerIndex}`] === "yes";
+              return (
+                <div
+                  key={travelerIndex}
+                  className="flex flex-col gap-3 rounded-xl bg-white p-3"
+                  style={{ border: `1px solid ${BORDER}` }}
+                >
+                  <Chip
+                    label={`${traveler.firstName || `Traveler ${travelerIndex + 1}`} may qualify`}
+                    active={enabled}
+                    onClick={() => setValue(`claimEnabled${travelerIndex}`, enabled ? "" : "yes")}
+                  />
+                  {enabled && (
+                    <>
+                      <Field label="Closest category">
+                        <select
+                          style={guestInput}
+                          value={working[`claimCategory${travelerIndex}`] ?? ""}
+                          onChange={set(`claimCategory${travelerIndex}`)}
+                        >
+                          <option value="">Select...</option>
+                          <option value="Active duty">Active duty</option>
+                          <option value="Retired military">Retired military</option>
+                          <option value="Veteran or honorably discharged">Veteran or honorably discharged</option>
+                          <option value="Reserve or National Guard">Reserve or National Guard</option>
+                          <option value="Canadian Armed Forces">Canadian Armed Forces</option>
+                          <option value="Government, civil service, or Department of Defense">Government, civil service, or Department of Defense</option>
+                          <option value="First responder - police, fire, or EMS">First responder - police, fire, or EMS</option>
+                          <option value="Airline or interline personnel">Airline or interline personnel</option>
+                          <option value="Eligible family member">Eligible family member</option>
+                          <option value="Other or not sure">Other or not sure</option>
+                        </select>
+                      </Field>
+                      <Field label="Could they provide proof later if the cruise line asks?">
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                          <Chip
+                            label="Yes, later"
+                            active={working[`claimProof${travelerIndex}`] === "available_later"}
+                            onClick={() => setValue(`claimProof${travelerIndex}`, "available_later")}
+                          />
+                          <Chip
+                            label="I need help"
+                            active={working[`claimProof${travelerIndex}`] === "need_help"}
+                            onClick={() => setValue(`claimProof${travelerIndex}`, "need_help")}
+                          />
+                          <Chip
+                            label="Not sure"
+                            active={working[`claimProof${travelerIndex}`] === "not_sure"}
+                            onClick={() => setValue(`claimProof${travelerIndex}`, "not_sure")}
+                          />
+                        </div>
+                      </Field>
+                    </>
+                  )}
+                </div>
+              );
+            })}
             <p className="text-[12px] leading-5" style={{ color: MUTED }}>
               Do not upload or type a military ID, service number, or discharge document here. Your agent will explain the exact cruise-line requirement only if a live rate is available.
             </p>
@@ -1762,16 +2461,22 @@ function PausedScreen({
   );
 }
 
-function HelpScreen({ draft, onBack }: { draft: MockDraft; onBack: () => void }) {
+function HelpScreen({
+  onBack,
+  isPrototype,
+}: {
+  onBack: () => void;
+  isPrototype: boolean;
+}) {
   return (
     <div className="flex h-full flex-col p-6" style={{ color: NAVY }}>
       <div className="my-auto text-center">
         <p className="text-[13px] font-bold uppercase tracking-[0.14em]" style={{ color: GOLD }}>Help is on the way</p>
         <h2 className="mt-2 text-2xl font-bold">An agent has been alerted</h2>
         <p className="mt-3 text-[14px] leading-6" style={{ color: MUTED }}>
-          (Simulated.) A real agent would see everything you've entered so far and call{" "}
-          {draft.phone || "your number"} - you never have to repeat yourself. During business hours,
-          expect a call within minutes.
+          {isPrototype ? "(Simulated.) " : ""}
+          {isPrototype ? "A real agent would see" : "An agent can now see"} everything you've entered so far, so you never have to repeat yourself.
+          During business hours, expect a call within minutes.
         </p>
         <div className="mt-6">
           <GuestButton onClick={onBack} small>Keep filling things in while I wait</GuestButton>
@@ -1791,21 +2496,44 @@ function CallFinalizeScreen({
   fallbackKey,
   callSignal,
   onLaunchCall,
+  noAgentsMode,
+  onRequestCallback,
+  onNoAgentsTryLater,
   onCallLater,
+  callLaterNotice,
+  desktopCallPrompt,
+  onCancelSignal,
+  onReviewAnswers,
   onOpenOptions,
   onOpenQuestion,
   onEmit,
+  isPrototype,
 }: {
   draft: MockDraft;
   fallbackKey: string;
   callSignal: CallSignal | null;
   onLaunchCall: () => void;
+  noAgentsMode: boolean;
+  onRequestCallback: FlowContentProps["onRequestCallback"];
+  onNoAgentsTryLater: () => Promise<boolean>;
   onCallLater: () => void;
+  callLaterNotice: boolean;
+  desktopCallPrompt: string | null;
+  onCancelSignal: () => void;
+  onReviewAnswers: () => void;
   onOpenOptions: () => void;
   onOpenQuestion: () => void;
   onEmit: (actor: MockJournalEvent["actor"], eventType: string, detail: string, taskId?: string) => void;
+  isPrototype: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [callbackChoice, setCallbackChoice] = useState<"as_soon_as_available" | "preferred_window">("as_soon_as_available");
+  const [windowStart, setWindowStart] = useState("");
+  const [windowEnd, setWindowEnd] = useState("");
+  const [noAgentsSubmitting, setNoAgentsSubmitting] = useState(false);
+  const [noAgentsComplete, setNoAgentsComplete] = useState<"callback" | "later" | null>(null);
+  const [noAgentsError, setNoAgentsError] = useState("");
+  const [resumeEmailAccepted, setResumeEmailAccepted] = useState(false);
   const status = draft.status;
   const pending = status === "call_signal_pending";
   const calling = status === "calling_now";
@@ -1833,6 +2561,50 @@ function CallFinalizeScreen({
       window.speechSynthesis?.speak(utterance);
     } catch {
       // Speech unavailable: the visible key text is the fallback.
+    }
+  }
+
+  async function submitCallbackRequest() {
+    let windowStartIso: string | undefined;
+    let windowEndIso: string | undefined;
+    if (callbackChoice === "preferred_window") {
+      const start = Date.parse(windowStart);
+      const end = Date.parse(windowEnd);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start <= Date.now() || end <= start) {
+        return;
+      }
+      windowStartIso = new Date(start).toISOString();
+      windowEndIso = new Date(end).toISOString();
+    }
+    setNoAgentsSubmitting(true);
+    setNoAgentsError("");
+    try {
+      const accepted = await onRequestCallback({
+        preference: callbackChoice,
+        windowStartIso,
+        windowEndIso,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
+      });
+      setResumeEmailAccepted(accepted);
+      setNoAgentsComplete("callback");
+    } catch (error) {
+      setNoAgentsError(error instanceof Error ? error.message : "We could not save the callback request");
+    } finally {
+      setNoAgentsSubmitting(false);
+    }
+  }
+
+  async function submitTryLater() {
+    setNoAgentsSubmitting(true);
+    setNoAgentsError("");
+    try {
+      const accepted = await onNoAgentsTryLater();
+      setResumeEmailAccepted(accepted);
+      setNoAgentsComplete("later");
+    } catch (error) {
+      setNoAgentsError(error instanceof Error ? error.message : "We could not send the resume email");
+    } finally {
+      setNoAgentsSubmitting(false);
     }
   }
 
@@ -1865,9 +2637,122 @@ function CallFinalizeScreen({
     );
   }
 
+  if (noAgentsMode) {
+    return (
+      <div className="flex h-full flex-col overflow-y-auto p-5" style={{ color: NAVY }}>
+        <div className="my-auto">
+          <p className="text-center text-[13px] font-bold uppercase tracking-[0.14em]" style={{ color: GOLD }}>
+            Information saved
+          </p>
+          <h2 className="mt-2 text-center text-[24px] font-bold">
+            No agents currently available
+          </h2>
+          {noAgentsComplete ? (
+            <div className="mt-5 rounded-xl bg-white p-4 text-[13px] leading-6" style={{ border: `1px solid ${BORDER}` }}>
+              <p className="font-bold">
+                {noAgentsComplete === "callback" ? "Your callback request is saved." : "Your information is saved."}
+              </p>
+              <p className="mt-2" style={{ color: MUTED }}>
+                {noAgentsComplete === "callback"
+                  ? `An agent will call as close to your requested time as possible. ${resumeEmailAccepted ? "We sent a secure resume link to your email." : "Your request is saved; the resume email may be delayed."}`
+                  : `${resumeEmailAccepted ? "We emailed you a secure link." : "Your progress is saved; the resume email may be delayed."} Use it whenever you are ready to return - you will not need to complete this form again.`}
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="mt-3 text-center text-[13px] leading-5" style={{ color: MUTED }}>
+                Your information is safely saved. Ask an agent to call when available, or return later without completing this form again.
+              </p>
+              <div className="mt-5 rounded-xl bg-white p-4" style={{ border: `1px solid ${BORDER}` }}>
+                <p className="text-[13px] font-bold">When is a good time to call?</p>
+                <label className="mt-3 flex min-h-11 items-center gap-3 text-[13px]">
+                  <input
+                    type="radio"
+                    checked={callbackChoice === "as_soon_as_available"}
+                    onChange={() => setCallbackChoice("as_soon_as_available")}
+                  />
+                  As soon as an agent is available
+                </label>
+                <label className="mt-2 flex min-h-11 items-center gap-3 text-[13px]">
+                  <input
+                    type="radio"
+                    checked={callbackChoice === "preferred_window"}
+                    onChange={() => setCallbackChoice("preferred_window")}
+                  />
+                  Choose a date and time window
+                </label>
+                {callbackChoice === "preferred_window" && (
+                  <div className="mt-3 grid gap-3">
+                    <label className="text-[12px] font-semibold">
+                      Window starts
+                      <input
+                        type="datetime-local"
+                        value={windowStart}
+                        onChange={(event) => setWindowStart(event.target.value)}
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
+                        style={{ borderColor: BORDER }}
+                      />
+                    </label>
+                    <label className="text-[12px] font-semibold">
+                      Window ends
+                      <input
+                        type="datetime-local"
+                        value={windowEnd}
+                        onChange={(event) => setWindowEnd(event.target.value)}
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
+                        style={{ borderColor: BORDER }}
+                      />
+                    </label>
+                  </div>
+                )}
+                <p className="mt-2 text-[11px]" style={{ color: MUTED }}>
+                  Times use {Intl.DateTimeFormat().resolvedOptions().timeZone || "your local timezone"}. We will call as close to the requested window as possible.
+                </p>
+              </div>
+              <div className="mt-4">
+                {noAgentsError && (
+                  <p className="mb-2 rounded-lg bg-red-50 p-2 text-[12px] text-red-700">{noAgentsError}</p>
+                )}
+                <GuestButton primary onClick={() => void submitCallbackRequest()} disabled={noAgentsSubmitting}>
+                  {noAgentsSubmitting ? "Saving..." : "Have an agent call me"}
+                </GuestButton>
+              </div>
+              <button
+                type="button"
+                onClick={() => void submitTryLater()}
+                disabled={noAgentsSubmitting}
+                className="mt-3 min-h-11 w-full rounded-xl border px-4 py-2 text-[13px] font-bold"
+                style={{ borderColor: BORDER }}
+              >
+                I&apos;ll try again later
+              </button>
+            </>
+          )}
+          <div className="mt-4 rounded-xl border border-dashed p-3 text-center" style={{ borderColor: BORDER }}>
+            <p className="text-[11px]" style={{ color: MUTED }}>Your three-letter call key remains</p>
+            <p className="mt-1 text-2xl font-bold tracking-[0.3em]">{fallbackKey}</p>
+          </div>
+          <p className="mt-4 text-center text-[11px]" style={{ color: MUTED }}>
+            Nothing is booked, held, or charged. Price and availability will be rechecked when you speak with an agent.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col overflow-y-auto p-5" style={{ color: NAVY }}>
       <div className="my-auto">
+        {!pending && !calling && (
+          <button
+            type="button"
+            onClick={onReviewAnswers}
+            className="mb-4 rounded-lg px-3 py-2 text-[12px] font-bold"
+            style={{ border: `1px solid ${BORDER}`, background: "#FFFFFF", minHeight: 44 }}
+          >
+            &larr; Review or change answers
+          </button>
+        )}
         <p className="text-center text-[13px] font-bold uppercase tracking-[0.14em]" style={{ color: GOLD }}>
           Information saved
         </p>
@@ -1887,7 +2772,10 @@ function CallFinalizeScreen({
           agent completes the booking.
         </div>
 
-        {/* Pending / calling status banner. */}
+        {/* Pending / calling status banner. Includes an always-available
+            escape hatch (not gated on the auto-expiry timer) so a guest who
+            returns to a stuck signal - the call never connected, or they just
+            left mid-attempt - is never trapped on a disabled button. */}
         {(pending || calling || ackFailed) && (
           <div
             className="mt-3 rounded-xl px-4 py-3 text-[13px] font-semibold"
@@ -1899,22 +2787,78 @@ function CallFinalizeScreen({
                   : { background: "#FBF3E4", color: GOLD }
             }
           >
-            {ackFailed
-              ? "We could not alert your agent yet."
-              : calling
-                ? "Your agent has your information. Starting the call..."
-                : "Alerting your agent... placing your information on their screen."}
+            <p>
+              {ackFailed
+                ? "We could not alert your agent yet."
+                : calling
+                  ? "Your agent has your information. Starting the call..."
+                  : "Alerting your agent... placing your information on their screen."}
+            </p>
+            {(pending || calling) && (
+              <>
+                <p className="mt-1 text-[12px] font-normal">
+                  Didn&apos;t connect, or this is from an earlier visit? You can cancel and try again any time.
+                </p>
+                <button
+                  type="button"
+                  onClick={onCancelSignal}
+                  className="mt-1.5 font-bold underline"
+                  style={{ minHeight: 32 }}
+                >
+                  Cancel and go back
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Desktop guests can't place a tel: call. The agent has still been
+            signaled (same flow/rules); this asks the guest to dial the number
+            on their phone. Shown only after a successful non-no_agents signal. */}
+        {desktopCallPrompt && (
+          <div
+            className="mt-4 rounded-xl px-4 py-3 text-center"
+            style={{ background: "#E7F3EC", border: `1px solid ${BORDER}` }}
+          >
+            <p className="text-[13px] font-bold" style={{ color: "#047857" }}>
+              Your agent has your information. Call to finish on your phone:
+            </p>
+            <a
+              href={`tel:${desktopCallPrompt}`}
+              className="mt-1 block text-2xl font-bold tracking-wide"
+              style={{ color: NAVY }}
+            >
+              {desktopCallPrompt}
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  navigator.clipboard?.writeText(desktopCallPrompt);
+                  onEmit("guest", "agent_number_copied", "Guest copied the agent number on desktop");
+                } catch {
+                  // Clipboard unavailable: the visible number is the fallback.
+                }
+              }}
+              className="mt-2 rounded-lg px-3 py-2 text-[12px] font-semibold"
+              style={{ border: `1px solid ${BORDER}`, color: NAVY, minHeight: 40 }}
+            >
+              Copy number
+            </button>
+            <p className="mt-2 text-[11px]" style={{ color: MUTED }}>
+              Nothing is booked, held, or charged yet. Your three-letter key is below if the agent needs it.
+            </p>
           </div>
         )}
 
         <div className="mt-4">
           <GuestButton primary onClick={onLaunchCall} disabled={pending || calling}>
-            {ackFailed ? "Try again" : pending ? "Alerting your agent..." : calling ? "Calling now..." : "Call agent to finalize"}
+            {ackFailed ? "Try again" : pending ? "Alerting your agent..." : calling ? "Calling now..." : desktopCallPrompt ? "Alert agent again" : "Call agent to finalize"}
           </GuestButton>
         </div>
         <p className="mt-2 text-center text-[11px]" style={{ color: MUTED }}>
           We will place your saved information on your agent&apos;s screen before the call starts.
-          {" "}(Prototype: the call is simulated, not dialed.)
+          {isPrototype ? " (Prototype: the call is simulated, not dialed.)" : ""}
         </p>
 
         {/* De-emphasized fallback key card (29.1.4). */}
@@ -1957,9 +2901,11 @@ function CallFinalizeScreen({
             More options
           </button>
         </div>
-        <p className="mt-4 text-center text-[11px]" style={{ color: MUTED }}>
-          Agent line: {MOCK_AGENT_PHONE}
-        </p>
+        {callLaterNotice && (
+          <div className="mt-3 rounded-xl bg-white px-4 py-3 text-center text-[12px] leading-5" style={{ border: `1px solid ${BORDER}`, color: MUTED }}>
+            You&apos;re all set to return later. Your information stays saved, your three-letter key stays the same, and you can use the secure email link or come back here whenever you&apos;re ready to call.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2021,15 +2967,18 @@ function QuestionSheet({
   questionText,
   setQuestionText,
   answer,
+  pending,
   onAsk,
   onClose,
 }: {
   questionText: string;
   setQuestionText: (value: string) => void;
   answer: { q: string; a: string } | null;
+  pending: boolean;
   onAsk: (picked?: { q: string; a: string }) => void;
   onClose: () => void;
 }) {
+  const canSubmit = questionText.trim().length > 0 && !pending;
   return (
     <div>
       <SheetHeader title="Ask a question" onClose={onClose} />
@@ -2039,7 +2988,17 @@ function QuestionSheet({
       {answer && (
         <div className="mb-3 rounded-xl bg-[#F5EFE6] p-3">
           <p className="text-[12px] font-bold" style={{ color: NAVY }}>{answer.q}</p>
-          <p className="mt-1 text-[13px] leading-5" style={{ color: MUTED }}>{answer.a}</p>
+          {pending && !answer.a ? (
+            <p className="mt-1 flex items-center gap-1.5 text-[13px] leading-5" style={{ color: MUTED }}>
+              <span
+                className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+                aria-hidden
+              />
+              Thinking…
+            </p>
+          ) : (
+            <p className="mt-1 text-[13px] leading-5" style={{ color: MUTED }}>{answer.a}</p>
+          )}
         </div>
       )}
       <div className="flex flex-col gap-2">
@@ -2048,7 +3007,8 @@ function QuestionSheet({
             key={entry.q}
             type="button"
             onClick={() => onAsk(entry)}
-            className="rounded-lg bg-white px-3 py-2.5 text-left text-[13px] font-medium"
+            disabled={pending}
+            className="rounded-lg bg-white px-3 py-2.5 text-left text-[13px] font-medium disabled:opacity-50"
             style={{ border: `1px solid ${BORDER}`, color: NAVY, minHeight: 44 }}
           >
             {entry.q}
@@ -2060,10 +3020,20 @@ function QuestionSheet({
           style={{ ...guestInput, fontSize: 14 }}
           placeholder="Or type your own..."
           value={questionText}
+          disabled={pending}
           onChange={(event) => setQuestionText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && canSubmit) onAsk();
+          }}
         />
-        <button type="button" onClick={() => onAsk()} className="shrink-0 rounded-lg px-4 text-[13px] font-bold text-white" style={{ background: NAVY, minHeight: 48 }}>
-          Ask
+        <button
+          type="button"
+          onClick={() => onAsk()}
+          disabled={!canSubmit}
+          className="shrink-0 rounded-lg px-4 text-[13px] font-bold text-white disabled:opacity-50"
+          style={{ background: NAVY, minHeight: 48 }}
+        >
+          {pending ? "…" : "Ask"}
         </button>
       </div>
     </div>
@@ -2095,7 +3065,7 @@ function ProgressSheet({ tasks, draft, onClose }: { tasks: TaskDef[]; draft: Moc
   );
 }
 
-function PrivacySheet({ onClose }: { onClose: () => void }) {
+function PrivacySheet({ onClose, isPrototype }: { onClose: () => void; isPrototype: boolean }) {
   return (
     <div>
       <SheetHeader title="Privacy & data use" onClose={onClose} />
@@ -2103,7 +3073,7 @@ function PrivacySheet({ onClose }: { onClose: () => void }) {
         <p>We save your confirmed answers so you never have to repeat them, and so an agent can finish your booking with you.</p>
         <p>We never collect or store card numbers - payment happens only in the cruise line's official system.</p>
         <p>You can pause, change reminders, or ask us to delete your saved details at any time.</p>
-        <p className="text-[11px]">(Lab note: this prototype stores everything only in this browser tab.)</p>
+        {isPrototype && <p className="text-[11px]">(Lab note: this prototype also keeps its scenario state in this browser tab.)</p>}
       </div>
     </div>
   );

@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createGuestRouteContext } from "@/lib/booking-assistant/guest-route-context";
 import { readBookingAssistantEnvConfig } from "@/lib/booking-assistant/operator-config";
-import { saveDraft, type SaveDraftInput } from "@/lib/booking-assistant/guest-service";
+import {
+  createGuestSessionForDraft,
+  saveDraft,
+  type SaveDraftInput,
+} from "@/lib/booking-assistant/guest-service";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +45,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       completionModeVersion: body.completionModeVersion ?? 1,
     });
 
-    return NextResponse.json({ success: true, result });
+    const session = createGuestSessionForDraft(result.draftId, body.personId);
+    const response = NextResponse.json({ success: true, result });
+    response.cookies.set({
+      name: session.cookieName,
+      value: session.cookieValue,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: request.nextUrl.protocol === "https:",
+      expires: new Date(session.expiresAtIso),
+      path: "/",
+    });
+    return response;
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Save draft failed";
     return NextResponse.json({ success: false, error: detail }, { status: 500 });

@@ -9,12 +9,23 @@ import {
   selectRandomCallKey,
 } from "../lib/booking-assistant/fallback-call-key.ts";
 
+process.env.BOOKING_ASSISTANT_CALL_KEY_HMAC_SECRET ??=
+  "booking-assistant-test-secret-with-at-least-thirty-two-characters";
+
+function isUppercaseAsciiLetter(value: string): boolean {
+  return value >= "A" && value <= "Z";
+}
+
 function testRegistry(): void {
   assert.equal(SAFE_WORD_REGISTRY.length, 90, "Registry should have 90 words");
   for (const word of SAFE_WORD_REGISTRY) {
     assert.equal(word.length, 3, `Word ${word} must be 3 letters`);
     assert.equal(word, word.toUpperCase(), `Word ${word} must be uppercase`);
-    assert.match(word, /^[A-Z]+$/, `Word ${word} must be alpha only`);
+    assert.equal(
+      [...word].every(isUppercaseAsciiLetter),
+      true,
+      `Word ${word} must be alpha only`
+    );
   }
   console.log("  ✓ Registry integrity (90 words, all 3-letter uppercase)");
 }

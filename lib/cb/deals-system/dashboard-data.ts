@@ -148,6 +148,8 @@ export interface DealsSystemDealActivity {
   linkRequests: number;
   callbackRequests: number;
   totalActions: number;
+  bookingPortalEntries: number;
+  bookingsConfirmed: number;
   lastActivityAtIso?: string;
   /** Last 14 UTC days (today inclusive, zero-filled) for the card sparkline. */
   daily14: DealDailyActivityBucket[];
@@ -455,6 +457,8 @@ const EMPTY_DEAL_ACTIVITY: DealsSystemDealActivity = {
   linkRequests: 0,
   callbackRequests: 0,
   totalActions: 0,
+  bookingPortalEntries: 0,
+  bookingsConfirmed: 0,
 };
 
 function summarizeDeal(
@@ -641,6 +645,8 @@ export async function getDealsSystemDashboardData(): Promise<DealsSystemDashboar
         linkRequests: s.linkRequests,
         callbackRequests: s.callbackRequests,
         totalActions: s.totalActions,
+        bookingPortalEntries: s.bookingPortalEntries,
+        bookingsConfirmed: s.bookingsConfirmed,
         lastActivityAtIso: s.lastActivityAtIso,
       });
     })

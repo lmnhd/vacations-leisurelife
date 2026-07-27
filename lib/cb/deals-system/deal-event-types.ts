@@ -27,7 +27,17 @@ export type DealEventType =
   | "link_email_sent" // the link email was actually dispatched
   | "callback_requested" // "request an agent callback" submitted
   | "callback_contacted" // operator marked the callback contacted
-  | "callback_closed"; // operator closed the callback
+  | "callback_closed" // operator closed the callback
+  // Booking portal funnel (milestones bridged from the Booking Assistant;
+  // draft linkage via metadata.draftId, guest identity via email/metadata
+  // where the guest supplied it in the flow)
+  | "booking_portal_entered" // guest landed on /deals/[id]/book (beacon)
+  | "booking_contact_captured" // guest confirmed name+email in the flow (pre-save partial lead)
+  | "booking_packet_saved" // draft persisted — full contact captured (server)
+  | "booking_review_ready" // packet reached review_ready (server)
+  | "booking_call_requested" // guest pressed "call agent to finalize" (server)
+  | "booking_confirmed" // operator recorded a confirmed booking outcome (server)
+  | "booking_cancelled"; // draft cancelled / operator dismissed (server)
 
 /**
  * One append-only Deal activity event.

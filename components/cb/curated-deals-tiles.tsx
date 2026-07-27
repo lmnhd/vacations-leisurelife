@@ -45,8 +45,6 @@ export default async function CuratedDealsTiles() {
               price: tile.pricePerPersonLabel
                 ? { perPerson: tile.pricePerPersonLabel }
                 : undefined,
-              bookButton: Boolean(tile.bookingUrl),
-              bookButtonHref: tile.bookingUrl,
               detailsLink: tile.href,
             };
 

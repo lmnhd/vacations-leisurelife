@@ -34,8 +34,6 @@ export default async function CBDestinationPicksTiles() {
         price: {
           perPerson: deal.pricePerPerson,
         },
-        bookButton: Boolean(detail?.booking.bookingUrl),
-        bookButtonHref: detail?.booking.bookingUrl,
         toolTips: deal.toolTips,
         detailsLink: `/deals/${encodeURIComponent(deal.id)}`,
       };

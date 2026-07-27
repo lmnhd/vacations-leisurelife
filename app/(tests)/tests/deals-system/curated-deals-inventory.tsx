@@ -56,6 +56,7 @@ const SORT_OPTIONS = [
   { id: "views", label: "Most views" },
   { id: "clicks", label: "Most book clicks" },
   { id: "actions", label: "Most actions" },
+  { id: "booked", label: "Most bookings" },
   { id: "sail", label: "Sail date" },
   { id: "title", label: "Title A–Z" },
 ] as const;
@@ -70,6 +71,11 @@ function compareDeals(a: CuratedDealSummary, b: CuratedDealSummary, sort: SortId
       return b.activity.bookNowClicks - a.activity.bookNowClicks;
     case "actions":
       return b.activity.totalActions - a.activity.totalActions;
+    case "booked":
+      return (
+        b.activity.bookingsConfirmed - a.activity.bookingsConfirmed ||
+        b.activity.bookingPortalEntries - a.activity.bookingPortalEntries
+      );
     case "sail":
       return (a.sailDateIso || "9999").localeCompare(b.sailDateIso || "9999");
     case "title":
@@ -407,6 +413,17 @@ function CuratedDealCard({
         <span>
           <span className="font-semibold text-white">{a.totalActions}</span> actions
         </span>
+        {a.bookingPortalEntries > 0 && (
+          <span>
+            <span className="font-semibold text-white">{a.bookingPortalEntries}</span> portal
+          </span>
+        )}
+        {a.bookingsConfirmed > 0 && (
+          <span>
+            <span className="font-semibold text-emerald-300">{a.bookingsConfirmed}</span>{" "}
+            <span className="text-emerald-300/80">booked</span>
+          </span>
+        )}
         <span className="flex items-center gap-3">
           <DealTrendSparkline daily={a.daily14} />
           <SevenDayDelta daily={a.daily14} />

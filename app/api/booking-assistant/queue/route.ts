@@ -15,7 +15,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const statusParams = (request.nextUrl.searchParams.get("statuses") ?? "")
       .split(",")
       .filter(Boolean);
-    const validStatuses = ["call_signal_pending", "ready_to_call_agent", "review_ready"] as const;
+    const validStatuses = [
+      "call_signal_pending",
+      "calling_now",
+      "ready_to_call_agent",
+      "review_ready",
+      "human_requested",
+      "agent_claimed",
+      "agent_processing",
+      "reconciliation_review",
+    ] as const;
     const statuses = statusParams.length > 0
       ? (statusParams.filter((s) => validStatuses.includes(s as never)) as readonly string[])
       : (validStatuses as readonly string[]);

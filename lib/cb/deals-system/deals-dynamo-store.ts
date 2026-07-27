@@ -48,10 +48,17 @@ function cacheGet<T>(key: string): T | undefined {
   const hit = readCache.get(key);
   if (!hit) return undefined;
   if (Date.now() - hit.at > CACHE_TTL_MS) {
-    readCache.delete(key);
+    // Keep the entry so it can serve as a stale fallback if a refresh throttles;
+    // it's only overwritten by a successful read or dropped by an explicit clear.
     return undefined;
   }
   return hit.value as T;
+}
+
+/** Last cached value regardless of age — the stale fallback when a live read fails. */
+function cacheGetStale<T>(key: string): T | undefined {
+  const hit = readCache.get(key);
+  return hit ? (hit.value as T) : undefined;
 }
 
 function cacheSet(key: string, value: unknown): void {
@@ -73,12 +80,51 @@ function isMissingTableError(error: unknown): boolean {
   );
 }
 
+function isThrottlingError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.name === "ThrottlingException" ||
+    error.name === "ProvisionedThroughputExceededException" ||
+    error.name === "RequestLimitExceeded" ||
+    /throughput exceeds|throttl/i.test(error.message)
+  );
+}
+
+const SCAN_MAX_ATTEMPTS = 5;
+
+/**
+ * Send a DynamoDB command, retrying on throttling with exponential backoff +
+ * jitter. On-demand tables auto-scale but reject bursts while they ramp; a full
+ * table Scan is the heaviest single call we make, so it's the most likely to be
+ * throttled. Retrying here (rather than letting the error propagate) keeps the
+ * public deal pages and the operator dashboard rendering through a transient
+ * capacity dip instead of erroring out.
+ */
+async function sendWithThrottleRetry<T>(send: () => Promise<T>, label: string): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await send();
+    } catch (error) {
+      attempt += 1;
+      if (!isThrottlingError(error) || attempt >= SCAN_MAX_ATTEMPTS) throw error;
+      // 200ms, 400ms, 800ms, 1600ms … plus up to 100ms jitter.
+      const backoff = 200 * 2 ** (attempt - 1) + Math.floor(Math.random() * 100);
+      console.warn(
+        `[deals-dynamo-store] ${label} throttled (attempt ${attempt}/${SCAN_MAX_ATTEMPTS}); retrying in ${backoff}ms`
+      );
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+  }
+}
+
 async function getItem<T>(pk: string): Promise<T | null> {
   const cached = cacheGet<T | null>(`get:${pk}`);
   if (cached !== undefined) return cached;
   try {
-    const response = await chatDynamoDocumentClient.send(
-      new GetCommand({ TableName: TABLE_NAME, Key: { PK: pk, SK } })
+    const response = await sendWithThrottleRetry(
+      () => chatDynamoDocumentClient.send(new GetCommand({ TableName: TABLE_NAME, Key: { PK: pk, SK } })),
+      `get ${pk}`
     );
     if (!response.Item) {
       cacheSet(`get:${pk}`, null);
@@ -92,6 +138,15 @@ async function getItem<T>(pk: string): Promise<T | null> {
   } catch (error) {
     if (isMissingTableError(error)) {
       return null;
+    }
+    // Throttled past retries: serve the last good read (even if expired) so a
+    // capacity dip doesn't 404 a real deal on a paid-traffic landing page.
+    if (isThrottlingError(error)) {
+      const stale = cacheGetStale<T | null>(`get:${pk}`);
+      if (stale !== undefined) {
+        console.warn(`[deals-dynamo-store] get ${pk} throttled after retries; serving stale cache`);
+        return stale;
+      }
     }
     console.error(`[deals-dynamo-store] Failed to get ${pk}:`, error);
     throw error;
@@ -131,13 +186,17 @@ async function scanByPrefix<T>(prefix: string): Promise<T[]> {
     let lastEvaluatedKey: Record<string, unknown> | undefined;
 
     do {
-      const response = await chatDynamoDocumentClient.send(
-        new ScanCommand({
-          TableName: TABLE_NAME,
-          FilterExpression: "begins_with(PK, :pfx) AND SK = :sk",
-          ExpressionAttributeValues: { ":pfx": prefix, ":sk": SK },
-          ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
-        })
+      const response = await sendWithThrottleRetry(
+        () =>
+          chatDynamoDocumentClient.send(
+            new ScanCommand({
+              TableName: TABLE_NAME,
+              FilterExpression: "begins_with(PK, :pfx) AND SK = :sk",
+              ExpressionAttributeValues: { ":pfx": prefix, ":sk": SK },
+              ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
+            })
+          ),
+        `scan ${prefix}`
       );
 
       for (const item of response.Items ?? []) {
@@ -154,6 +213,18 @@ async function scanByPrefix<T>(prefix: string): Promise<T[]> {
   } catch (error) {
     if (isMissingTableError(error)) {
       return [];
+    }
+    // Throttled past our retries: serve the last good scan (even if expired)
+    // rather than throwing and breaking the page. Better a few-minutes-stale
+    // deal list than a 500 on the homepage or a dead operator dashboard.
+    if (isThrottlingError(error)) {
+      const stale = cacheGetStale<T[]>(`scan:${prefix}`);
+      if (stale !== undefined) {
+        console.warn(
+          `[deals-dynamo-store] scan ${prefix} throttled after retries; serving stale cache (${stale.length} items)`
+        );
+        return stale;
+      }
     }
     console.error(`[deals-dynamo-store] Failed to scan prefix ${prefix}:`, error);
     throw error;

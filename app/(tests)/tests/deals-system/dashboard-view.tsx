@@ -12,6 +12,7 @@ import { DealCampaignWorkbench } from "./campaign-workbench";
 import { DealPricingCheckPanel } from "./deal-pricing-check-panel";
 import { DealsSystemControls } from "./controls";
 import { PackageLookupControl } from "./package-lookup-control";
+import { BookingAssistantOperatorWorkspace } from "../booking-assistant-operator/page";
 
 type CuratedDealSummary = DealsSystemDashboardData["curatedDeals"][number];
 
@@ -119,9 +120,10 @@ function homepageReadiness(data: DealsSystemDashboardData) {
 
 // ─── Tab scaffolding ─────────────────────────────────────────────────────────
 
-type TabId = "pipeline" | "tools" | "inventory" | "health";
+type TabId = "pipeline" | "bookings" | "tools" | "inventory" | "health";
 
 const TABS: Array<{ id: TabId; label: string; hint: string }> = [
+  { id: "bookings", label: "Bookings", hint: "Guest handoffs and operator processing" },
   { id: "pipeline", label: "Pipeline", hint: "Discovery → Meta ads" },
   { id: "tools", label: "Operator Tools", hint: "Scripts, lookup, workbench" },
   { id: "inventory", label: "Inventory", hint: "Deals, promos, links" },
@@ -806,12 +808,16 @@ export function DealsSystemDashboardView({
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const initialTab: TabId =
-    requestedTab === "tools" || requestedTab === "inventory" || requestedTab === "health"
+    requestedTab === "bookings" ||
+    requestedTab === "tools" ||
+    requestedTab === "inventory" ||
+    requestedTab === "health"
       ? requestedTab
       : "pipeline";
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   const tabCounts: Record<TabId, number | null> = {
+    bookings: null,
     pipeline: null,
     tools: null,
     inventory: data.summary.curatedDeals + data.summary.promoRecords,
@@ -861,6 +867,7 @@ export function DealsSystemDashboardView({
       <TabBar active={activeTab} onChange={setActiveTab} counts={tabCounts} />
 
       <div className="mt-6">
+        {activeTab === "bookings" && <BookingAssistantOperatorWorkspace embedded />}
         {activeTab === "pipeline" && <PipelineTab data={data} />}
         {activeTab === "tools" && <ToolsTab data={data} />}
         {activeTab === "inventory" && <InventoryTab data={data} />}

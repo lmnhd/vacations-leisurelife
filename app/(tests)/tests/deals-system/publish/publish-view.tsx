@@ -626,8 +626,8 @@ export function PublishView({
             </p>
             <p className="mt-1 text-[11px] leading-5 text-slate-400">
               {currentExpiresOnIso
-                ? `Set to "${currentExpiresOnIso}" - the deal disappears from the homepage and its detail page after that date.`
-                : `Defaults to ${DEFAULT_EXPIRY_DAYS} days from today (${defaultExpiryDate()}). Every deal expires; adjust the date below if needed.`}
+                ? `Set to "${currentExpiresOnIso}" - the deal disappears from the homepage and its detail page after that date, or earlier once it enters the 45-day pre-sail inventory cutoff window.`
+                : `Defaults to ${DEFAULT_EXPIRY_DAYS} days from today (${defaultExpiryDate()}). Every deal expires, and homepage visibility also stops automatically once the sailing is within 45 days.`}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <input

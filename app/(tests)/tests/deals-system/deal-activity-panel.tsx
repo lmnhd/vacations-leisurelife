@@ -4,16 +4,26 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
   DealActivitySummary,
+  DealBookingFunnelStage,
+  DealBookingLead,
   DealDailyActivityBucket,
 } from "@/lib/cb/deals-system/deal-events-store";
 import type { DealEvent } from "@/lib/cb/deals-system/deal-event-types";
 
-import { DailyActionsChart, DailyActivityTable, DailyReachChart } from "./deal-activity-charts";
+import {
+  BookingFunnelStrip,
+  DailyActionsChart,
+  DailyActivityTable,
+  DailyBookingChart,
+  DailyReachChart,
+} from "./deal-activity-charts";
 
 interface ActivityResponse {
   ok: boolean;
   summary?: DealActivitySummary;
   daily?: DealDailyActivityBucket[];
+  bookingFunnel?: DealBookingFunnelStage[];
+  bookingLeads?: DealBookingLead[];
   events?: DealEvent[];
   error?: string;
 }
@@ -27,6 +37,13 @@ const EVENT_LABELS: Record<string, string> = {
   callback_requested: "Callback requested",
   callback_contacted: "Callback contacted",
   callback_closed: "Callback closed",
+  booking_portal_entered: "Entered booking portal",
+  booking_contact_captured: "Booking contact captured",
+  booking_packet_saved: "Booking packet saved",
+  booking_review_ready: "Packet review ready",
+  booking_call_requested: "Call requested",
+  booking_confirmed: "Booking confirmed",
+  booking_cancelled: "Booking cancelled",
 };
 
 const RANGE_PRESETS = [
@@ -77,6 +94,8 @@ interface DayLogGroup {
   views: number;
   uniqueSessions: number;
   engaged: number;
+  /** Anonymous booking-portal entries roll up like views. */
+  portalEntries: number;
   /** Non-view events for the day, newest first. */
   actionEvents: DealEvent[];
 }
@@ -97,6 +116,7 @@ function groupEventsByDay(events: DealEvent[]): DayLogGroup[] {
         views: 0,
         uniqueSessions: 0,
         engaged: 0,
+        portalEntries: 0,
         actionEvents: [],
         sessionIds: new Set<string>(),
       };
@@ -107,6 +127,8 @@ function groupEventsByDay(events: DealEvent[]): DayLogGroup[] {
       group.sessionIds.add(event.attribution.sessionId ?? event.eventId);
     } else if (event.eventType === "deal_engaged") {
       group.engaged += 1;
+    } else if (event.eventType === "booking_portal_entered") {
+      group.portalEntries += 1;
     } else {
       group.actionEvents.push(event);
     }
@@ -125,6 +147,8 @@ function groupEventsByDay(events: DealEvent[]): DayLogGroup[] {
 export function DealActivityPanel({ dealId }: { dealId: string }) {
   const [summary, setSummary] = useState<DealActivitySummary | null>(null);
   const [daily, setDaily] = useState<DealDailyActivityBucket[]>([]);
+  const [bookingFunnel, setBookingFunnel] = useState<DealBookingFunnelStage[]>([]);
+  const [bookingLeads, setBookingLeads] = useState<DealBookingLead[]>([]);
   const [events, setEvents] = useState<DealEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +169,8 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
       }
       setSummary(data.summary);
       setDaily(data.daily ?? []);
+      setBookingFunnel(data.bookingFunnel ?? []);
+      setBookingLeads(data.bookingLeads ?? []);
       setEvents(data.events ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load activity.");
@@ -180,6 +206,8 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
       : events;
     return groupEventsByDay(scoped);
   }, [events, rangeStartIso]);
+
+  const hasBookingActivity = bookingFunnel.some((stage) => stage.count > 0);
 
   if (loading && !summary) {
     return <p className="mt-3 text-xs text-slate-400">Loading activity…</p>;
@@ -217,7 +245,7 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
         </button>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-10">
         <StatChip label="Views" value={summary.totalViews} />
         <StatChip label="Unique" value={summary.uniqueSessions} />
         <StatChip label="Engaged" value={summary.engagedViews} />
@@ -226,6 +254,8 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
         <StatChip label="Emails sent" value={summary.linkEmailsSent} />
         <StatChip label="Callbacks" value={summary.callbackRequests} />
         <StatChip label="Actions" value={summary.totalActions} />
+        <StatChip label="Portal" value={summary.bookingPortalEntries} />
+        <StatChip label="Booked" value={summary.bookingsConfirmed} />
       </div>
 
       {daily.length === 0 ? (
@@ -275,6 +305,12 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
               <div className="grid gap-3 xl:grid-cols-2">
                 <DailyReachChart buckets={buckets} />
                 <DailyActionsChart buckets={buckets} />
+                {hasBookingActivity && (
+                  <>
+                    <BookingFunnelStrip stages={bookingFunnel} />
+                    <DailyBookingChart buckets={buckets} />
+                  </>
+                )}
               </div>
             ) : (
               <DailyActivityTable buckets={buckets} />
@@ -309,6 +345,56 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
         </div>
       )}
 
+      {bookingLeads.length > 0 && (
+        <div className="mt-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+              Booking leads
+            </p>
+            <p className="text-[10px] text-slate-600">
+              guests who identified themselves in the booking portal — including
+              incomplete flows
+            </p>
+          </div>
+          <ul className="mt-1.5 space-y-1">
+            {bookingLeads.slice(0, 10).map((lead) => (
+              <li
+                key={lead.email}
+                className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-xs"
+              >
+                <span className="min-w-0 truncate">
+                  {lead.firstName && (
+                    <span className="font-semibold text-slate-200">{lead.firstName}</span>
+                  )}
+                  <span className={lead.firstName ? "ml-1.5 text-cyan-200" : "text-cyan-200"}>
+                    {lead.email}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${
+                      lead.confirmed
+                        ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200"
+                        : "border-amber-400/35 bg-amber-500/10 text-amber-200"
+                    }`}
+                  >
+                    {lead.confirmed ? "Booked" : lead.furthestStageLabel}
+                  </span>
+                  <span className="text-slate-500">
+                    {formatDayHeading(lead.lastSeenAtIso.slice(0, 10))}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {bookingLeads.length > 10 && (
+            <p className="mt-1 text-[10px] text-slate-600">
+              Showing the 10 most recent of {bookingLeads.length} leads.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="mt-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
           Event log
@@ -329,6 +415,7 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
                   <span className="text-slate-500">
                     {group.views} views · {group.uniqueSessions} unique
                     {group.engaged > 0 ? ` · ${group.engaged} engaged` : ""}
+                    {group.portalEntries > 0 ? ` · ${group.portalEntries} portal` : ""}
                   </span>
                 </div>
                 {group.actionEvents.length > 0 && (
@@ -340,7 +427,13 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
                           key={event.eventId}
                           className="flex items-center justify-between gap-3 text-xs"
                         >
-                          <span className="min-w-0 truncate font-medium text-slate-200">
+                          <span
+                            className={`min-w-0 truncate font-medium ${
+                              event.eventType === "booking_confirmed"
+                                ? "text-emerald-300"
+                                : "text-slate-200"
+                            }`}
+                          >
                             {EVENT_LABELS[event.eventType] ?? event.eventType}
                             {event.email !== "anonymous" && (
                               <span className="ml-1.5 text-cyan-200">{event.email}</span>

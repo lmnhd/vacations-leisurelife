@@ -27,6 +27,7 @@ import {
 } from "./booking-flow-experience";
 import {
   CALL_OUTCOME_LABELS,
+  buildJourneyReplay,
   mockMscSeniorCandidate,
   serviceRateSummary,
   type CallOutcome,
@@ -184,6 +185,7 @@ export function BookingAssistantLab() {
           <div className="flex w-full min-w-0 flex-col gap-6 lg:max-w-[560px]">
             <CallIntentPanel snapshot={snapshot} flowRef={flowRef} />
             <OperatorPreview snapshot={snapshot} />
+            <JourneyReplayPanel journal={snapshot?.journal ?? []} />
             <JournalPanel journal={snapshot?.journal ?? []} />
           </div>
         </div>
@@ -471,6 +473,49 @@ const ACTOR_TONE: Record<MockJournalEvent["actor"], string> = {
   system: "border-slate-400/30 bg-slate-500/10 text-slate-300",
   operator: "border-fuchsia-400/35 bg-fuchsia-500/10 text-fuchsia-200",
 };
+
+function JourneyReplayPanel({ journal }: { journal: MockJournalEvent[] }) {
+  const steps = buildJourneyReplay(journal);
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+        Structured journey replay
+      </p>
+      <p className="mt-1 text-[11px] text-slate-500">
+        A privacy-safe operational replay derived from registered journal events.
+      </p>
+      <ol className="mt-4 flex flex-col gap-2">
+        {steps.map((step, index) => (
+          <li
+            key={step.id}
+            className="grid grid-cols-[28px_1fr_auto] items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2"
+          >
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-bold ${
+                step.state === "completed"
+                  ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+                  : step.state === "active"
+                    ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-200"
+                    : "border-white/10 bg-white/[0.03] text-slate-600"
+              }`}
+            >
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold text-slate-300">{step.label}</p>
+              <p className="truncate font-mono text-[10px] text-slate-600">
+                {step.lastEventType ?? "No event yet"}
+              </p>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+              {step.state === "not_started" ? "waiting" : `${step.eventCount} event${step.eventCount === 1 ? "" : "s"}`}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 function JournalPanel({ journal }: { journal: MockJournalEvent[] }) {
   const rows = [...journal].reverse();

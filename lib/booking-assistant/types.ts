@@ -306,6 +306,7 @@ export interface DraftMetaItem {
   updatedAtIso: string;
   lastGuestActivityAtIso: string;
   lastMeaningfulGuestActivityAtIso: string;
+  lastJournalEventAtIso?: string;
   dealId: string;
   packageId: string;
   personId: string;
@@ -329,6 +330,14 @@ export interface DraftContactItem {
   pk: string;
   sk: "CONTACT";
   encryptedContact: EncryptedBlob;
+  updatedAtIso: string;
+  version: number;
+}
+
+export interface DraftDealItem {
+  pk: string;
+  sk: "DEAL";
+  encryptedDeal: EncryptedBlob;
   updatedAtIso: string;
   version: number;
 }
@@ -380,6 +389,29 @@ export interface CallKeyLookupItem {
   issuedAtIso: string;
 }
 
+export interface ResumeTokenItem {
+  pk: string;
+  sk: "TOKEN";
+  draftId: string;
+  personId: string;
+  redirectDealId: string;
+  tokenHash: string;
+  state: "active" | "consumed";
+  issuedAtIso: string;
+  expiresAtIso: string;
+  ttlEpochSeconds: number;
+  consumedAtIso?: string;
+}
+
+export interface DraftResumePointerItem {
+  pk: string;
+  sk: "RESUME_ACTIVE";
+  tokenHash: string;
+  expiresAtIso: string;
+  updatedAtIso: string;
+  ttlEpochSeconds: number;
+}
+
 export interface JournalEventItem {
   pk: string;
   sk: string;
@@ -398,6 +430,8 @@ export interface JournalEventItem {
 
 export interface OperatorQueueCard {
   bookingDraftId: string;
+  /** Current optimistic-concurrency version needed for operator actions. */
+  version: number;
   firstName: string;
   dealSummary: string;
   status: BookingDraftStatus;
@@ -409,8 +443,10 @@ export interface OperatorQueueCard {
   callKeyState?: CallKeyState;
   readyToCallAge?: string;
   assignedOperatorId?: string;
+  claimLeaseExpiresAtIso?: string;
   activeCallAttemptId?: string;
   callIntentExpiresAtIso?: string;
+  callbackWindowLabel?: string;
 }
 
 // ── Call intent signal for operator display ────────────────────────────────

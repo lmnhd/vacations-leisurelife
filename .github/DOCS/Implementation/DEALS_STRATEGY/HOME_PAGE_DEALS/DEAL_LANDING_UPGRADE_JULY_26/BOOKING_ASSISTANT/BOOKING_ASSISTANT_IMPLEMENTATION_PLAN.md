@@ -18,6 +18,53 @@ Supporting sources:
 - `.github/DOCS/Implementation/GUEST_INFO.json`
 - Current Deal CTA, chat, voice, callback, Klaviyo, DynamoDB, and Odysseus code paths
 
+## Development integration status - July 25, 2026
+
+The pilot is now connected to real Deal landing pages in local development only.
+
+- Every Deal landing-page renderer now exposes one public action: `Start booking`. The former landing-page `Email me the link`, `Request callback`, and `Ask about this deal` buttons are removed rather than presented as competing entry paths.
+- On `localhost`, that single Deal booking CTA routes to `/deals/[id]/book`.
+- The booking route now owns a fixed, app-like mobile viewport. It hides the normal landing-page footer and background page chrome, prevents the document behind the assistant from scrolling, and leaves scrolling only inside the active booking task or sheet. The compact action area does not repeat reminder-program explanatory copy.
+- Every task after the first now exposes a plainly labeled `Back` control. It moves one task at a time, reloads the saved answer for editing, preserves every other confirmed answer, records the navigation, and reopens dependent tasks when a changed answer makes them stale. The ready-to-call screen also provides `Review or change answers` until a call handoff is active.
+- The intent behind the removed actions is not discarded. `Email me the link` becomes the draft-aware `Continue later`/secure-resume path after contact capture, and callback/help becomes the contextual human-help and final call-agent paths inside the assistant. Those actions must use the same draft and Booking Activity Journal.
+- The new route resolves the same eligible Curated Deal or legacy Deal used by the landing page and passes its package facts plus original supplier booking URL into the assistant.
+- The assistant saves that original supplier booking URL in the encrypted draft packet. After operator verification and packet reveal, the console exposes it as the operator's fresh-session starting link.
+- The existing production CTA behavior is unchanged: production continues to open the approved Cruise Brothers booking URL directly. The `/deals/[id]/book` route returns not found outside local development.
+- Final review now waits for the durable `review_ready` write before presenting `Call agent to finalize`; this prevents a guest call signal from racing ahead of the saved state.
+
+### Phase 1 completion evidence - July 25, 2026
+
+The Phase 1 implementation scope is complete in the Interaction Flow Lab:
+
+- military/service qualification is repeatable for every traveler, and each selected claim now persists into that traveler's `rateQualificationClaims` packet field instead of being dropped or flattened to one booking-level value;
+- the observer surface now includes a structured, privacy-safe journey replay derived from registered mock journal events, alongside the chronological journal;
+- the existing text/voice switch, editable simulated transcript confirmation, exact-task pause/resume, side-question overlay, More Options flow, operator preview, and acknowledged call-intent/fallback-key handoff remain intact;
+- `tests/booking-assistant/phase-one-flow.ts` covers dynamic traveler tasks, validation, stable fallback keys, per-traveler qualification mapping, and journey replay;
+- `tests/booking-assistant/phase-one-mobile.spec.ts` covers the 390px iPhone viewport and editable voice confirmation in Playwright WebKit;
+- `npm run test:booking-assistant:phase-one`, `npm run test:booking-assistant:contracts`, the WebKit mobile suite, and the full TypeScript check pass.
+
+Phase 1's code and automated-test deliverables are complete. Its exit gate remains pending the operator's usability walk-through and approval of the exact public copy; automated checks cannot substitute for that product approval.
+
+### Phase 2 and Phase 3 implementation completion - July 26, 2026
+
+The Phase 2 durable-security deliverables and Phase 3 guided-collection implementation are now present:
+
+- `guest/save` now establishes an opaque HTTP-only guest session cookie, and `guest/resume/[draftId]` refuses to return a decrypted draft unless that cookie matches the draft and person;
+- `app/api/booking-assistant/resume/route.ts` now consumes a one-time signed opaque resume token, establishes the guest cookie, redirects to a clean `/deals/[id]/book` URL, and sets `Referrer-Policy: no-referrer` on the exchange response;
+- all guest state-changing routes after draft creation require that signed draft/person session, while the one-time email token remains an exchange credential rather than a reusable draft bearer;
+- draft creation, field confirmation, guest review/readiness, guest call-intent transitions, and operator status mutations use optimistic concurrency and append the authoritative journal event with the durable mutation;
+- `field-catalog.ts`, `flow-definition.ts`, and the guest flow API provide the versioned server task/form contract; encrypted field revisions save each confirmed task and reconstruct the exact next task through the protected current-draft endpoint after refresh or cross-device email resume;
+- `redaction.ts` rejects ordinary persistence of card data, restricted proof/identity material, and disallowed structured keys; `conversation-store.ts` encrypts accepted content, quarantines restricted Tier C turns, and unconditionally discards detected Tier D content;
+- `event-registry.ts` covers every authoritative Booking Journal event contract, and `analytics-projector.ts` emits only registered allowlisted dimensions under an HMAC-derived anonymous draft identity;
+- `age-at-sailing.ts`, `rate-qualification-registry.ts`, and `rate-comparison.ts` implement the versioned age/rate foundation without turning a candidate or claim into verified entitlement or automatic selection;
+- `reminders.ts`, `continue-later-program.ts`, `notifications.ts`, and the authenticated cron worker implement one mutually exclusive active reminder program per draft, one-time replacement resume tokens, immediate Klaviyo receipt events, 72-hour recurrence, a ten-message/30-day ceiling, lifecycle suppression, claim expiry recovery, opt-out, and terminal-state cancellation;
+- review now advances the server draft through `review_ready` to `ready_to_call_agent`, atomically replaces the intake reminder with `call_to_finalize_v1`, sends the ready-to-call receipt, and preserves the same fallback key;
+- the public client polls the protected draft after a call-intent publish and enters `calling_now` or launches the configured `tel:` action only after the operator dashboard has acknowledged that attempt;
+- `retention.ts`, `retention-worker.ts`, the guarded retention cron route, and the authenticated guest delete route remove protected draft content and leave only a non-reversible deletion tombstone; and
+- the test inventory now contains sixteen Booking Assistant unit/integration/viewport files. `npm run test:booking-assistant`, `npm run test:booking-assistant:phase-two`, `npm run test:booking-assistant:phase-three`, the existing WebKit mobile suite, the full TypeScript check, and `git diff --check` are the verification commands for this checkpoint.
+
+Phase 2 and Phase 3 code deliverables are complete. This checkpoint does not deploy or enable production PII traffic by itself. Operational activation still requires the approved retention value, public base URL, analytics HMAC secret, Klaviyo flows, agency phone value, AWS table/KMS/cron permissions, and the Phase 1 operator copy/usability approval. The Phase 3 exit scenario must then be run against that configured environment; source-only tests cannot prove external email delivery, AWS policy, or a live local-operator acknowledgement.
+
 ## 1. Executive decision
 
 Build a mobile-first Deal Booking Assistant that sits between a Curated Deal landing page and the Cruise Brothers/Odysseus payment surface.
@@ -65,6 +112,8 @@ The initial target user is an older, low-technical-confidence guest arriving fro
 | Save after every confirmed answer | The server, not browser memory, is the durable source of truth. |
 | Tell us once | Reuse confirmed values. Ask for review again only when data is stale, legally sensitive, changed, or must be explicitly reconfirmed. |
 | One primary task at a time | Never show the guest a large Odysseus-style multi-section form. |
+| Reversible step navigation | Every task after the first has a visible `Back` action. Moving backward never discards confirmed data. Previously saved values preload for editing, and a material upstream change deterministically invalidates only the dependent confirmations that must be reviewed again. |
+| Focused booking viewport | The Booking Assistant hides the normal site footer and unrelated landing-page chrome. Keep the viewport fixed while allowing the active task and sheets to scroll internally; do not trap access to long form fields, validation messages, or accessibility controls. |
 | Progressive options without confusion | Show one primary action, one visible `Continue later` escape, and only the secondary options that are valid at the current stage. Never show unavailable future capabilities. |
 | Channel continuity | Text, voice, forms, email resume, and operator actions update one draft and one timeline. |
 | Complete observable journey | Every meaningful action, message, state transition, validation outcome, delivery result, and operator/supplier interaction writes a versioned journal event. Do not record raw keystrokes, payment data, or uncontrolled sensitive screen/audio capture. |
@@ -112,7 +161,7 @@ Do not promise literally that a question can never reappear. Legal-name confirma
 
 | Existing capability | Reuse | Required correction or limit |
 | --- | --- | --- |
-| `components/cb/deal-cta-actions.tsx` | Reuse Deal context and analytics entry point. | Replace three public actions with one assistant route after prototype approval. Preserve the old actions behind a rollback flag. |
+| `components/cb/deal-cta-actions.tsx` | Reuse Deal context and analytics entry point. | It now renders one public booking action. Keep resume email, callback/help, voice, and agent-finalization choices inside the assistant so they share a draft and journal. Do not restore competing landing-page actions during dashboard work. |
 | `/tests/deals-system` | Reuse the shared local Deals workbench and Deal data. | Add a dedicated local-only Booking Queue. Real PII is read server-side only by the loopback operator console using short-lived AWS operator credentials; no production admin route or public operator API is enabled. |
 | Callback request Dynamo store and Pushover | Reuse notification transport and status concepts. | Booking drafts need a richer lifecycle, claim locks, audit events, and PII-minimized notifications. |
 | Klaviyo event integration | Reuse for event-triggered email delivery. | Send secure resume URLs, not sensitive answers or raw Odysseus session links. Add consent, caps, cancellation, and idempotency. |
@@ -1844,6 +1893,62 @@ Add four views under the protected Bookings workspace:
 
 Every chart links back only to an authorized filtered draft list or de-identified cohort. Analytics filters must never expose a single guest through overly narrow segmentation.
 
+### 20.6 Deal-System dashboard handoff: complete non-call tracking
+
+This is a required enhancement for the next Deal-System dashboard implementation agent. It is not satisfied by counting only saved drafts, call-button taps, or completed bookings.
+
+The dashboard must account for **every journey that enters the Booking Assistant, including every journey that never results in a call to the agent**. A non-call journey is any `booking_assistant_opened` journey without a later valid `call_outcome_recorded` or authoritative booking outcome. It remains in this cohort until a later correlated event changes that fact.
+
+Instrumentation starts before contact capture:
+
+1. The landing-page `Start booking` click creates or reuses a privacy-safe `journeyId` and records Deal, package, campaign/source attribution, flow version, timestamp, coarse device/channel class, and the CTA surface.
+2. `booking_assistant_opened` and all pre-contact observations use that `journeyId`.
+3. When the first durable draft is created, the server atomically records the `journeyId` to `bookingDraftId` correlation. This prevents guests who leave before or during contact capture from disappearing from reporting.
+4. Every accepted action and every failed attempt records an allowlisted outcome exactly once. Client retry uses an idempotency key; server commands retain their command/result chain.
+5. Free-form guest text, raw PII, exact phone/email, card data, voice audio, and supplier secrets never enter the analytics projection.
+
+The non-call cohort must distinguish, at minimum:
+
+- CTA selected but assistant never loaded;
+- assistant opened with no task interaction;
+- contact task started but no contact saved;
+- contact saved, then incomplete;
+- validation blocked or repeated correction;
+- `Continue later` selected;
+- secure resume email sent, failed, opened, clicked, or expired;
+- reminder armed, sent, suppressed, stopped, or exhausted;
+- guest resumed and the exact return stage;
+- side question asked, answered, unresolved, or escalated;
+- human help requested before final review;
+- review started but incomplete;
+- review completed but `Call agent to finalize` was not selected;
+- call disclosure shown but call launch not requested;
+- call signal publish failed, acknowledgement timed out, or signal expired;
+- call signal pinned but no call was received;
+- fallback-key lookup attempted without a completed call;
+- guest explicitly cancelled; and
+- journey inferred abandoned after the approved inactivity window.
+
+For each journey, the protected detail projection must expose the last meaningful action, current/last stage and task, last actor, last outcome or failure code, elapsed inactivity, intended next action, reminder state, call-signal state, and consent-safe follow-up eligibility. Aggregate Deal-System views must show:
+
+- funnel counts and conversion rates from Deal view -> Start booking -> assistant open -> contact saved -> review ready -> call requested -> operator pin -> agent processing -> confirmed;
+- non-call count and rate by Deal, campaign/source, flow version, date range, coarse device/channel class, and last stage;
+- abandonment and failure reason by last task;
+- `Continue later`, resume, and reminder return performance;
+- time to contact, review, call request, operator acknowledgement, and final outcome;
+- unresolved help requests and stale non-call journeys requiring operator attention;
+- event coverage, duplicate suppression, schema failures, journal gaps, and projection freshness; and
+- an authorized chronological journey detail/replay that shows what happened without exposing forbidden content.
+
+The two removed landing-page choices are rerouted as follows:
+
+| Former landing-page action | New in-flow equivalent | Required tracking |
+| --- | --- | --- |
+| `Email me the link` | `Continue later` after contact capture, followed by a secure resume email and the capped reminder program | selection, save result, token issuance, delivery/open/click/expiry, resume, reminder outcomes, and eventual completion/non-call status |
+| `Request callback` / `Ask about this deal` | contextual `Get human help` after phone/contact permission exists, then the reviewed `Call agent to finalize` handoff | help request, urgency, acknowledgement, response/outcome, call disclosure, signal/pin/expiry, fallback use, and eventual completion/non-call status |
+
+Do not create new records through the old landing-page link-request or callback-request UI. Existing records/endpoints may remain available for history, rollback migrations, or an explicit internal compatibility adapter, but they are not a second public funnel and must not split analytics identity from the Booking Assistant journey.
+
 ## 21. Implementation phases
 
 ### Phase 0 - Complete the booking transport research
@@ -1964,6 +2069,34 @@ Exit gate:
 
 - operator receives the expected draft before dialing, or locates it from the fallback key, then verifies/claims/processes it without asking the guest to repeat confirmed answers;
 - urgent help is acknowledged and tracked end to end.
+
+Implementation status (July 26, 2026): Phase 4 code is complete for the selected
+local-operator pilot. The Deals workbench now has an embedded protected
+`Bookings` tab backed by the fail-closed operator APIs. It retains
+Calling-now, claimed, processing, human-requested, and reconciliation work in
+the queue; enforces persisted caller verification before claim; rechecks the
+operator claim lease before reveal, processing, contact actions, edits,
+conversation access, outcomes, and reconciliation; and provides masked
+fallback lookup, audited detail/timeline access, structured journey replay,
+claim-gated conversation display, Pushover call urgency, exact stored
+rate-candidate comparison, proof readiness, call/email/request-field actions,
+Tier-A-only operator corrections, a fixed completion-mode control, and
+authoritative booking-reference reconciliation. A call outcome can no longer
+mark a booking confirmed directly: it enters `reconciliation_review`, and only
+an encrypted CBAT Trip or supplier-confirmation reference can transition it to
+`booking_confirmed`. The automated Phase 4 checks, the full Booking Assistant
+suite, TypeScript, the live local workbench route, and diff validation pass.
+The exit gate still requires a configured end-to-end operator run with real
+AWS/KMS/DynamoDB credentials, Pushover delivery, and approved operator
+procedure/copy; those are operational activation checks rather than missing
+code.
+
+Call-launch correction (July 26, 2026): the guest's primary call button writes
+the durable handoff signal and then immediately launches the configured
+`tel:` number. Operator-dashboard acknowledgement remains useful presence and
+workflow state, but it no longer gates the phone launch. Pushover remains an
+optional, non-blocking operator notification and never replaces or delays the
+guest's phone action.
 
 ### Phase 5 - Future Odysseus preparation automation (not a launch dependency)
 
@@ -2111,6 +2244,11 @@ After pilot success, add supplier contract and rate-qualification fixtures one c
 ### 22.4 End-to-end guest tests
 
 - iPhone SE and current iPhone viewport;
+- every task after the first shows a visible, keyboard-accessible, screen-reader-labeled `Back` control;
+- repeated Back actions move one task at a time, preload each saved answer, and preserve unrelated confirmed answers across refresh;
+- editing an upstream answer returns to the earliest remaining task and reopens only genuinely dependent confirmations;
+- the ready-to-call screen offers `Review or change answers` before signal launch and prevents packet editing while a call signal is pending or acknowledged;
+- Back and correction actions each appear exactly once in the Booking Activity Journal;
 - Chromium and WebKit;
 - text-only completion;
 - voice-to-text and text-to-voice completion;
@@ -2168,6 +2306,11 @@ After pilot success, add supplier contract and rate-qualification fixtures one c
 
 ### 22.6 Activity Journal and analytics tests
 
+- every Deal landing-page renderer exposes one booking action and does not render public email-link, callback, or ask-about-this-deal actions;
+- a `Start booking` journey that leaves before draft creation still appears in the Deal-System non-call cohort with its last observable stage;
+- the pre-contact `journeyId` is correlated exactly once to the durable `bookingDraftId`, without duplicating earlier events;
+- every non-call condition in Section 20.6 projects to an explicit stage/outcome instead of disappearing into a generic abandonment bucket;
+- `Continue later` and human-help activity remain part of the same Booking Assistant journey rather than creating legacy link-request/callback funnels;
 - every accepted state-changing API command writes exactly one command/result chain or fails the mutation;
 - each flow action has a registered event contract, owner, privacy class, and analytics projection decision;
 - current-state panel matches the authoritative draft after late or out-of-order observation events;
@@ -2212,7 +2355,7 @@ The authoritative server-side journal for mutations and protected-data access is
 
 ### 23.3 Rollback
 
-One flag restores the existing three CTA experience without deleting drafts. Existing guests can still resume or receive operator help. Worker shutdown never deletes durable drafts.
+One flag may restore the previous supplier-booking destination without deleting drafts, but the public Deal page retains one booking CTA. Existing guests can still resume or receive operator help inside the assistant. Worker shutdown never deletes durable drafts. Restoring the former three-button landing-page experience requires a separate, explicit product decision and is not the default technical rollback.
 
 ## 24. Gap and risk register
 
@@ -2414,12 +2557,14 @@ tests/booking-assistant/
 The feature is complete only when all of the following are true:
 
 - Every eligible Deal has one booking CTA into the assistant.
+- No eligible Deal renderer exposes public `Email me the link`, `Request callback`, or `Ask about this deal` actions; their valid intent is handled inside the assistant on the same draft.
 - Contact is saved before the long flow begins.
 - Confirmed progress survives refresh, page close, email resume, and Odysseus expiry.
 - Text, voice, forms, email, and operator actions share one draft.
 - Every meaningful guest, assistant, operator, email, system, and Odysseus action has a versioned, attributable Booking Activity Journal event with causality and outcome.
 - The protected operator workspace can show what is happening now, the full sanitized conversation, the chronological timeline, and a structured journey replay without exposing payment or uncontrolled sensitive content.
 - Aggregate dashboards explain funnel progression, task friction, validation/correction loops, conversation resolution, channel switching, wait ownership, reminders, errors, and completion using PII-free journal projections.
+- The Deal-System dashboard accounts for every `Start booking` journey that does not result in an agent call, including pre-contact exits, Continue-later/resume activity, help requests, review exits, call-signal failures/expiry, and no-call-received outcomes, with the last meaningful stage and reason.
 - State-changing command coverage is complete; observation gaps, projection lag, schema failures, and instrumentation loops are visible and alertable.
 - The guest can ask a side question and return to the exact task.
 - The guest can request human help at any time after phone capture.
@@ -2455,7 +2600,7 @@ Phase 0 is complete for the selected call-agent pilot. Start with two parallel-b
 
 Do not start the durable PII store, production CTA replacement, or future Odysseus worker until the interaction prototype and call-finalization procedure are approved. A later verified Cruise Brothers guest-payment capability changes the post-save completion adapter and feature flags, not the upstream booking draft, task engine, call-intent/fallback-key recovery, or operator workflow.
 
-Implementation status (July 20, 2026): the amended mock Interaction Flow Lab is in progress, and the first shared contract slice now lives under `lib/booking-assistant/**`. It fixes the pilot completion mode, lifecycle transitions, privacy-safe call-intent/acknowledgement shapes, local-only operator surface, and required journal vocabulary. The durable PII store remains disconnected until the local-operator security preflight is implemented and approved.
+Implementation status (July 26, 2026): Phase 1's code and automated tests are implemented, and the Phase 2, Phase 3, and selected-pilot Phase 4 code deliverables are complete. The shared Booking Assistant now includes authenticated guest sessions, one-time replacement resume tokens, encrypted field revisions and conversations, server-defined fields/tasks/options, transactional journaled mutations, redaction/quarantine, PII-free analytics projections, supplier qualification/rate primitives, real per-answer autosave and cross-device reconstruction, provider-backed resume receipts, mutually exclusive capped reminders, guarded retention/deletion jobs, and the integrated protected operator workbench with claim-gated processing and booking-reference reconciliation. Phase 1 still requires operator usability and exact-copy approval, and production activation remains blocked on the explicitly listed environment/policy approvals and configured Phase 3/4 end-to-end exit runs. Phase 5 Odysseus automation remains deliberately deferred.
 
 ## 29. Prototype amendment brief for implementation agents
 
@@ -2551,3 +2696,73 @@ Optional experiment, disabled by default:
 3. Test update/deletion propagation, reused phone numbers, duplicate contacts, international formatting, caller-ID blocking, calls from another number, and privacy-safe cleanup.
 4. Store the Google contact resource ID only in protected integration metadata; delete the temporary contact after completion/cancellation/retention expiry.
 5. Even if the experiment passes, use the contact label only as operator convenience. The web call-intent signal and fallback key remain authoritative recovery paths, and caller verification remains mandatory.
+
+## 30. No Agents mode - implemented July 26, 2026
+
+No Agents mode is a runtime, server-authoritative availability control for random days when the operator cannot answer live booking calls. It changes only the completion handoff. Contact capture, guided collection, autosave, final review, encryption, the fallback key, secure resume, retention, and the Booking Activity Journal remain unchanged.
+
+### 30.1 Operator control and durable availability
+
+- The protected Booking workbench displays `Calls available`, `No Agents until tomorrow`, and `No Agents until changed`.
+- Availability is stored in the Booking Assistant DynamoDB table at `PK=CONFIG#BOOKING_ASSISTANT`, `SK=AGENT_AVAILABILITY`.
+- Each change uses optimistic concurrency and writes an immutable `AVAILABILITY_EVENT#...` audit item.
+- A bounded No Agents interval automatically evaluates as available after `effectiveUntilIso`.
+- The public availability response exposes only mode, expiry, and version. Operator identity is not public.
+
+### 30.2 Atomic call prevention
+
+The guest's final call action reads availability on the server and the call-intent transaction includes a DynamoDB condition check against the availability item. If No Agents mode becomes active after the page loads but before the transaction commits, the transaction does not publish the call signal, does not send the Pushover call alert, and does not authorize the browser to launch `tel:`.
+
+Missing availability configuration defaults to the pre-feature behavior (`available`) for migration compatibility. A runtime availability-read failure returns the fail-closed No Agents guest result.
+
+### 30.3 Guest branch
+
+When No Agents mode is returned, the reviewed draft remains `ready_to_call_agent` and the guest sees:
+
+- `No agents currently available`;
+- a callback choice with `As soon as an agent is available` or a future date/time window in the guest's displayed timezone;
+- `I'll try again later`;
+- confirmation that the form and three-letter key remain saved; and
+- the existing boundary that nothing is booked, held, or charged and live price/availability will be rechecked.
+
+No phone action launches from this branch.
+
+### 30.4 Callback request
+
+- A confirmed callback stores an encrypted `CALLBACK_ACTIVE` artifact beneath the existing draft.
+- The draft transitions to `human_requested` and appears in the protected operator queue with the requested window.
+- Pushover contains a guest-safe Deal/sailing summary, masked phone ending, and requested window.
+- The operator claims the outbound callback before accessing the phone action, verifies the guest after connection, and only then reveals the protected packet.
+- Repeated callback updates use the same draft and journal rather than creating disconnected legacy callback records.
+
+### 30.5 Resume email and reminders
+
+Two Klaviyo events were added:
+
+- `LLL Booking Assistant Callback Requested`;
+- `LLL Booking Assistant No Agents Progress Saved`.
+
+Both carry a fresh one-time secure resume URL. Callback receipts also carry `callback_window_label`.
+
+Call-to-finalize reminders are deferred while No Agents mode is active without consuming a reminder generation. A bounded mode resumes checks after its end time; indefinite mode is rechecked on a bounded interval. Callback requests move to `human_requested`, causing the ordinary call reminder lifecycle to stop.
+
+The complete Klaviyo creation and activation procedure is in `KLAVIYO_BOOKING_ASSISTANT_SETUP.md`.
+
+### 30.6 API and module additions
+
+- `GET /api/booking-assistant/guest/availability`
+- `GET|POST /api/booking-assistant/availability` (protected local operator)
+- `POST /api/booking-assistant/guest/callback`
+- `POST /api/booking-assistant/guest/no-agents-try-later`
+- `lib/booking-assistant/agent-availability.ts`
+- `lib/booking-assistant/no-agents-service.ts`
+
+### 30.7 Acceptance conditions
+
+- Intake and final review complete normally in either availability mode.
+- A stale browser cannot launch a call after the operator enables No Agents mode.
+- No Agents callback and try-later choices each send the correct resume-email event.
+- Callback time windows validate as future windows and retain the guest timezone.
+- Callback cards appear in the Booking queue and preserve caller-verification and claim gates.
+- Active call reminders do not send or consume a generation while No Agents mode is active.
+- Returning to Calls available restores the unchanged acknowledged call-signal flow.

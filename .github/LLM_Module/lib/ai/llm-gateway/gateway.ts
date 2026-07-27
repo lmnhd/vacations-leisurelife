@@ -109,7 +109,6 @@ export async function* streamLLM(
       apiKey: config.provider === 'openai' ? process.env.OPENAI_API_KEY! : process.env.GROQ_API_KEY!,
     });
 
-    // @ts-expect-error — dynamic SDK shape
     const stream = await client.chat.completions.create({
       model:       apiId,
       messages:    [{ role: 'user', content: prompt }],
@@ -118,7 +117,6 @@ export async function* streamLLM(
       stream:      true,
     });
 
-    // @ts-expect-error — async iterable
     for await (const chunk of stream) {
       yield chunk.choices?.[0]?.delta?.content ?? '';
     }

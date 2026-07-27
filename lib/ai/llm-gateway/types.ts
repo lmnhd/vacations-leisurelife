@@ -80,6 +80,44 @@ export interface LLMResponse {
   raw?: unknown;
 }
 
+export interface ToolAgentFunctionDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface ToolAgentSource {
+  title: string;
+  url: string;
+}
+
+export interface ToolAgentExecution {
+  name: string;
+  arguments: Record<string, unknown>;
+  succeeded: boolean;
+}
+
+export interface ToolAgentOptions {
+  systemPrompt: string;
+  functions: ToolAgentFunctionDefinition[];
+  executeFunction: (
+    name: string,
+    argumentsValue: Record<string, unknown>
+  ) => Promise<unknown>;
+  enableWebSearch?: boolean;
+  maxOutputTokens?: number;
+  maxToolRounds?: number;
+  reasoningEffort?: "low" | "medium" | "high";
+  signal?: AbortSignal;
+}
+
+export interface ToolAgentResult {
+  content: string;
+  model: string;
+  sources: ToolAgentSource[];
+  executions: ToolAgentExecution[];
+}
+
 // ─── Agent Role Wrappers ─────────────────────────────────────────────────────
 
 /** Input contract for all semantic agent helper functions */

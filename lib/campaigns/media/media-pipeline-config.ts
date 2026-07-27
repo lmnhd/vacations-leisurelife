@@ -30,6 +30,7 @@ import {
 const MODEL_TO_GENERATOR: Record<ModelName, GeneratorService> = {
     [ModelName.CLAUDE_4_OPUS]: 'claude4_opus',
     [ModelName.CLAUDE_4_SONNET]: 'claude4_sonnet',
+    [ModelName.CLAUDE_HAIKU]: 'claude4_sonnet',
     [ModelName.GPT_5_HIGH]: 'gpt5',
     [ModelName.GPT_5_MEDIUM]: 'gpt5_mini',
     [ModelName.GPT_5_INSTANT]: 'gpt5_mini',

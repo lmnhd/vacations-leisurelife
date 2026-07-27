@@ -127,6 +127,8 @@ export interface DealActivitySummary {
   totalActions: number;
   /** totalActions ÷ uniqueSessions, 0 when no sessions. */
   viewToActionRate: number;
+  bookingPortalEntries: number;
+  bookingsConfirmed: number;
   lastActivityAtIso?: string;
   sourceBreakdown: DealSourceBreakdownEntry[];
 }
@@ -148,6 +150,10 @@ export interface DealDailyActivityBucket {
   callbackRequests: number;
   /** Contact actions (link request or callback request), matching the summary. */
   totalActions: number;
+  /** Booking portal sessions started that day. */
+  bookingPortalEntries: number;
+  /** Bookings the operator confirmed that day. */
+  bookingsConfirmed: number;
 }
 
 function emptyDailyBucket(dateIso: string): DealDailyActivityBucket {
@@ -161,6 +167,8 @@ function emptyDailyBucket(dateIso: string): DealDailyActivityBucket {
     linkEmailsSent: 0,
     callbackRequests: 0,
     totalActions: 0,
+    bookingPortalEntries: 0,
+    bookingsConfirmed: 0,
   };
 }
 
@@ -210,6 +218,12 @@ export function computeDealDailyActivity(events: DealEvent[]): DealDailyActivity
       case "callback_requested":
         bucket.callbackRequests += 1;
         bucket.totalActions += 1;
+        break;
+      case "booking_portal_entered":
+        bucket.bookingPortalEntries += 1;
+        break;
+      case "booking_confirmed":
+        bucket.bookingsConfirmed += 1;
         break;
       default:
         break;
@@ -318,7 +332,137 @@ export function computeDealActivitySummary(dealId: string, events: DealEvent[]):
     callbackRequests,
     totalActions,
     viewToActionRate: uniqueSessions > 0 ? totalActions / uniqueSessions : 0,
+    bookingPortalEntries: count("booking_portal_entered"),
+    bookingsConfirmed: count("booking_confirmed"),
     lastActivityAtIso,
     sourceBreakdown,
   };
+}
+
+// ─── Booking portal funnel + leads ───────────────────────────────────────────
+
+export const BOOKING_FUNNEL_STAGES = [
+  { key: "entered", label: "Entered portal", eventType: "booking_portal_entered" },
+  { key: "contact", label: "Contact captured", eventType: "booking_contact_captured" },
+  { key: "saved", label: "Packet saved", eventType: "booking_packet_saved" },
+  { key: "review", label: "Review ready", eventType: "booking_review_ready" },
+  { key: "call", label: "Call requested", eventType: "booking_call_requested" },
+  { key: "confirmed", label: "Booked", eventType: "booking_confirmed" },
+] as const;
+
+export type BookingFunnelStageKey = (typeof BOOKING_FUNNEL_STAGES)[number]["key"];
+
+export interface DealBookingFunnelStage {
+  key: BookingFunnelStageKey;
+  label: string;
+  /** Distinct guests/sessions that reached the stage (not raw event count). */
+  count: number;
+}
+
+/**
+ * Distinct-count funnel over the booking milestone events. Each stage counts
+ * unique identities — sessions for the entry beacon, emails for contact
+ * capture, draft ids for draft-backed stages — so a guest who bounces through
+ * `review_ready` twice still counts once.
+ */
+export function computeDealBookingFunnel(events: DealEvent[]): DealBookingFunnelStage[] {
+  const identities = new Map<BookingFunnelStageKey, Set<string>>(
+    BOOKING_FUNNEL_STAGES.map((stage) => [stage.key, new Set<string>()])
+  );
+
+  for (const event of events) {
+    const stage = BOOKING_FUNNEL_STAGES.find((s) => s.eventType === event.eventType);
+    if (!stage) continue;
+    const identity =
+      stage.key === "entered"
+        ? sessionKey(event)
+        : stage.key === "contact"
+          ? event.email
+          : (event.metadata?.draftId ?? event.eventId);
+    identities.get(stage.key)?.add(identity);
+  }
+
+  return BOOKING_FUNNEL_STAGES.map((stage) => ({
+    key: stage.key,
+    label: stage.label,
+    count: identities.get(stage.key)?.size ?? 0,
+  }));
+}
+
+const LEAD_STAGE_RANK: Record<BookingFunnelStageKey, number> = {
+  entered: 0,
+  contact: 1,
+  saved: 2,
+  review: 3,
+  call: 4,
+  confirmed: 5,
+};
+
+export interface DealBookingLead {
+  email: string;
+  firstName?: string;
+  /** Present once the guest's draft was persisted server-side. */
+  draftId?: string;
+  furthestStage: BookingFunnelStageKey;
+  furthestStageLabel: string;
+  firstSeenAtIso: string;
+  lastSeenAtIso: string;
+  confirmed: boolean;
+}
+
+/**
+ * Identified booking-portal guests — including partial leads who confirmed
+ * name+email in the flow but never completed a save. Keyed by email; draft
+ * milestone events (which carry only a draftId) join through the
+ * `booking_packet_saved` event that carries both.
+ */
+export function computeDealBookingLeads(events: DealEvent[]): DealBookingLead[] {
+  const byEmail = new Map<string, DealBookingLead>();
+  const draftToEmail = new Map<string, string>();
+
+  const touch = (email: string, event: DealEvent, stage: BookingFunnelStageKey) => {
+    const existing = byEmail.get(email);
+    const firstName = event.metadata?.guestFirstName;
+    const draftId = event.metadata?.draftId;
+    if (!existing) {
+      byEmail.set(email, {
+        email,
+        firstName,
+        draftId,
+        furthestStage: stage,
+        furthestStageLabel: BOOKING_FUNNEL_STAGES.find((s) => s.key === stage)?.label ?? stage,
+        firstSeenAtIso: event.occurredAt,
+        lastSeenAtIso: event.occurredAt,
+        confirmed: stage === "confirmed",
+      });
+      return;
+    }
+    existing.firstName = existing.firstName ?? firstName;
+    existing.draftId = existing.draftId ?? draftId;
+    if (event.occurredAt < existing.firstSeenAtIso) existing.firstSeenAtIso = event.occurredAt;
+    if (event.occurredAt > existing.lastSeenAtIso) existing.lastSeenAtIso = event.occurredAt;
+    if (LEAD_STAGE_RANK[stage] > LEAD_STAGE_RANK[existing.furthestStage]) {
+      existing.furthestStage = stage;
+      existing.furthestStageLabel =
+        BOOKING_FUNNEL_STAGES.find((s) => s.key === stage)?.label ?? stage;
+    }
+    if (stage === "confirmed") existing.confirmed = true;
+  };
+
+  for (const event of events) {
+    const stage = BOOKING_FUNNEL_STAGES.find((s) => s.eventType === event.eventType)?.key;
+    if (!stage || stage === "entered") continue;
+
+    const draftId = event.metadata?.draftId;
+    let email = event.email !== "anonymous" ? event.email : undefined;
+    if (email && draftId) draftToEmail.set(draftId, email);
+    if (!email && draftId) email = draftToEmail.get(draftId);
+    if (!email) continue;
+
+    touch(email, event, stage);
+  }
+
+  return Array.from(byEmail.values()).sort((a, b) =>
+    b.lastSeenAtIso.localeCompare(a.lastSeenAtIso)
+  );
 }

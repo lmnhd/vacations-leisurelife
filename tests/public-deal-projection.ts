@@ -195,6 +195,14 @@ check(
   "future-expiring approved deal included",
   isDealHomepageEligible({ ...approved, expiresOnIso: "2999-01-01" })
 );
+check(
+  "approved deal inside the 45-day inventory cutoff is excluded",
+  !isDealHomepageEligible({
+    ...approved,
+    cruiseFacts: { ...approved.cruiseFacts, sailDateIso: "2026-08-20" },
+    expiresOnIso: "2999-01-01",
+  })
+);
 
 // --- Projection safety --------------------------------------------------------
 console.log("\nProjection safety:");

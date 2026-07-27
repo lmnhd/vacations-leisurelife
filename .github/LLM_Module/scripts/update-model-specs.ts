@@ -147,7 +147,7 @@ function buildDiff(scraped: ScrapedModel[], source: string): UpdateResult[] {
         modelKey:   key,
         field:      fieldPath,
         oldValue:   -1,          // filled in during patch phase
-        newValue:   Math.round(newVal),
+        newValue:   Math.round(Number(newVal)),
         source,
         confidence: 'medium',
       });

@@ -1,0 +1,312 @@
+{
+  "generatedAtIso": "2026-07-26T23:15:48.104Z",
+  "totalEntries": 153,
+  "entriesByKind": {
+    "vendor": 102,
+    "promotion": 0,
+    "insurance": 0,
+    "deposit": 0,
+    "refund": 0,
+    "cancellation": 0,
+    "flight": 0,
+    "training": 11,
+    "agency": 40,
+    "other": 0
+  },
+  "sections": [
+    {
+      "url": "https://www.cbagenttools.com/marketing/vendor_urls/",
+      "linkText": "Vendor Directory",
+      "kind": "vendor",
+      "status": "ingested",
+      "entryCount": 102
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/todaysview/",
+      "linkText": "Today's Promotions",
+      "kind": "promotion",
+      "status": "empty",
+      "entryCount": 0
+    },
+    {
+      "url": "https://www.cbagenttools.com/bookings/home/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/bookings/reports_home/",
+      "linkText": "Reports",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/groups/modification-requests/",
+      "linkText": "Modification Requests",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/groups/modification-requests/?request_type=payment",
+      "linkText": "Payments",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/bookings/odysseus/admin/",
+      "linkText": "Cruise Engine Admin",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 4
+    },
+    {
+      "url": "https://www.cbagenttools.com/groups/view_groups/",
+      "linkText": "View All Groups",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 3
+    },
+    {
+      "url": "https://www.cbagenttools.com/groups/view_groups/?price_advantage=on",
+      "linkText": "View Price Advantages",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 3
+    },
+    {
+      "url": "https://www.cbagenttools.com/groups/view_campaigns/",
+      "linkText": "View Campaigns",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 2
+    },
+    {
+      "url": "https://www.cbagenttools.com/bookings/search_people/",
+      "linkText": "Search/Edit Clients",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 2
+    },
+    {
+      "url": "https://www.cbagenttools.com/bookings/add_client/",
+      "linkText": "Add Client",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/bookings/upload_my_clients/",
+      "linkText": "Upload my Clients",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/bookings/view_agent_todos/",
+      "linkText": "View ToDos",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/bookings/view_agent_todo_calendar/2026/7/",
+      "linkText": "View ToDos Calendar",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 2
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/home/",
+      "linkText": "Training / Resources Home",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/event_calendar/",
+      "linkText": "Event Calendar",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/view_agency_contact_info/",
+      "linkText": "Cruise Brothers Contact Info",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/university/",
+      "linkText": "CBAT University",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/calendar/",
+      "linkText": "Calendar",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/home/",
+      "linkText": "Search",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/icleads/manage_subdomain_intro/23379/",
+      "linkText": "Get Started",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/accounts/password_change/",
+      "linkText": "Change Password",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/accounts/my-profile/",
+      "linkText": "Edit My Profile",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/icleads/user_sign_new_contract/",
+      "linkText": "View My Contract",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/icleads/user_unsubscribe/bVSZ1yZ4iiGlzP1ndGF9lXf9WyVJTwuKddThyTK4KJY/",
+      "linkText": "Contact Preferences",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/accounts/enable_multi_auth/",
+      "linkText": "Enable Two-Factor Auth",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/event/2004/",
+      "linkText": "Cunard; Queen Mary 2 Tour in New York (Brooklyn Cruise Terminal)",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/event/2171/",
+      "linkText": "Tauck: Once in a Lifetime Experiences",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/event/2344/",
+      "linkText": "Celebrity Cruises; BOOKING CELEBRITY RIVER",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/event/2213/",
+      "linkText": "Switzerland Week with Railbookers",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/event/2164/",
+      "linkText": "CBAT: Learn how to navigate and access all of the tools on CB agent tools",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/events/",
+      "linkText": "Live",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/training/events/?type=online",
+      "linkText": "Webinars",
+      "kind": "training",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/promotion/2904/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/promotion/2913/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/promotion/2896/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 2
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/promotion/2907/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/promotion/2875/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/promotion/2268/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/promotion/2893/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    },
+    {
+      "url": "https://www.cbagenttools.com/marketing/promotion/2381/",
+      "linkText": "",
+      "kind": "agency",
+      "status": "ingested",
+      "entryCount": 1
+    }
+  ]
+}

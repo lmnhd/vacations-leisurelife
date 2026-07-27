@@ -23,6 +23,7 @@ export interface ModelScores {
   speed: number;
   /** Needle-in-haystack / long-context retrieval */
   context: number;
+  [key: string]: number;
 }
 
 // ─── Model Configuration ──────────────────────────────────────────────────────

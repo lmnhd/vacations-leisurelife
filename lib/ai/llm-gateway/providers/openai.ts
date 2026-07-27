@@ -5,7 +5,15 @@
  * Requires env: OPENAI_API_KEY
  */
 
-import type { LLMCallOptions, LLMResponse } from '../types';
+import type {
+  LLMCallOptions,
+  LLMResponse,
+  ToolAgentExecution,
+  ToolAgentOptions,
+  ToolAgentResult,
+  ToolAgentSource,
+} from '../types';
+import type { ResponseInput } from "openai/resources/responses/responses";
 
 const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
 
@@ -148,5 +156,126 @@ export async function callOpenAI(
         }
       : undefined,
     raw: response,
+  };
+}
+
+function parseFunctionArguments(value: string): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(value);
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("Tool arguments must be a JSON object.");
+  }
+  return parsed as Record<string, unknown>;
+}
+
+export async function runOpenAIResponsesToolAgent(
+  apiId: string,
+  prompt: string,
+  options: ToolAgentOptions
+): Promise<ToolAgentResult> {
+  const { default: OpenAI } = await import("openai");
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const tools = [
+    ...(options.enableWebSearch === false
+      ? []
+      : [{ type: "web_search_preview" as const, search_context_size: "medium" as const }]),
+    ...options.functions.map((definition) => ({
+      type: "function" as const,
+      name: definition.name,
+      description: definition.description,
+      parameters: definition.parameters,
+      strict: true,
+    })),
+  ];
+
+  const input: ResponseInput = [
+    { role: "user", content: prompt },
+  ];
+  const executions: ToolAgentExecution[] = [];
+  let activeModel = apiId;
+  async function createResponse() {
+    try {
+      return await client.responses.create({
+        model: activeModel,
+        instructions: options.systemPrompt,
+        input,
+        tools,
+        tool_choice: "auto",
+        parallel_tool_calls: false,
+        max_output_tokens: options.maxOutputTokens ?? 4_000,
+        reasoning: { effort: options.reasoningEffort ?? "medium" },
+        include: ["reasoning.encrypted_content"],
+        store: false,
+      }, { signal: options.signal });
+    } catch (error) {
+      if (!isModelAccessError(error)) throw error;
+      const fallbackModel = getOpenAIFallbackModel(activeModel);
+      if (fallbackModel === activeModel) throw error;
+      console.warn(`[AI Gateway] OpenAI Responses model "${activeModel}" unavailable. Retrying with "${fallbackModel}".`);
+      activeModel = fallbackModel;
+      return client.responses.create({
+        model: activeModel,
+        instructions: options.systemPrompt,
+        input,
+        tools,
+        tool_choice: "auto",
+        parallel_tool_calls: false,
+        max_output_tokens: options.maxOutputTokens ?? 4_000,
+        reasoning: { effort: options.reasoningEffort ?? "medium" },
+        include: ["reasoning.encrypted_content"],
+        store: false,
+      }, { signal: options.signal });
+    }
+  }
+
+  let response = await createResponse();
+
+  const maxRounds = options.maxToolRounds ?? 4;
+  for (let round = 0; round < maxRounds; round += 1) {
+    const functionCalls = response.output.filter((item) => item.type === "function_call");
+    if (functionCalls.length === 0) break;
+
+    input.push(...response.output);
+    for (const call of functionCalls) {
+      let argumentsValue: Record<string, unknown> = {};
+      let output: unknown;
+      let succeeded = false;
+      try {
+        argumentsValue = parseFunctionArguments(call.arguments);
+        output = await options.executeFunction(call.name, argumentsValue);
+        succeeded = true;
+      } catch (error) {
+        output = {
+          error: error instanceof Error ? error.message : "Tool execution failed.",
+        };
+      }
+      executions.push({ name: call.name, arguments: argumentsValue, succeeded });
+      input.push({
+        type: "function_call_output",
+        call_id: call.call_id,
+        output: JSON.stringify(output),
+      });
+    }
+
+    response = await createResponse();
+  }
+
+  const sourceMap = new Map<string, ToolAgentSource>();
+  for (const item of response.output) {
+    if (item.type !== "message") continue;
+    for (const part of item.content) {
+      if (part.type !== "output_text") continue;
+      for (const annotation of part.annotations) {
+        if (annotation.type === "url_citation") {
+          sourceMap.set(annotation.url, { title: annotation.title, url: annotation.url });
+        }
+      }
+    }
+  }
+
+  return {
+    content: response.output_text.trim(),
+    model: response.model,
+    sources: Array.from(sourceMap.values()),
+    executions,
   };
 }

@@ -78,6 +78,8 @@ export default async function DealDetailPage({
   ].filter((fact) => fact.value);
 
   const bookingHref = deal.booking.bookingUrl;
+  const useDevelopmentBookingAssistant = process.env.NODE_ENV === "development";
+  const primaryBookingHref = useDevelopmentBookingAssistant ? `/deals/${id}/book` : (bookingHref ?? "");
   const dealHighlights = safeList(deal.display.dealHighlights, "Current Cruise Brothers featured deal.");
   const itineraryHighlights = safeList(deal.display.itineraryHighlights, deal.cruiseFacts.destination);
   const destinationHighlights = safeList(deal.display.destinationHighlights, deal.cruiseFacts.destination);
@@ -117,18 +119,17 @@ export default async function DealDetailPage({
               <div className="flex flex-wrap gap-3">
                 {bookingHref ? (
                   <Button asChild size="lg" className="rounded-full px-6 font-semibold">
-                    <a href={bookingHref} target="_blank" rel="noreferrer">
-                      Book through Cruise Brothers
-                    </a>
+                    {useDevelopmentBookingAssistant ? (
+                      <Link href={primaryBookingHref}>Start booking</Link>
+                    ) : (
+                      <a href={primaryBookingHref} target="_blank" rel="noreferrer">Book through Cruise Brothers</a>
+                    )}
                   </Button>
                 ) : (
                   <Button disabled size="lg" className="rounded-full px-6 font-semibold">
                     Booking link pending review
                   </Button>
                 )}
-                <Button asChild variant="outline" size="lg" className="rounded-full border-white/35 bg-white/10 px-6 text-white hover:bg-white hover:text-slate-950">
-                  <Link href="/contact">Ask about this deal</Link>
-                </Button>
               </div>
             </div>
 
@@ -227,18 +228,20 @@ export default async function DealDetailPage({
               <div className="mt-6 space-y-3">
                 {bookingHref ? (
                   <Button asChild className="w-full rounded-full font-semibold">
-                    <a href={bookingHref} target="_blank" rel="noreferrer">
-                      Book through CB
-                    </a>
+                    {useDevelopmentBookingAssistant ? (
+                      <Link href={primaryBookingHref}>Start booking</Link>
+                    ) : (
+                      <a href={primaryBookingHref} target="_blank" rel="noreferrer">Book through CB</a>
+                    )}
                   </Button>
                 ) : (
                   <Button disabled className="w-full rounded-full font-semibold">
                     Booking pending
                   </Button>
                 )}
-                <Button asChild variant="outline" className="w-full rounded-full font-semibold">
-                  <Link href="/">Back to deals</Link>
-                </Button>
+                <Link href="/" className="block text-center text-sm font-semibold text-muted-foreground hover:text-foreground">
+                  Back to deals
+                </Link>
               </div>
             </aside>
           </div>
@@ -248,13 +251,15 @@ export default async function DealDetailPage({
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 p-3 shadow-lg backdrop-blur md:hidden">
         {bookingHref ? (
           <Button asChild className="w-full rounded-full font-semibold">
-            <a href={bookingHref} target="_blank" rel="noreferrer">
-              Book through Cruise Brothers
-            </a>
+            {useDevelopmentBookingAssistant ? (
+              <Link href={primaryBookingHref}>Start booking</Link>
+            ) : (
+              <a href={primaryBookingHref} target="_blank" rel="noreferrer">Book through Cruise Brothers</a>
+            )}
           </Button>
         ) : (
-          <Button asChild className="w-full rounded-full font-semibold">
-            <Link href="/contact">Ask about this deal</Link>
+          <Button disabled className="w-full rounded-full font-semibold">
+            Booking pending
           </Button>
         )}
       </div>
@@ -263,5 +268,3 @@ export default async function DealDetailPage({
     </div>
   );
 }
-
-

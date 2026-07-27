@@ -2,30 +2,19 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 import { callLLM, modelForTask } from '@/lib/ai/llm-gateway';
+import {
+    KnowledgeCacheSchema,
+    assessFreshness,
+    entriesFromCache,
+    type KnowledgeEntry,
+} from '@/lib/chat/tools/cb-knowledge-schema';
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
-
-const KnowledgeEntrySchema = z.object({
-    title: z.string(),
-    content: z.string(),
-    source: z.string().optional(),
-    url: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-});
-
-const KnowledgeCacheSchema = z.union([
-    z.array(KnowledgeEntrySchema),
-    z.object({
-        entries: z.array(KnowledgeEntrySchema),
-    }),
-]);
 
 const AiMatchSchema = z.object({
     indices: z.array(z.number()),
     reasoning: z.string(),
 });
-
-type KnowledgeEntry = z.infer<typeof KnowledgeEntrySchema>;
 
 const CACHE_FILE_PATH = path.join(process.cwd(), '.github', 'data', 'cb-knowledge-cache.json');
 
@@ -35,14 +24,21 @@ async function selectRelevantEntries(
     query: string,
     entries: KnowledgeEntry[]
 ): Promise<number[]> {
-    // Build a compact index: "0: Title — first 80 chars of content"
+    // Build a compact index: "0: Title [kind/jurisdiction] — first 80 chars of content"
     const index = entries
-        .map((entry, i) => `${i}: ${entry.title} — ${entry.content.slice(0, 80)}`)
+        .map((entry, i) => {
+            const facets = [entry.sectionKind, entry.jurisdiction]
+                .filter(Boolean)
+                .join('/');
+            const facetLabel = facets ? ` [${facets}]` : '';
+            return `${i}: ${entry.title}${facetLabel} — ${entry.content.slice(0, 80)}`;
+        })
         .join('\n');
 
     const systemPrompt = [
         'You are a knowledge retrieval assistant for Cruise Brothers travel agents.',
         'Given a query and an index of knowledge entries, return the indices of the 1-3 entries that genuinely answer the query.',
+        'Prefer entries whose section kind and jurisdiction match the query (e.g. an insurance question about Florida should match an insurance entry scoped to FL).',
         'Only return entries with directly relevant content. Never match on incidental word overlap.',
         'Respond with JSON: { "indices": [<number>, ...], "reasoning": "<one sentence>" }',
     ].join(' ');
@@ -63,17 +59,50 @@ async function selectRelevantEntries(
     return parsed.data.indices.filter((idx) => idx >= 0 && idx < entries.length);
 }
 
+// ─── Attribution rendering ──────────────────────────────────────────────────────
+
+/**
+ * Builds a one-line attribution/freshness suffix so the copilot can separate
+ * confirmed dated guidance from stale or authority-unclear material, per the
+ * plan's source-and-freshness rules.
+ */
+function attributionLine(entry: KnowledgeEntry): string {
+    const facets: string[] = [];
+    if (entry.supplier) facets.push(`supplier: ${entry.supplier}`);
+    if (entry.jurisdiction) facets.push(`jurisdiction: ${entry.jurisdiction}`);
+    if (entry.effectiveDate) facets.push(`effective: ${entry.effectiveDate}`);
+    if (entry.retrievedAtIso) facets.push(`retrieved: ${entry.retrievedAtIso.slice(0, 10)}`);
+
+    const freshness = assessFreshness(entry);
+    if (freshness.state === 'stale') {
+        facets.push(`STALE (${freshness.ageDays}d old; verify with supplier)`);
+    } else if (freshness.state === 'unknown') {
+        facets.push('date/authority unclear — treat as operational guidance');
+    }
+
+    return facets.length > 0 ? ` [${facets.join('; ')}]` : ' [date/authority unclear — treat as operational guidance]';
+}
+
 // ─── Public handler ───────────────────────────────────────────────────────────
+
+export interface CruiseBrothersKnowledgeMatch {
+    title: string;
+    source?: string;
+    url?: string;
+    supplier?: string;
+    jurisdiction?: string;
+    sectionKind?: string;
+    docType?: string;
+    effectiveDate?: string;
+    retrievedAtIso?: string;
+    freshness: 'fresh' | 'stale' | 'unknown';
+}
 
 export async function runCruiseBrothersKnowledgeLookup(input: {
     query: string;
 }): Promise<{
     knowledgeSummary: string;
-    matches: Array<{
-        title: string;
-        source?: string;
-        url?: string;
-    }>;
+    matches: CruiseBrothersKnowledgeMatch[];
 }> {
     let rawCacheFile: string;
     try {
@@ -86,7 +115,7 @@ export async function runCruiseBrothersKnowledgeLookup(input: {
     }
 
     const parsedCache = KnowledgeCacheSchema.parse(JSON.parse(rawCacheFile));
-    const entries = Array.isArray(parsedCache) ? parsedCache : parsedCache.entries;
+    const entries = entriesFromCache(parsedCache);
 
     if (!input.query.trim()) {
         throw new Error('Cruise Brothers query must not be empty.');
@@ -101,7 +130,7 @@ export async function runCruiseBrothersKnowledgeLookup(input: {
     const selectedEntries = selectedIndices.map((idx) => entries[idx]!);
 
     const knowledgeSummary = selectedEntries
-        .map((entry) => `- ${entry.title}: ${entry.content}`)
+        .map((entry) => `- ${entry.title}${attributionLine(entry)}: ${entry.content}`)
         .join('\n');
 
     return {
@@ -110,6 +139,13 @@ export async function runCruiseBrothersKnowledgeLookup(input: {
             title: entry.title,
             source: entry.source,
             url: entry.url,
+            supplier: entry.supplier,
+            jurisdiction: entry.jurisdiction,
+            sectionKind: entry.sectionKind,
+            docType: entry.docType,
+            effectiveDate: entry.effectiveDate,
+            retrievedAtIso: entry.retrievedAtIso,
+            freshness: assessFreshness(entry).state,
         })),
     };
 }

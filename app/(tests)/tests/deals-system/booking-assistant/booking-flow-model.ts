@@ -16,6 +16,11 @@ import {
   type CallOutcome,
   type CallerIdState,
 } from "@/lib/booking-assistant/contracts";
+import type {
+  ProofReadiness,
+  RateQualificationClaim,
+  RateQualificationType,
+} from "@/lib/booking-assistant/types";
 
 export { COMPLETION_MODE, type CallOutcome, type CallerIdState };
 
@@ -42,6 +47,12 @@ export interface MockTraveler {
   age: string;
 }
 
+export interface MockServiceRateClaim {
+  travelerIndex: number;
+  category: string;
+  proofReadiness: ProofReadiness;
+}
+
 export function emptyTraveler(): MockTraveler {
   return { title: "", gender: "", firstName: "", middleName: "", lastName: "", dob: "", age: "" };
 }
@@ -56,9 +67,7 @@ export interface MockDraft {
   citizenship: string;
   residencyState: string;
   serviceRateInterest: "" | "yes" | "no" | "not_sure";
-  serviceRateTravelerIndex: string;
-  serviceRateCategory: string;
-  serviceRateProofReadiness: string;
+  serviceRateClaims: MockServiceRateClaim[];
   addressLine1: string;
   addressCity: string;
   addressState: string;
@@ -87,9 +96,7 @@ export function emptyDraft(): MockDraft {
     citizenship: "",
     residencyState: "",
     serviceRateInterest: "",
-    serviceRateTravelerIndex: "",
-    serviceRateCategory: "",
-    serviceRateProofReadiness: "",
+    serviceRateClaims: [],
     addressLine1: "",
     addressCity: "",
     addressState: "",
@@ -296,10 +303,123 @@ export function serviceRateSummary(draft: MockDraft): string {
   if (draft.serviceRateInterest === "no") return "No military/service claim";
   if (draft.serviceRateInterest === "not_sure") return "Agent should check military/service eligibility";
   if (draft.serviceRateInterest !== "yes") return "Not answered";
-  const travelerIndex = Number(draft.serviceRateTravelerIndex);
-  const traveler = draft.travelers[travelerIndex];
-  const travelerLabel = traveler?.firstName || `Traveler ${travelerIndex + 1}`;
-  return `${travelerLabel}: ${draft.serviceRateCategory || "service-related claim"} - verification needed`;
+  if (draft.serviceRateClaims.length === 0) return "No qualifying traveler selected";
+  return draft.serviceRateClaims
+    .map((claim) => {
+      const traveler = draft.travelers[claim.travelerIndex];
+      const travelerLabel = traveler?.firstName || `Traveler ${claim.travelerIndex + 1}`;
+      return `${travelerLabel}: ${claim.category} - verification needed`;
+    })
+    .join("; ");
+}
+
+function qualificationTypeForCategory(category: string): RateQualificationType {
+  if (
+    category === "Active duty" ||
+    category === "Retired military" ||
+    category === "Reserve or National Guard" ||
+    category === "Canadian Armed Forces"
+  ) {
+    return "military";
+  }
+  if (category === "Veteran or honorably discharged") return "veteran";
+  if (category === "Government, civil service, or Department of Defense") {
+    return "government_civil_service";
+  }
+  if (category === "First responder - police, fire, or EMS") return "first_responder";
+  if (category === "Airline or interline personnel") return "interline";
+  if (category === "Eligible family member") return "family_member";
+  return "other";
+}
+
+export function rateQualificationClaimsForTraveler(
+  draft: MockDraft,
+  travelerIndex: number
+): RateQualificationClaim[] {
+  if (draft.serviceRateInterest !== "yes") return [];
+  return draft.serviceRateClaims
+    .filter((claim) => claim.travelerIndex === travelerIndex)
+    .map((claim) => ({
+      type: qualificationTypeForCategory(claim.category),
+      broadCategory: claim.category,
+      claimStatus: "claimed",
+      proofReadiness: claim.proofReadiness,
+    }));
+}
+
+export interface JourneyReplayStep {
+  id: "intake" | "collection" | "review" | "handoff" | "verification" | "processing" | "outcome";
+  label: string;
+  state: "not_started" | "active" | "completed";
+  eventCount: number;
+  lastEventType?: string;
+}
+
+const JOURNEY_STAGES: Array<{
+  id: JourneyReplayStep["id"];
+  label: string;
+  eventTypes: readonly string[];
+}> = [
+  {
+    id: "intake",
+    label: "Booking intake",
+    eventTypes: ["booking_assistant_opened", "booking_draft_started"],
+  },
+  {
+    id: "collection",
+    label: "Guest answers",
+    eventTypes: ["task_presented", "field_confirmed", "task_completed", "field_deferred"],
+  },
+  {
+    id: "review",
+    label: "Packet review",
+    eventTypes: ["booking_packet_reviewed", "ready_to_call_presented"],
+  },
+  {
+    id: "handoff",
+    label: "Call handoff",
+    eventTypes: ["call_launch_requested", "operator_call_draft_pinned", "call_signal_acknowledged"],
+  },
+  {
+    id: "verification",
+    label: "Caller verification",
+    eventTypes: ["caller_id_compared", "caller_verification_recorded"],
+  },
+  {
+    id: "processing",
+    label: "Agent processing",
+    eventTypes: ["operator_claimed", "agent_processing_started"],
+  },
+  {
+    id: "outcome",
+    label: "Call outcome",
+    eventTypes: ["call_outcome_recorded", "booking_confirmed"],
+  },
+];
+
+export function buildJourneyReplay(journal: readonly MockJournalEvent[]): JourneyReplayStep[] {
+  let lastStartedIndex = -1;
+  const counts = JOURNEY_STAGES.map((stage, stageIndex) => {
+    const matchingEvents = journal.filter((event) => stage.eventTypes.includes(event.eventType));
+    if (matchingEvents.length > 0) lastStartedIndex = stageIndex;
+    return matchingEvents;
+  });
+
+  return JOURNEY_STAGES.map((stage, stageIndex) => {
+    const matchingEvents = counts[stageIndex];
+    return {
+      id: stage.id,
+      label: stage.label,
+      state:
+        matchingEvents.length === 0
+          ? "not_started"
+          : stageIndex < lastStartedIndex
+            ? "completed"
+            : "active",
+      eventCount: matchingEvents.length,
+      lastEventType: matchingEvents.at(-1)?.eventType,
+    };
+  });
 }
 
 // --- Call-agent-to-finalize completion (Section 29) --------------------------

@@ -32,18 +32,27 @@ import type {
   CallKeyState,
   CabinRecord,
   ContactRecord,
+  DraftResumePointerItem,
   DecisionsAndConsents,
   DraftCallKeyItem,
   DraftCabinItem,
   DraftContactItem,
+  DraftDealItem,
   DraftDecisionsItem,
   DraftMetaItem,
   DraftTravelerItem,
   DealPriceSnapshot,
   FallbackCallKeyRecord,
   JournalEventItem,
+  ResumeTokenItem,
   TravelerRecord,
 } from "./types";
+import {
+  buildJournalEvent,
+  type JournalEventInput,
+  type JournalEventRecord,
+} from "./activity-journal";
+import { projectJournalEventIfConfigured } from "./analytics-projector";
 
 export interface DraftStoreConfig {
   tableName: string;
@@ -61,11 +70,11 @@ function draftPk(draftId: string): string {
   return `DRAFT#${draftId}`;
 }
 
-function travelerSk(travelerId: string): string {
+export function travelerSk(travelerId: string): string {
   return `TRAVELER#${travelerId}`;
 }
 
-function cabinSk(cabinId: string): string {
+export function cabinSk(cabinId: string): string {
   return `CABIN#${cabinId}`;
 }
 
@@ -100,8 +109,21 @@ export interface CreateDraftResult {
   createdAtIso: string;
 }
 
+export interface CreateDraftWithArtifactsInput extends CreateDraftInput {
+  decisions?: DecisionsAndConsents;
+  travelers?: TravelerRecord[];
+  cabin?: CabinRecord;
+  fallbackCallKey?: {
+    rawKey: string;
+    lookupHmac: string;
+    keyVersion: number;
+    packetVersion: number;
+  };
+  journalEvent?: Omit<JournalEventInput, "draftId" | "expectedDraftVersion" | "sequence">;
+}
+
 /**
- * Creates a new draft with META + CONTACT items in a transaction.
+ * Creates a new draft with META, DEAL, and CONTACT items in a transaction.
  * Fails if a draft with the same ID already exists.
  */
 export async function createDraft(
@@ -138,6 +160,15 @@ export async function createDraft(
   } as never;
 
   const encryptedContact = await encryptJson(clients.encryption, input.contact);
+  const encryptedDeal = await encryptJson(clients.encryption, input.dealSnapshot);
+
+  const dealItem: DraftDealItem = {
+    pk,
+    sk: "DEAL",
+    encryptedDeal,
+    updatedAtIso: nowIso,
+    version: 1,
+  };
 
   const contactItem: DraftContactItem = {
     pk,
@@ -164,11 +195,211 @@ export async function createDraft(
             ConditionExpression: "attribute_not_exists(PK)",
           },
         },
+        {
+          Put: {
+            TableName: config.tableName,
+            Item: serializeDealItem(dealItem) as never,
+            ConditionExpression: "attribute_not_exists(PK)",
+          },
+        },
       ],
     })
   );
 
   return { draftId: input.draftId, version: 1, createdAtIso: nowIso };
+}
+
+export async function createDraftWithArtifacts(
+  clients: DraftStoreClients,
+  config: DraftStoreConfig,
+  input: CreateDraftWithArtifactsInput
+): Promise<{ draftId: string; version: number; createdAtIso: string; journalEvent?: JournalEventRecord }> {
+  const nowIso = new Date().toISOString();
+  const pk = draftPk(input.draftId);
+  const journalSequence = input.journalEvent ? 1 : 0;
+
+  const metaItem: DraftMetaItem = {
+    pk,
+    sk: "META",
+    status: input.initialStatus,
+    urgency: "informational",
+    flowDefinitionVersion: input.flowDefinitionVersion,
+    bookingFlowVersion: input.bookingFlowVersion,
+    completionMode: input.completionMode,
+    completionModeVersion: input.completionModeVersion,
+    packetVersion: 0,
+    version: 1,
+    journalSequence,
+    createdAtIso: nowIso,
+    updatedAtIso: nowIso,
+    lastGuestActivityAtIso: nowIso,
+    lastMeaningfulGuestActivityAtIso: nowIso,
+    lastJournalEventAtIso: input.journalEvent?.occurredAtIso,
+    dealId: input.dealSnapshot.dealId,
+    packageId: input.dealSnapshot.packageId,
+    personId: input.personId,
+    gsi1pk: `STATUS#${input.initialStatus}`,
+    gsi1sk: nowIso,
+    gsi2pk: `PERSON#${input.personId}`,
+    gsi2sk: nowIso,
+  } as never;
+
+  const transactItems: Array<Record<string, unknown>> = [
+    {
+      Put: {
+        TableName: config.tableName,
+        Item: serializeMetaItem(metaItem) as never,
+        ConditionExpression: "attribute_not_exists(PK)",
+      },
+    },
+    {
+      Put: {
+        TableName: config.tableName,
+        Item: serializeContactItem({
+          pk,
+          sk: "CONTACT",
+          encryptedContact: await encryptJson(clients.encryption, input.contact),
+          updatedAtIso: nowIso,
+          version: 1,
+        }) as never,
+        ConditionExpression: "attribute_not_exists(PK)",
+      },
+    },
+    {
+      Put: {
+        TableName: config.tableName,
+        Item: serializeDealItem({
+          pk,
+          sk: "DEAL",
+          encryptedDeal: await encryptJson(clients.encryption, input.dealSnapshot),
+          updatedAtIso: nowIso,
+          version: 1,
+        }) as never,
+        ConditionExpression: "attribute_not_exists(PK)",
+      },
+    },
+  ];
+
+  if (input.decisions) {
+    transactItems.push({
+      Put: {
+        TableName: config.tableName,
+        Item: serializeDecisionsItem({
+          pk,
+          sk: "DECISIONS",
+          encryptedDecisions: await encryptJson(clients.encryption, input.decisions),
+          updatedAtIso: nowIso,
+          version: 1,
+        }) as never,
+        ConditionExpression: "attribute_not_exists(PK)",
+      },
+    });
+  }
+
+  for (const traveler of input.travelers ?? []) {
+    transactItems.push({
+      Put: {
+        TableName: config.tableName,
+        Item: serializeTravelerItem({
+          pk,
+          sk: travelerSk(traveler.travelerId),
+          travelerId: traveler.travelerId,
+          isPrimary: traveler.isPrimary,
+          encryptedTraveler: await encryptJson(clients.encryption, traveler),
+          updatedAtIso: nowIso,
+          version: 1,
+        }) as never,
+        ConditionExpression: "attribute_not_exists(PK)",
+      },
+    });
+  }
+
+  if (input.cabin) {
+    transactItems.push({
+      Put: {
+        TableName: config.tableName,
+        Item: serializeCabinItem({
+          pk,
+          sk: cabinSk(input.cabin.cabinId),
+          cabinId: input.cabin.cabinId,
+          encryptedCabin: await encryptJson(clients.encryption, input.cabin),
+          updatedAtIso: nowIso,
+          version: 1,
+        }) as never,
+        ConditionExpression: "attribute_not_exists(PK)",
+      },
+    });
+  }
+
+  if (input.fallbackCallKey) {
+    transactItems.push(
+      {
+        Put: {
+          TableName: config.tableName,
+          Item: serializeCallKeyItem({
+            pk,
+            sk: "CALL_KEY",
+            keyVersion: input.fallbackCallKey.keyVersion,
+            state: "active",
+            issuedAtIso: nowIso,
+            packetVersion: input.fallbackCallKey.packetVersion,
+            lookupHmac: input.fallbackCallKey.lookupHmac,
+            encryptedRawValue: await clients.encryption.encrypt(input.fallbackCallKey.rawKey),
+            updatedAtIso: nowIso,
+          }) as never,
+          ConditionExpression: "attribute_not_exists(PK)",
+        },
+      },
+      {
+        Put: {
+          TableName: config.tableName,
+          Item: serializeCallKeyLookupItem({
+            pk: callKeyLookupPk(input.fallbackCallKey.lookupHmac),
+            sk: pk,
+            draftId: input.draftId,
+            state: "active",
+            issuedAtIso: nowIso,
+          }) as never,
+          ConditionExpression: "attribute_not_exists(PK)",
+        },
+      }
+    );
+  }
+
+  let builtJournal: JournalEventRecord | undefined;
+  if (input.journalEvent) {
+    const built = buildJournalEvent({
+      draftId: input.draftId,
+      eventType: input.journalEvent.eventType,
+      actorType: input.journalEvent.actorType,
+      occurredAtIso: input.journalEvent.occurredAtIso,
+      privacyClass: input.journalEvent.privacyClass,
+      idempotencyKey: input.journalEvent.idempotencyKey,
+      expectedDraftVersion: 1,
+      sequence: 1,
+      payload: input.journalEvent.payload,
+    });
+    builtJournal = built.record;
+    transactItems.push({
+      Put: {
+        TableName: config.tableName,
+        Item: built.item as never,
+        ConditionExpression: "attribute_not_exists(PK) AND attribute_not_exists(SK)",
+      },
+    });
+  }
+
+  await clients.dynamo.send(
+    new TransactWriteItemsCommand({
+      TransactItems: transactItems as never,
+    })
+  );
+
+  if (builtJournal) {
+    await projectJournalEventIfConfigured(clients.dynamo, config, builtJournal);
+  }
+
+  return { draftId: input.draftId, version: 1, createdAtIso: nowIso, journalEvent: builtJournal };
 }
 
 // ── Save decisions (encrypted) ──────────────────────────────────────────────
@@ -317,6 +548,7 @@ export async function getDraft(
 
   let metaItem: DraftMetaItem | null = null;
   let contactItem: DraftContactItem | null = null;
+  let dealItem: DraftDealItem | null = null;
   let decisionsItem: DraftDecisionsItem | null = null;
   let callKeyItem: DraftCallKeyItem | null = null;
   const travelerItems: DraftTravelerItem[] = [];
@@ -326,6 +558,7 @@ export async function getDraft(
     const sk = (item[SK] as { S?: string })?.S ?? "";
     if (sk === "META") metaItem = parseMetaItem(item);
     else if (sk === "CONTACT") contactItem = parseContactItem(item);
+    else if (sk === "DEAL") dealItem = parseDealItem(item);
     else if (sk === "DECISIONS") decisionsItem = parseDecisionsItem(item);
     else if (sk === "CALL_KEY") callKeyItem = parseCallKeyItem(item);
     else if (sk.startsWith("TRAVELER#")) travelerItems.push(parseTravelerItem(item));
@@ -337,6 +570,10 @@ export async function getDraft(
   const contact: ContactRecord = contactItem
     ? await decryptJson<ContactRecord>(clients.encryption, contactItem.encryptedContact)
     : emptyContact();
+
+  const dealSnapshot: DealPriceSnapshot = dealItem
+    ? await decryptJson<DealPriceSnapshot>(clients.encryption, dealItem.encryptedDeal)
+    : emptyDealSnapshot();
 
   const travelers: TravelerRecord[] = [];
   for (const ti of travelerItems) {
@@ -394,7 +631,7 @@ export async function getDraft(
     callIntentExpiresAtIso: metaItem.callIntentExpiresAtIso,
   };
 
-  return { metadata, dealSnapshot: emptyDealSnapshot(), contact, travelers, cabins, decisions, fallbackCallKey };
+  return { metadata, dealSnapshot, contact, travelers, cabins, decisions, fallbackCallKey };
 }
 
 // ── Update draft status (with optimistic concurrency) ───────────────────────
@@ -416,6 +653,12 @@ export interface UpdateStatusInput {
 export interface UpdateStatusResult {
   newVersion: number;
   updatedAtIso: string;
+}
+
+export interface UpdateStatusWithJournalInput extends UpdateStatusInput {
+  journalEvent: Omit<JournalEventInput, "draftId" | "expectedDraftVersion" | "sequence">;
+  extraPutItems?: Array<Record<string, unknown>>;
+  extraTransactItems?: Array<Record<string, unknown>>;
 }
 
 /**
@@ -501,6 +744,129 @@ export async function updateDraftStatus(
   );
 
   return { newVersion, updatedAtIso: nowIso };
+}
+
+export async function updateDraftStatusWithJournal(
+  clients: DraftStoreClients,
+  config: DraftStoreConfig,
+  input: UpdateStatusWithJournalInput
+): Promise<UpdateStatusResult & { journalEvent: JournalEventRecord }> {
+  const pk = draftPk(input.draftId);
+  const nowIso = new Date().toISOString();
+
+  const existing = await clients.dynamo.send(
+    new GetItemCommand({
+      TableName: config.tableName,
+      Key: { PK: { S: pk }, SK: { S: "META" } },
+      ProjectionExpression: "#status, #version, journalSequence",
+      ExpressionAttributeNames: { "#status": "status", "#version": "version" },
+    })
+  );
+
+  const currentStatus = (existing.Item?.status as { S?: string })?.S as BookingDraftStatus | undefined;
+  const currentVersion = Number((existing.Item?.version as { N?: string })?.N ?? "0");
+  const currentJournalSequence = Number((existing.Item?.journalSequence as { N?: string })?.N ?? "0");
+
+  if (!currentStatus || currentVersion !== input.expectedVersion) {
+    throw new DraftVersionConflictError(input.expectedVersion, currentVersion);
+  }
+
+  if (!canTransitionBookingStatus(currentStatus, input.newStatus)) {
+    throw new InvalidTransitionError(currentStatus, input.newStatus);
+  }
+
+  const newVersion = currentVersion + 1;
+  const newJournalSequence = currentJournalSequence + 1;
+  const builtJournal = buildJournalEvent({
+    draftId: input.draftId,
+    eventType: input.journalEvent.eventType,
+    actorType: input.journalEvent.actorType,
+    occurredAtIso: input.journalEvent.occurredAtIso,
+    privacyClass: input.journalEvent.privacyClass,
+    idempotencyKey: input.journalEvent.idempotencyKey,
+    expectedDraftVersion: newVersion,
+    sequence: newJournalSequence,
+    payload: input.journalEvent.payload,
+  });
+
+  const updateExprParts: string[] = [
+    "SET #status = :status",
+    "#version = :version",
+    "updatedAtIso = :now",
+    "GSI1PK = :gsi1pk",
+    "GSI1SK = :now",
+    "journalSequence = :journalSequence",
+    "lastJournalEventAtIso = :lastJournalEventAtIso",
+  ];
+  const exprAttrNames: Record<string, string> = {
+    "#status": "status",
+    "#version": "version",
+  };
+  const exprAttrValues: Record<string, unknown> = {
+    ":status": { S: input.newStatus },
+    ":version": { N: String(newVersion) },
+    ":now": { S: nowIso },
+    ":gsi1pk": { S: `STATUS#${input.newStatus}` },
+    ":expectedVersion": { N: String(input.expectedVersion) },
+    ":journalSequence": { N: String(newJournalSequence) },
+    ":lastJournalEventAtIso": { S: input.journalEvent.occurredAtIso },
+  };
+
+  if (input.additionalUpdates) {
+    for (const [key, value] of Object.entries(input.additionalUpdates)) {
+      if (value !== undefined) {
+        const attrName = `#${key}`;
+        const attrValue = `:${key}`;
+        exprAttrNames[attrName] = key;
+        updateExprParts.push(`${attrName} = ${attrValue}`);
+        if (typeof value === "number") {
+          exprAttrValues[attrValue] = { N: String(value) };
+        } else if (typeof value === "string") {
+          exprAttrValues[attrValue] = { S: value };
+        }
+      }
+    }
+  }
+
+  const transactItems: Array<Record<string, unknown>> = [
+    ...(input.extraTransactItems ?? []),
+    {
+      Update: {
+        TableName: config.tableName,
+        Key: { PK: { S: pk }, SK: { S: "META" } },
+        UpdateExpression: updateExprParts.join(", "),
+        ConditionExpression: "#version = :expectedVersion",
+        ExpressionAttributeNames: exprAttrNames as never,
+        ExpressionAttributeValues: exprAttrValues as never,
+      },
+    },
+    {
+      Put: {
+        TableName: config.tableName,
+        Item: builtJournal.item as never,
+        ConditionExpression: "attribute_not_exists(PK) AND attribute_not_exists(SK)",
+      },
+    },
+  ];
+
+  for (const item of input.extraPutItems ?? []) {
+    transactItems.push({
+      Put: {
+        TableName: config.tableName,
+        Item: item as never,
+      },
+    });
+  }
+
+  await clients.dynamo.send(
+    new TransactWriteItemsCommand({
+      TransactItems: transactItems as never,
+    })
+  );
+
+  await projectJournalEventIfConfigured(clients.dynamo, config, builtJournal.record);
+
+  return { newVersion, updatedAtIso: nowIso, journalEvent: builtJournal.record };
 }
 
 // ── Save fallback call key ──────────────────────────────────────────────────
@@ -697,6 +1063,7 @@ function serializeMetaItem(item: DraftMetaItem): Record<string, unknown> {
     updatedAtIso: { S: item.updatedAtIso },
     lastGuestActivityAtIso: { S: item.lastGuestActivityAtIso },
     lastMeaningfulGuestActivityAtIso: { S: item.lastMeaningfulGuestActivityAtIso },
+    ...(item.lastJournalEventAtIso && { lastJournalEventAtIso: { S: item.lastJournalEventAtIso } }),
     ...(s(item.dealId) && { dealId: s(item.dealId) }),
     ...(s(item.packageId) && { packageId: s(item.packageId) }),
     personId: { S: item.personId },
@@ -734,6 +1101,7 @@ function parseMetaItem(item: Record<string, unknown>): DraftMetaItem {
     updatedAtIso: s("updatedAtIso"),
     lastGuestActivityAtIso: s("lastGuestActivityAtIso"),
     lastMeaningfulGuestActivityAtIso: s("lastMeaningfulGuestActivityAtIso"),
+    lastJournalEventAtIso: s("lastJournalEventAtIso") || undefined,
     dealId: s("dealId"),
     packageId: s("packageId"),
     personId: s("personId"),
@@ -772,7 +1140,27 @@ function parseContactItem(item: Record<string, unknown>): DraftContactItem {
   };
 }
 
-function serializeTravelerItem(item: DraftTravelerItem): Record<string, unknown> {
+function serializeDealItem(item: DraftDealItem): Record<string, unknown> {
+  return {
+    PK: { S: item.pk },
+    SK: { S: item.sk },
+    encryptedDeal: serializeEncryptedBlob(item.encryptedDeal),
+    updatedAtIso: { S: item.updatedAtIso },
+    version: { N: String(item.version) },
+  };
+}
+
+function parseDealItem(item: Record<string, unknown>): DraftDealItem {
+  return {
+    pk: (item.PK as { S?: string })?.S ?? "",
+    sk: "DEAL",
+    encryptedDeal: parseEncryptedBlob(item.encryptedDeal as Record<string, unknown>),
+    updatedAtIso: (item.updatedAtIso as { S?: string })?.S ?? "",
+    version: Number((item.version as { N?: string })?.N ?? "0"),
+  };
+}
+
+export function serializeTravelerItem(item: DraftTravelerItem): Record<string, unknown> {
   return {
     PK: { S: item.pk },
     SK: { S: item.sk },
@@ -796,7 +1184,7 @@ function parseTravelerItem(item: Record<string, unknown>): DraftTravelerItem {
   };
 }
 
-function serializeCabinItem(item: DraftCabinItem): Record<string, unknown> {
+export function serializeCabinItem(item: DraftCabinItem): Record<string, unknown> {
   return {
     PK: { S: item.pk },
     SK: { S: item.sk },
@@ -818,7 +1206,7 @@ function parseCabinItem(item: Record<string, unknown>): DraftCabinItem {
   };
 }
 
-function serializeDecisionsItem(item: DraftDecisionsItem): Record<string, unknown> {
+export function serializeDecisionsItem(item: DraftDecisionsItem): Record<string, unknown> {
   return {
     PK: { S: item.pk },
     SK: { S: item.sk },
@@ -875,6 +1263,51 @@ function serializeCallKeyLookupItem(item: CallKeyLookupItem): Record<string, unk
     draftId: { S: item.draftId },
     state: { S: item.state },
     issuedAtIso: { S: item.issuedAtIso },
+  };
+}
+
+export function serializeResumeTokenItem(item: ResumeTokenItem): Record<string, unknown> {
+  return {
+    PK: { S: item.pk },
+    SK: { S: item.sk },
+    draftId: { S: item.draftId },
+    personId: { S: item.personId },
+    redirectDealId: { S: item.redirectDealId },
+    tokenHash: { S: item.tokenHash },
+    state: { S: item.state },
+    issuedAtIso: { S: item.issuedAtIso },
+    expiresAtIso: { S: item.expiresAtIso },
+    ttlEpochSeconds: { N: String(item.ttlEpochSeconds) },
+    ...(item.consumedAtIso && { consumedAtIso: { S: item.consumedAtIso } }),
+  };
+}
+
+export function parseResumeTokenItem(item: Record<string, unknown>): ResumeTokenItem {
+  const s = (key: string): string => (item[key] as { S?: string })?.S ?? "";
+  const n = (key: string): number => Number((item[key] as { N?: string })?.N ?? "0");
+  return {
+    pk: s("PK"),
+    sk: "TOKEN",
+    draftId: s("draftId"),
+    personId: s("personId"),
+    redirectDealId: s("redirectDealId"),
+    tokenHash: s("tokenHash"),
+    state: s("state") as ResumeTokenItem["state"],
+    issuedAtIso: s("issuedAtIso"),
+    expiresAtIso: s("expiresAtIso"),
+    ttlEpochSeconds: n("ttlEpochSeconds"),
+    consumedAtIso: s("consumedAtIso") || undefined,
+  };
+}
+
+export function serializeDraftResumePointerItem(item: DraftResumePointerItem): Record<string, unknown> {
+  return {
+    PK: { S: item.pk },
+    SK: { S: item.sk },
+    tokenHash: { S: item.tokenHash },
+    expiresAtIso: { S: item.expiresAtIso },
+    updatedAtIso: { S: item.updatedAtIso },
+    ttlEpochSeconds: { N: String(item.ttlEpochSeconds) },
   };
 }
 

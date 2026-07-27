@@ -13,6 +13,10 @@
 
 import type { BookingDraftStatus } from "./contracts";
 import {
+  GetItemCommand,
+  TransactWriteItemsCommand,
+} from "@aws-sdk/client-dynamodb";
+import {
   canTransitionBookingStatus,
   type BookingJournalEventType,
 } from "./contracts";
@@ -34,15 +38,26 @@ import {
   lookupDraftByCallKeyHmac,
   queryOperatorQueue,
   saveFallbackCallKey,
-  updateDraftStatus,
+  updateDraftStatusWithJournal,
   type DraftStoreClients,
   type DraftStoreConfig,
   type QueueQueryResult,
 } from "./store";
 import {
+  buildJournalEvent,
   writeJournalEvent,
   type JournalPayload,
 } from "./activity-journal";
+import { encryptJson } from "./encryption";
+import {
+  assertAllowedStructuredKeys,
+  assertNoRestrictedStructuredContent,
+} from "./redaction";
+import { stopReminderProgram } from "./reminders";
+import {
+  emitBookingMilestone,
+  emitBookingMilestoneForDraft,
+} from "./deal-milestones";
 import type {
   BookingDraft,
   BookingDraftMetadata,
@@ -80,12 +95,25 @@ export async function pollOperatorQueue(
       try {
         const draft = await getDraft(clients, config, row.draftId);
         if (draft) {
+          card.version = draft.metadata.version;
           card.firstName = draft.contact.firstName;
           card.dealSummary = `${draft.dealSnapshot.cruiseLine} ${draft.dealSnapshot.ship} — ${draft.dealSnapshot.sailingDateIso.slice(0, 10)}`;
           card.callKeyState = draft.fallbackCallKey?.state;
           card.assignedOperatorId = draft.metadata.assignedOperatorId;
+          card.claimLeaseExpiresAtIso = draft.metadata.claimLeaseExpiresAtIso;
           card.activeCallAttemptId = draft.metadata.activeCallAttemptId;
           card.callIntentExpiresAtIso = draft.metadata.callIntentExpiresAtIso;
+          if (draft.metadata.status === "human_requested") {
+            const callback = await clients.dynamo.send(new GetItemCommand({
+              TableName: config.tableName,
+              Key: {
+                PK: { S: `DRAFT#${row.draftId}` },
+                SK: { S: "CALLBACK_ACTIVE" },
+              },
+              ProjectionExpression: "callbackWindowLabel",
+            }));
+            card.callbackWindowLabel = callback.Item?.callbackWindowLabel?.S;
+          }
         }
       } catch {
         // Skip enrichment if draft can't be loaded
@@ -109,6 +137,7 @@ export async function pollOperatorQueue(
 function queueRowToCard(row: QueueQueryResult): OperatorQueueCard {
   return {
     bookingDraftId: row.draftId,
+    version: 0,
     firstName: "",
     dealSummary: "",
     status: row.status,
@@ -133,6 +162,8 @@ export type FallbackKeyLookupOutput =
       draftId: string;
       maskedCallerSummary: string;
       dealSummary: string;
+      version: number;
+      status: BookingDraftStatus;
       packetVersion: number;
       keyVersion: number;
       issuedAtIso: string;
@@ -199,6 +230,8 @@ export async function lookupByFallbackKey(
     draftId: lookup.draftId,
     maskedCallerSummary: maskedCaller,
     dealSummary,
+    version: draft.metadata.version,
+    status: draft.metadata.status,
     packetVersion: draft.metadata.packetVersion,
     keyVersion: draft.fallbackCallKey?.keyVersion ?? 1,
     issuedAtIso: lookup.issuedAtIso,
@@ -213,6 +246,41 @@ export interface CallerVerificationInput {
   callerIdState: CallerIdState;
   operatorSessionId: string;
   verificationNotes?: string;
+}
+
+export interface AcknowledgeCallIntentInput {
+  draftId: string;
+  expectedVersion: number;
+  operatorSessionId: string;
+}
+
+export interface AcknowledgeCallIntentResult {
+  newVersion: number;
+  journalEventId: string;
+}
+
+/** Pins the incoming call for this operator before claim/processing can begin. */
+export async function acknowledgeCallIntent(
+  clients: DraftStoreClients,
+  config: OperatorServiceConfig,
+  input: AcknowledgeCallIntentInput
+): Promise<AcknowledgeCallIntentResult> {
+  const nowIso = new Date().toISOString();
+  const update = await updateDraftStatusWithJournal(clients, config, {
+    draftId: input.draftId,
+    expectedVersion: input.expectedVersion,
+    newStatus: "calling_now",
+    idempotencyKey: `acknowledge-${input.operatorSessionId}-${nowIso}`,
+    journalEvent: {
+      eventType: "operator_call_draft_pinned" as BookingJournalEventType,
+      actorType: "operator",
+      occurredAtIso: nowIso,
+      privacyClass: "operational",
+      idempotencyKey: `acknowledge-event-${input.operatorSessionId}-${nowIso}`,
+      payload: { operatorSessionId: input.operatorSessionId, action: "call_intent_acknowledged" },
+    },
+  });
+  return { newVersion: update.newVersion, journalEventId: update.journalEvent.journalEventId };
 }
 
 export interface CallerVerificationResult {
@@ -237,9 +305,22 @@ export async function recordCallerVerification(
   }
 
   const nowIso = new Date().toISOString();
-
-  // Journal: caller_id_compared
-  await writeJournalEvent(clients.dynamo, config.tableName, {
+  if (
+    draft.metadata.status !== "calling_now" &&
+    draft.metadata.status !== "agent_claimed"
+  ) {
+    throw new Error("Caller verification requires a calling-now or claimed callback draft");
+  }
+  if (draft.metadata.version !== input.expectedVersion) {
+    throw new DraftVersionConflictError(input.expectedVersion, draft.metadata.version);
+  }
+  assertNoRestrictedStructuredContent(input.verificationNotes ?? "");
+  const verificationExpiresAtIso = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const encryptedVerification = await encryptJson(clients.encryption, {
+    callerIdState: input.callerIdState,
+    verificationNotes: input.verificationNotes ?? "",
+  });
+  const callerIdEvent = buildJournalEvent({
     draftId: input.draftId,
     eventType: "caller_id_compared" as BookingJournalEventType,
     actorType: "operator",
@@ -250,12 +331,7 @@ export async function recordCallerVerification(
     sequence: draft.metadata.journalSequence + 1,
     payload: { callerIdState: input.callerIdState },
   });
-
-  // Journal: caller_verification_recorded
-  const verificationEvent = await writeJournalEvent(
-    clients.dynamo,
-    config.tableName,
-    {
+  const verificationEvent = buildJournalEvent({
       draftId: input.draftId,
       eventType: "caller_verification_recorded" as BookingJournalEventType,
       actorType: "operator",
@@ -267,15 +343,74 @@ export async function recordCallerVerification(
       payload: {
         operatorSessionId: input.operatorSessionId,
         callerIdState: input.callerIdState,
-        notes: input.verificationNotes ?? "",
+        verificationOutcome: "verified",
+        hasNotes: Boolean(input.verificationNotes),
       },
-    }
+    });
+  await clients.dynamo.send(
+    new TransactWriteItemsCommand({
+      TransactItems: [
+        {
+          Update: {
+            TableName: config.tableName,
+            Key: { PK: { S: `DRAFT#${input.draftId}` }, SK: { S: "META" } },
+            UpdateExpression: "SET journalSequence = :sequence, lastJournalEventAtIso = :now",
+            ConditionExpression: "#version = :version AND journalSequence = :priorSequence AND #status = :callingNow",
+            ExpressionAttributeNames: { "#version": "version", "#status": "status" },
+            ExpressionAttributeValues: {
+              ":version": { N: String(input.expectedVersion) },
+              ":priorSequence": { N: String(draft.metadata.journalSequence) },
+              ":sequence": { N: String(draft.metadata.journalSequence + 2) },
+              ":now": { S: nowIso },
+              ":callingNow": { S: "calling_now" },
+            },
+          },
+        },
+        {
+          Put: {
+            TableName: config.tableName,
+            Item: callerIdEvent.item as never,
+            ConditionExpression: "attribute_not_exists(PK)",
+          },
+        },
+        {
+          Put: {
+            TableName: config.tableName,
+            Item: verificationEvent.item as never,
+            ConditionExpression: "attribute_not_exists(PK)",
+          },
+        },
+        {
+          Put: {
+            TableName: config.tableName,
+            Item: {
+              PK: { S: `DRAFT#${input.draftId}` },
+              SK: { S: `OPERATOR_VERIFICATION#${input.operatorSessionId}` },
+              operatorSessionId: { S: input.operatorSessionId },
+              verifiedDraftVersion: { N: String(input.expectedVersion) },
+              verifiedAtIso: { S: nowIso },
+              expiresAtIso: { S: verificationExpiresAtIso },
+              ttlEpochSeconds: { N: String(Math.floor(Date.parse(verificationExpiresAtIso) / 1000)) },
+              encryptedVerification: {
+                M: {
+                  ciphertext: { S: encryptedVerification.ciphertext },
+                  iv: { S: encryptedVerification.iv },
+                  tag: { S: encryptedVerification.tag },
+                  encryptedDataKey: { S: encryptedVerification.encryptedDataKey },
+                  kmsKeyArn: { S: encryptedVerification.kmsKeyArn },
+                },
+              },
+            },
+          },
+        },
+      ],
+    })
   );
 
   return {
     verified: true,
     newVersion: input.expectedVersion,
-    journalEventId: verificationEvent.journalEventId,
+    journalEventId: verificationEvent.record.journalEventId,
   };
 }
 
@@ -305,6 +440,18 @@ export async function revealPacket(
   const draft = await getDraft(clients, config, input.draftId);
   if (!draft) {
     throw new Error(`Draft not found: ${input.draftId}`);
+  }
+
+  const leaseExpiresAt = draft.metadata.claimLeaseExpiresAtIso
+    ? Date.parse(draft.metadata.claimLeaseExpiresAtIso)
+    : Number.NaN;
+  if (
+    (draft.metadata.status !== "agent_claimed" && draft.metadata.status !== "agent_processing") ||
+    draft.metadata.assignedOperatorId !== input.operatorSessionId ||
+    !Number.isFinite(leaseExpiresAt) ||
+    leaseExpiresAt <= Date.now()
+  ) {
+    throw new Error("Active operator claim is required before packet reveal");
   }
 
   const nowIso = new Date().toISOString();
@@ -348,6 +495,77 @@ export interface OperatorClaimResult {
   journalEventId: string;
 }
 
+export interface DismissDraftInput {
+  draftId: string;
+  expectedVersion: number;
+  operatorSessionId: string;
+  reason?: string;
+}
+
+export interface DismissDraftResult {
+  newVersion: number;
+  journalEventId: string;
+}
+
+/**
+ * Removes an unwanted draft from the active operator queue without deleting
+ * the packet or its audit history. This is intended for abandoned test drafts
+ * and pre-call drafts that an operator deliberately closes.
+ */
+export async function dismissDraft(
+  clients: DraftStoreClients,
+  config: OperatorServiceConfig,
+  input: DismissDraftInput
+): Promise<DismissDraftResult> {
+  const draft = await getDraft(clients, config, input.draftId);
+  if (!draft) {
+    throw new Error("Booking draft was not found");
+  }
+
+  if (draft.metadata.status === "booking_confirmed") {
+    throw new Error("A confirmed booking cannot be dismissed from the queue");
+  }
+
+  if (draft.metadata.status === "agent_processing") {
+    const claimLeaseExpiresAt = Date.parse(draft.metadata.claimLeaseExpiresAtIso ?? "");
+    if (!Number.isFinite(claimLeaseExpiresAt) || claimLeaseExpiresAt > Date.now()) {
+      throw new Error("An actively leased booking cannot be dismissed from the queue");
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+  const updateResult = await updateDraftStatusWithJournal(clients, config, {
+    draftId: input.draftId,
+    expectedVersion: input.expectedVersion,
+    newStatus: "cancelled",
+    idempotencyKey: `dismiss-${input.operatorSessionId}-${nowIso}`,
+    journalEvent: {
+      eventType: "operator_draft_dismissed" as BookingJournalEventType,
+      actorType: "operator",
+      occurredAtIso: nowIso,
+      privacyClass: "operational",
+      idempotencyKey: `dismiss-event-${input.operatorSessionId}-${nowIso}`,
+      payload: {
+        operatorSessionId: input.operatorSessionId,
+        reason: input.reason ?? "operator_queue_cleanup",
+      },
+    }
+  });
+
+  emitBookingMilestone({
+    dealId: draft.metadata.dealId,
+    eventType: "booking_cancelled",
+    draftId: input.draftId,
+    status: "cancelled",
+  });
+  await stopReminderProgram(clients.dynamo, config, input.draftId, "operator_dismissed");
+
+  return {
+    newVersion: updateResult.newVersion,
+    journalEventId: updateResult.journalEvent.journalEventId,
+  };
+}
+
 /**
  * Operator claims a draft. Sets a claim lease to prevent concurrent operators.
  */
@@ -357,9 +575,33 @@ export async function claimDraft(
   input: OperatorClaimInput
 ): Promise<OperatorClaimResult> {
   const nowIso = new Date().toISOString();
+  const currentDraft = await getDraft(clients, config, input.draftId);
+  if (!currentDraft) throw new Error("Booking draft was not found");
+  if (currentDraft.metadata.status !== "human_requested") {
+    const verification = await clients.dynamo.send(
+      new GetItemCommand({
+        TableName: config.tableName,
+        Key: {
+          PK: { S: `DRAFT#${input.draftId}` },
+          SK: { S: `OPERATOR_VERIFICATION#${input.operatorSessionId}` },
+        },
+      })
+    );
+    const verifiedDraftVersion = Number(
+      (verification.Item?.verifiedDraftVersion as { N?: string })?.N ?? "0"
+    );
+    const verificationExpiresAtIso =
+      (verification.Item?.expiresAtIso as { S?: string })?.S ?? "";
+    if (
+      verifiedDraftVersion !== input.expectedVersion ||
+      Date.parse(verificationExpiresAtIso) <= Date.now()
+    ) {
+      throw new Error("Current caller verification is required before claiming this draft");
+    }
+  }
   const leaseExpiry = new Date(Date.now() + config.claimLeaseSeconds * 1000).toISOString();
 
-  const updateResult = await updateDraftStatus(clients, config, {
+  const updateResult = await updateDraftStatusWithJournal(clients, config, {
     draftId: input.draftId,
     expectedVersion: input.expectedVersion,
     newStatus: "agent_claimed",
@@ -368,31 +610,24 @@ export async function claimDraft(
       assignedOperatorId: input.operatorSessionId,
       claimLeaseExpiresAtIso: leaseExpiry,
     },
-  });
-
-  const claimEvent = await writeJournalEvent(
-    clients.dynamo,
-    config.tableName,
-    {
-      draftId: input.draftId,
+    journalEvent: {
       eventType: "operator_claimed" as BookingJournalEventType,
       actorType: "operator",
       occurredAtIso: nowIso,
       privacyClass: "operational",
       idempotencyKey: `claim-event-${input.operatorSessionId}-${nowIso}`,
-      expectedDraftVersion: updateResult.newVersion,
-      sequence: 0,
       payload: {
         operatorSessionId: input.operatorSessionId,
         leaseExpiresAtIso: leaseExpiry,
       },
     }
-  );
+  });
+  await stopReminderProgram(clients.dynamo, config, input.draftId, "operator_claimed");
 
   return {
     newVersion: updateResult.newVersion,
     claimLeaseExpiresAtIso: leaseExpiry,
-    journalEventId: claimEvent.journalEventId,
+    journalEventId: updateResult.journalEvent.journalEventId,
   };
 }
 
@@ -415,35 +650,28 @@ export async function startAgentProcessing(
   input: StartProcessingInput
 ): Promise<StartProcessingResult> {
   const nowIso = new Date().toISOString();
+  await requireActiveOperatorClaim(clients, config, input.draftId, input.operatorSessionId);
 
-  const updateResult = await updateDraftStatus(clients, config, {
+  const updateResult = await updateDraftStatusWithJournal(clients, config, {
     draftId: input.draftId,
     expectedVersion: input.expectedVersion,
     newStatus: "agent_processing",
     idempotencyKey: `processing-${input.operatorSessionId}-${nowIso}`,
-  });
-
-  const processingEvent = await writeJournalEvent(
-    clients.dynamo,
-    config.tableName,
-    {
-      draftId: input.draftId,
+    journalEvent: {
       eventType: "agent_processing_started" as BookingJournalEventType,
       actorType: "operator",
       occurredAtIso: nowIso,
       privacyClass: "operational",
       idempotencyKey: `processing-event-${input.operatorSessionId}-${nowIso}`,
-      expectedDraftVersion: updateResult.newVersion,
-      sequence: 0,
       payload: {
         operatorSessionId: input.operatorSessionId,
       },
     }
-  );
+  });
 
   return {
     newVersion: updateResult.newVersion,
-    journalEventId: processingEvent.journalEventId,
+    journalEventId: updateResult.journalEvent.journalEventId,
   };
 }
 
@@ -463,6 +691,20 @@ export interface RecordOutcomeResult {
   journalEventId: string;
 }
 
+export interface ReconcileBookingInput {
+  draftId: string;
+  expectedVersion: number;
+  operatorSessionId: string;
+  bookingReference: string;
+  evidenceType: "cbat_trip" | "supplier_confirmation";
+}
+
+export interface ReconcileBookingResult {
+  newVersion: number;
+  newStatus: "booking_confirmed";
+  journalEventId: string;
+}
+
 /**
  * Records the call outcome and transitions the draft to the appropriate
  * next status based on the outcome type.
@@ -473,48 +715,174 @@ export async function recordCallOutcome(
   input: RecordOutcomeInput
 ): Promise<RecordOutcomeResult> {
   const nowIso = new Date().toISOString();
+  await requireActiveOperatorClaim(clients, config, input.draftId, input.operatorSessionId);
+  assertAllowedStructuredKeys({ notes: input.notes });
+  assertNoRestrictedStructuredContent(input.notes ?? "");
+  const encryptedOutcome = await encryptJson(clients.encryption, {
+    outcome: input.outcome,
+    notes: input.notes ?? "",
+  });
 
   // Determine next status from outcome
   const nextStatus = outcomeToStatus(input.outcome);
 
-  const updateResult = await updateDraftStatus(clients, config, {
+  const updateResult = await updateDraftStatusWithJournal(clients, config, {
     draftId: input.draftId,
     expectedVersion: input.expectedVersion,
     newStatus: nextStatus,
     idempotencyKey: `outcome-${input.operatorSessionId}-${nowIso}`,
-  });
-
-  const outcomeEvent = await writeJournalEvent(
-    clients.dynamo,
-    config.tableName,
-    {
-      draftId: input.draftId,
+    journalEvent: {
       eventType: "call_outcome_recorded" as BookingJournalEventType,
       actorType: "operator",
       occurredAtIso: nowIso,
       privacyClass: "operational",
       idempotencyKey: `outcome-event-${input.operatorSessionId}-${nowIso}`,
-      expectedDraftVersion: updateResult.newVersion,
-      sequence: 0,
       payload: {
         outcome: input.outcome,
         outcomeLabel: callOutcomeLabels[input.outcome],
-        notes: input.notes ?? "",
+        hasNotes: Boolean(input.notes),
       },
-    }
-  );
+    },
+    extraPutItems: [
+      {
+        PK: { S: `DRAFT#${input.draftId}` },
+        SK: { S: `OPERATOR_OUTCOME#${nowIso}` },
+        outcome: { S: input.outcome },
+        recordedAtIso: { S: nowIso },
+        operatorSessionId: { S: input.operatorSessionId },
+        encryptedOutcome: {
+          M: {
+            ciphertext: { S: encryptedOutcome.ciphertext },
+            iv: { S: encryptedOutcome.iv },
+            tag: { S: encryptedOutcome.tag },
+            encryptedDataKey: { S: encryptedOutcome.encryptedDataKey },
+            kmsKeyArn: { S: encryptedOutcome.kmsKeyArn },
+          },
+        },
+      },
+    ],
+  });
+
+  if (nextStatus === "booking_confirmed") {
+    await stopReminderProgram(clients.dynamo, config, input.draftId, "booking_confirmed");
+    emitBookingMilestoneForDraft(clients.dynamo, config.tableName, {
+      eventType: "booking_confirmed",
+      draftId: input.draftId,
+      status: nextStatus,
+    });
+  }
 
   return {
     newVersion: updateResult.newVersion,
     newStatus: nextStatus,
-    journalEventId: outcomeEvent.journalEventId,
+    journalEventId: updateResult.journalEvent.journalEventId,
   };
 }
 
-function outcomeToStatus(outcome: CallOutcome): BookingDraftStatus {
+/**
+ * Confirms a booking only after the operator has reconciled an authoritative
+ * booking reference. The reference is encrypted and never enters the journal.
+ */
+export async function reconcileBookingReference(
+  clients: DraftStoreClients,
+  config: OperatorServiceConfig,
+  input: ReconcileBookingInput
+): Promise<ReconcileBookingResult> {
+  const draft = await requireActiveOperatorClaim(
+    clients,
+    config,
+    input.draftId,
+    input.operatorSessionId
+  );
+  if (draft.metadata.status !== "reconciliation_review") {
+    throw new Error("Booking reconciliation requires reconciliation_review status");
+  }
+  const bookingReference = input.bookingReference.trim();
+  if (bookingReference.length < 3 || bookingReference.length > 100) {
+    throw new Error("A valid authoritative booking reference is required");
+  }
+  assertNoRestrictedStructuredContent(bookingReference);
+  const nowIso = new Date().toISOString();
+  const encryptedReconciliation = await encryptJson(clients.encryption, {
+    bookingReference,
+    evidenceType: input.evidenceType,
+  });
+  const updateResult = await updateDraftStatusWithJournal(clients, config, {
+    draftId: input.draftId,
+    expectedVersion: input.expectedVersion,
+    newStatus: "booking_confirmed",
+    idempotencyKey: `reconcile-${input.operatorSessionId}-${nowIso}`,
+    journalEvent: {
+      eventType: "reconciliation_completed",
+      actorType: "reconciliation",
+      occurredAtIso: nowIso,
+      privacyClass: "operational",
+      idempotencyKey: `reconcile-event-${input.operatorSessionId}-${nowIso}`,
+      payload: {
+        evidenceType: input.evidenceType,
+        bookingReferencePresent: true,
+      },
+    },
+    extraPutItems: [
+      {
+        PK: { S: `DRAFT#${input.draftId}` },
+        SK: { S: "RECONCILIATION#BOOKING_REFERENCE" },
+        recordedAtIso: { S: nowIso },
+        operatorSessionId: { S: input.operatorSessionId },
+        evidenceType: { S: input.evidenceType },
+        encryptedReconciliation: {
+          M: {
+            ciphertext: { S: encryptedReconciliation.ciphertext },
+            iv: { S: encryptedReconciliation.iv },
+            tag: { S: encryptedReconciliation.tag },
+            encryptedDataKey: { S: encryptedReconciliation.encryptedDataKey },
+            kmsKeyArn: { S: encryptedReconciliation.kmsKeyArn },
+          },
+        },
+      },
+    ],
+  });
+  await stopReminderProgram(clients.dynamo, config, input.draftId, "booking_confirmed");
+  emitBookingMilestoneForDraft(clients.dynamo, config.tableName, {
+    eventType: "booking_confirmed",
+    draftId: input.draftId,
+    status: "booking_confirmed",
+  });
+  return {
+    newVersion: updateResult.newVersion,
+    newStatus: "booking_confirmed",
+    journalEventId: updateResult.journalEvent.journalEventId,
+  };
+}
+
+export async function requireActiveOperatorClaim(
+  clients: DraftStoreClients,
+  config: OperatorServiceConfig,
+  draftId: string,
+  operatorSessionId: string
+): Promise<BookingDraft> {
+  const draft = await getDraft(clients, config, draftId);
+  if (!draft) throw new Error("Booking draft was not found");
+  const leaseExpiresAt = Date.parse(draft.metadata.claimLeaseExpiresAtIso ?? "");
+  if (
+    draft.metadata.assignedOperatorId !== operatorSessionId ||
+    !Number.isFinite(leaseExpiresAt) ||
+    leaseExpiresAt <= Date.now() ||
+    (
+      draft.metadata.status !== "agent_claimed" &&
+      draft.metadata.status !== "agent_processing" &&
+      draft.metadata.status !== "reconciliation_review"
+    )
+  ) {
+    throw new Error("An active operator claim is required");
+  }
+  return draft;
+}
+
+export function outcomeToStatus(outcome: CallOutcome): BookingDraftStatus {
   switch (outcome) {
     case "confirmed":
-      return "booking_confirmed";
+      return "reconciliation_review";
     case "completed_pending_reconciliation":
       return "reconciliation_review";
     case "payment_failed":
@@ -538,7 +906,10 @@ function outcomeToStatus(outcome: CallOutcome): BookingDraftStatus {
 
 /** Mask phone to show only last 4 digits. */
 function maskPhone(phoneE164: string): string {
-  const digits = phoneE164.replace(/\D/g, "");
+  let digits = "";
+  for (const character of phoneE164) {
+    if (character >= "0" && character <= "9") digits += character;
+  }
   const last4 = digits.slice(-4);
   return `••• ••• ${last4 || "----"}`;
 }
@@ -554,7 +925,7 @@ export {
   selectRandomCallKey,
   saveFallbackCallKey,
   getDraft,
-  updateDraftStatus,
+  updateDraftStatusWithJournal,
   writeJournalEvent,
   DraftVersionConflictError,
   InvalidTransitionError,

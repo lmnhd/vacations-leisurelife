@@ -133,3 +133,21 @@ Record operator-driven workflow corrections, recurring friction, temporary rules
 - Trigger: `Check bonus offer` looked like an automated eligibility check but only created another manual callback task with no defined operator resolution workflow.
 - Operating rule: Deal landing pages expose the verified booking action, email-link action, and one general callback request. Promotion questions can be included in the normal callback notes; do not create a separate bonus-check CTA or queue.
 - Refactor implication: Keep legacy `promo_check` records readable for history, but public Deal components must not create new ones.
+
+## 2026-07-25 - Deal landing pages have one Booking Assistant entry
+
+- Trigger: The public Deal hero still displayed `Email me the link` and `Request callback` beside `Start booking`, even though the approved Booking Assistant design begins through one guided funnel and must account for guests who never reach an agent call.
+- Operating rule: A Deal landing page exposes one booking action: `Start booking`. Secure email resume (`Continue later`) and contextual human help/final call actions appear only inside the Booking Assistant after the required context exists, and all of them remain on one journey, draft, and Booking Activity Journal.
+- Refactor implication: Do not recreate public link-request, callback-request, bonus-check, or generic ask-an-agent CTAs. Preserve old records for history, and project every assistant entry - including pre-contact exits and all other non-call outcomes - into the Deal-System analytics work.
+
+## 2026-07-25 - Booking intake uses a focused app viewport
+
+- Trigger: The normal corporate landing-page footer appeared directly below the Booking Assistant controls on a phone, adding dense legal/contact text to an already sensitive older-guest form.
+- Operating rule: Once `Start booking` opens the assistant, hide unrelated site chrome and the normal footer. Lock the background document in place, keep the primary controls predictable, and allow scrolling only inside the active task or sheet so long forms and accessibility controls remain reachable.
+- Refactor implication: Legal and privacy information remains available through the assistant's contextual privacy/help surfaces, but it must not be repeated as a full site footer beneath every booking task.
+
+## 2026-07-25 - Every Booking Assistant step must be reversible
+
+- Trigger: A guest could move forward through intake but had no direct way to return to the previous step and correct an earlier answer.
+- Operating rule: Show a large, plainly labeled `Back` control on every task after the first. Back preloads the saved answer, preserves all unrelated confirmed data, and records the navigation. When an upstream correction changes task requirements, reopen only the dependent steps. The ready-to-call screen also provides a review/change path until call handoff begins.
+- Refactor implication: Do not rely on final-review edit links or browser history as the only correction path. Forward and backward task navigation are both required parts of the mobile booking contract.

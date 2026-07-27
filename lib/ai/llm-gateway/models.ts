@@ -1,5 +1,5 @@
 /**
- * LLM GATEWAY - MODEL REGISTRY  (Updated: March 2026)
+ * LLM GATEWAY - MODEL REGISTRY  (Updated: July 2026)
  * ─────────────────────────────────────────────────────
  * Single source of truth for every model the app can use.
  *
@@ -13,7 +13,7 @@ import type { ModelConfig } from "./types";
 
 export enum ModelName {
   // TIER 1 · Heavy Reasoning & Architecture
-  GPT_5_HIGH = "gpt-5.4-high",
+  GPT_5_HIGH = "gpt-5.6-sol",
   CLAUDE_4_OPUS = "claude-4.6-opus",
   GEMINI_3_PRO = "gemini-3.1-pro",
 
@@ -26,6 +26,7 @@ export enum ModelName {
   GPT_5_INSTANT = "gpt-5.4-instant",
   GEMINI_3_FLASH_LITE = "gemini-3-lite",
   LLAMA_4_MAVERICK = "llama-4-maverick",
+  CLAUDE_HAIKU = "claude-4.5-haiku",
 
   // LEGACY · Low-Complexity Website Tasks
   LEGACY_CHAT = "legacy-chat",
@@ -66,6 +67,10 @@ export const TASK_MODEL_MAP: Record<string, ModelName> = {
   extraction: ModelName.GPT_5_MEDIUM,
   /** Real-time voice / low-latency UI chat */
   ui_chat: ModelName.GEMINI_3_FLASH,
+  /** Grounded guest-facing Q&A (booking assistant): cheap, fast, on-brand */
+  guest_qa: ModelName.CLAUDE_HAIKU,
+  /** Operator call copilot: frontier reasoning, web research, and tool use */
+  operator_copilot: ModelName.GPT_5_HIGH,
   /** Memory / preference mining extraction */
   memory_extraction: ModelName.GPT_5_INSTANT,
   /** Cruise booking simulation / evaluation */
@@ -87,12 +92,12 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
 
   [ModelName.GPT_5_HIGH]: {
     provider: "openai",
-    apiId: "gpt-5.4",
-    maxTokens: 16_384,
-    defaultTemp: 0.7,
-    contextWindow: 128_000,
-    lastVerified: "2026-05-25",
-    scores: { coding: 84, logic: 95, speed: 35, context: 88 },
+    apiId: "gpt-5.6-sol",
+    maxTokens: 128_000,
+    defaultTemp: 0.4,
+    contextWindow: 1_050_000,
+    lastVerified: "2026-07-26",
+    scores: { coding: 98, logic: 99, speed: 45, context: 99 },
   },
 
   [ModelName.CLAUDE_4_OPUS]: {
@@ -180,6 +185,17 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
     contextWindow: 1_000_000,
     lastVerified: "2026-03-01",
     scores: { coding: 65, logic: 70, speed: 98, context: 80 },
+  },
+
+  [ModelName.CLAUDE_HAIKU]: {
+    provider: "anthropic",
+    // Cheapest capable Claude tier ($1/$5 per MTok): grounded guest Q&A.
+    apiId: "claude-haiku-4-5",
+    maxTokens: 4_096,
+    defaultTemp: 0.4,
+    contextWindow: 200_000,
+    lastVerified: "2026-07-25",
+    scores: { coding: 60, logic: 72, speed: 96, context: 85 },
   },
 
   // ── LEGACY ─────────────────────────────────────────────────────────────────

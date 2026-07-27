@@ -1,131 +1,35 @@
 "use client";
 
-import { useState } from "react";
-
 import Image from "next/image";
 import {
   Anchor,
   CalendarDays,
   CheckCircle2,
   CircleDollarSign,
-  ExternalLink,
-  Loader2,
-  Mail,
-  Phone,
   Ship,
   Sparkles,
 } from "lucide-react";
 
 import { LandingFooter } from "@/components/landing-footer";
 import { LandingNavbar } from "@/components/landing-navbar";
-import { Button } from "@/components/ui/button";
 import type { PublicDealPage } from "@/lib/cb/deals-system/public-deal-projection";
+import { DealCtaActions } from "./deal-cta-actions";
 
 /**
  * Public render for an operator-approved Curated Deal (Phase 10/11/12).
  *
- * Book now: opens the approved booking URL.
- * Email me the link: opens an inline email form, then calls
- *   POST /api/deals/link-request with { dealId, email }. The response reports
- *   whether the Klaviyo email send (Phase 12) actually went out.
- * Request a callback: calls POST /api/deals/callback-request — stores the request
- *   queues the request for the operator dashboard and sends an admin Pushover notification.
- *
- * Email me the link captures only an email address. Callback captures name,
- * email, phone, and notes from a minimal inline form.
+ * The public page has one entry action. Development routes it into the Booking
+ * Assistant; production retains the approved booking handoff until rollout.
+ * Resume-email and human-help choices belong inside the guided flow after the
+ * guest has entered it, where they can share one activity journal.
  */
 export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
-  const [linkState, setLinkState] = useState<
-    "idle" | "form" | "submitting" | "sent" | "not_sent" | "error"
-  >("idle");
-  const [linkEmail, setLinkEmail] = useState("");
-  const [linkError, setLinkError] = useState("");
-  const [callbackState, setCallbackState] = useState<
-    "idle" | "form" | "submitting" | "done" | "error"
-  >("idle");
-  const [callbackName, setCallbackName] = useState("");
-  const [callbackEmail, setCallbackEmail] = useState("");
-  const [callbackPhone, setCallbackPhone] = useState("");
-  const [callbackNotes, setCallbackNotes] = useState("");
-  const [callbackError, setCallbackError] = useState("");
-
-  const isSubmitting = callbackState === "submitting";
-  const isLinkSubmitting = linkState === "submitting";
-
   const facts = [
     { label: "Starting From", value: deal.facts.priceFromLabel, icon: CircleDollarSign },
     { label: "Sailing", value: deal.facts.sailDateLabel, icon: CalendarDays },
     { label: "Ship", value: deal.facts.shipName, icon: Ship },
     { label: "Destination", value: deal.facts.destination, icon: Anchor },
   ].filter((fact) => fact.value);
-
-  async function handleEmailLinkSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!linkEmail) {
-      setLinkError("Please enter an email address.");
-      return;
-    }
-    setLinkError("");
-    setLinkState("submitting");
-    try {
-      const res = await fetch("/api/deals/link-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dealId: deal.id, email: linkEmail }),
-      });
-      const data = (await res.json()) as {
-        ok: boolean;
-        emailDelivered?: boolean;
-        emailError?: string;
-        error?: string;
-      };
-      if (!data.ok) {
-        setLinkError(data.error ?? "We couldn't prepare that link right now.");
-        setLinkState("error");
-        return;
-      }
-      if (!data.emailDelivered) {
-        setLinkError(data.emailError ?? "We couldn't send that email right now.");
-        setLinkState("not_sent");
-        return;
-      }
-      setLinkState("sent");
-    } catch {
-      setLinkState("error");
-    }
-  }
-
-  async function handleCallbackSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!callbackEmail && !callbackPhone) {
-      setCallbackError("Please enter an email address or phone number.");
-      return;
-    }
-    setCallbackError("");
-    setCallbackState("submitting");
-    try {
-      const res = await fetch("/api/deals/callback-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dealId: deal.id,
-          name: callbackName || undefined,
-          email: callbackEmail || undefined,
-          phone: callbackPhone || undefined,
-          notes: callbackNotes || undefined,
-        }),
-      });
-      const data = (await res.json()) as { ok: boolean; requestId?: string; error?: string };
-      if (!data.ok) {
-        setCallbackError(data.error ?? "We couldn't save that request right now.");
-        setCallbackState("error");
-        return;
-      }
-      setCallbackState("done");
-    } catch {
-      setCallbackState("error");
-    }
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -160,149 +64,16 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                 <p className="max-w-2xl text-lg leading-8 text-white/82">{deal.heroSummary}</p>
                 {deal.textOnlyLaunchWaived && (
                   <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/80 backdrop-blur">
-                    Images coming soon — book now while rates are available.
+                    Images coming soon - book now while rates are available.
                   </p>
                 )}
               </div>
-              <div className="flex flex-wrap gap-3">
-                <Button asChild size="lg" className="rounded-full px-6 font-semibold">
-                  <a href={deal.bookingUrl} target="_blank" rel="noreferrer">
-                    Book now
-                  </a>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="lg"
-                  disabled={linkState === "sent" || linkState === "not_sent"}
-                  onClick={() => setLinkState(linkState === "form" ? "idle" : "form")}
-                  className="rounded-full border-white/35 bg-white/10 px-6 text-white hover:bg-white hover:text-slate-950 disabled:opacity-60"
-                >
-                  {linkState === "sent" || linkState === "not_sent" ? (
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Mail className="mr-2 h-4 w-4" />
-                  )}
-                  {linkState === "sent"
-                    ? "Link sent"
-                    : linkState === "not_sent"
-                      ? "Email not sent"
-                      : "Email me the booking link"}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => setCallbackState(callbackState === "form" ? "idle" : "form")}
-                  className="rounded-full border-white/35 bg-white/10 px-6 text-white hover:bg-white hover:text-slate-950"
-                >
-                  <Phone className="mr-2 h-4 w-4" />
-                  Request an agent callback
-                </Button>
-              </div>
-
-              {linkState === "form" && (
-                <form
-                  onSubmit={handleEmailLinkSubmit}
-                  className="mt-2 max-w-sm space-y-3 rounded-lg border border-white/20 bg-white/10 p-5 backdrop-blur"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
-                    Email me the booking link
-                  </p>
-                  <input
-                    type="email"
-                    placeholder="Email address"
-                    value={linkEmail}
-                    onChange={(e) => setLinkEmail(e.target.value)}
-                    className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
-                  />
-                  {linkError && <p className="text-xs text-red-300">{linkError}</p>}
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isLinkSubmitting}
-                    className="w-full rounded-full font-semibold"
-                  >
-                    {isLinkSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isLinkSubmitting ? "Sending…" : "Send me the link"}
-                  </Button>
-                </form>
-              )}
-
-              {linkState === "sent" && (
-                <p className="text-sm text-emerald-300">
-                  Link sent to your email.
-                </p>
-              )}
-              {linkState === "not_sent" && (
-                <p className="text-sm text-amber-300">
-                  We couldn&apos;t send the email right now. Try again, use Book now, or contact us directly.
-                </p>
-              )}
-
-              {callbackState === "form" && (
-                <form
-                  onSubmit={handleCallbackSubmit}
-                  className="mt-2 max-w-sm space-y-3 rounded-lg border border-white/20 bg-white/10 p-5 backdrop-blur"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
-                    Request a callback
-                  </p>
-                  <input
-                    type="text"
-                    placeholder="Your name (optional)"
-                    value={callbackName}
-                    onChange={(e) => setCallbackName(e.target.value)}
-                    className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email address"
-                    value={callbackEmail}
-                    onChange={(e) => setCallbackEmail(e.target.value)}
-                    className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Phone (optional)"
-                    value={callbackPhone}
-                    onChange={(e) => setCallbackPhone(e.target.value)}
-                    className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
-                  />
-                  <textarea
-                    placeholder="Anything you'd like us to know? (optional)"
-                    value={callbackNotes}
-                    onChange={(e) => setCallbackNotes(e.target.value)}
-                    rows={2}
-                    className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
-                  />
-                  {callbackError && (
-                    <p className="text-xs text-red-300">{callbackError}</p>
-                  )}
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isSubmitting}
-                    className="w-full rounded-full font-semibold"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    {isSubmitting ? "Sending…" : "Send request"}
-                  </Button>
-                </form>
-              )}
-
-              {callbackState === "done" && (
-                <p className="text-sm text-emerald-300">
-                  Request received — an agent will be in touch.
-                </p>
-              )}
-              {(callbackState === "error" || linkState === "error") && !linkError && (
-                <p className="text-sm text-red-300">
-                  Something went wrong. Please try again or contact us directly.
-                </p>
-              )}
+              <DealCtaActions
+                dealId={deal.id}
+                bookingUrl={deal.bookingUrl}
+                primaryLabel="Book now"
+                tone="hero"
+              />
             </div>
 
             <div className="rounded-lg border border-white/18 bg-white/12 p-5 shadow-2xl backdrop-blur-md">
@@ -418,60 +189,26 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                   ))}
                 </div>
               )}
-              <div className="mt-6 space-y-3">
-                <Button asChild className="w-full rounded-full font-semibold">
-                  <a href={deal.bookingUrl} target="_blank" rel="noreferrer">
-                    Book now
-                  </a>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full rounded-full font-semibold"
-                  disabled={linkState === "sent" || linkState === "not_sent"}
-                  onClick={() => setLinkState(linkState === "form" ? "idle" : "form")}
-                >
-                  {linkState === "sent" || linkState === "not_sent" ? (
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Mail className="mr-2 h-4 w-4" />
-                  )}
-                  {linkState === "sent"
-                    ? "Link sent"
-                    : linkState === "not_sent"
-                      ? "Email not sent"
-                      : "Email me the link"}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full rounded-full font-semibold"
-                  onClick={() => setCallbackState(callbackState === "form" ? "idle" : "form")}
-                >
-                  <Phone className="mr-2 h-4 w-4" />
-                  Request a callback
-                </Button>
+              <div className="mt-6">
+                <DealCtaActions
+                  dealId={deal.id}
+                  bookingUrl={deal.bookingUrl}
+                  primaryLabel="Book now"
+                  tone="light"
+                />
               </div>
-
-              {callbackState === "done" && (
-                <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">
-                  Request received — an agent will be in touch.
-                </p>
-              )}
-              {linkState === "sent" && (
-                <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">
-                  Link sent to your email.
-                </p>
-              )}
             </aside>
           </div>
         </section>
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 p-3 shadow-lg backdrop-blur md:hidden">
-        <Button asChild className="w-full rounded-full font-semibold">
-          <a href={deal.bookingUrl} target="_blank" rel="noreferrer">
-            Book now
-          </a>
-        </Button>
+        <DealCtaActions
+          dealId={deal.id}
+          bookingUrl={deal.bookingUrl}
+          primaryLabel="Book now"
+          tone="mobile"
+        />
       </div>
 
       <LandingFooter />
