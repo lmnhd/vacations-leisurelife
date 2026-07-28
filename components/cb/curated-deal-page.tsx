@@ -71,7 +71,7 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
               <DealCtaActions
                 dealId={deal.id}
                 bookingUrl={deal.bookingUrl}
-                primaryLabel="Book now"
+                primaryLabel="Start Booking"
                 tone="hero"
               />
             </div>
@@ -193,7 +193,7 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
                 <DealCtaActions
                   dealId={deal.id}
                   bookingUrl={deal.bookingUrl}
-                  primaryLabel="Book now"
+                  primaryLabel="Start Booking"
                   tone="light"
                 />
               </div>
@@ -206,7 +206,7 @@ export function CuratedDealPage({ deal }: { deal: PublicDealPage }) {
         <DealCtaActions
           dealId={deal.id}
           bookingUrl={deal.bookingUrl}
-          primaryLabel="Book now"
+          primaryLabel="Start Booking"
           tone="mobile"
         />
       </div>

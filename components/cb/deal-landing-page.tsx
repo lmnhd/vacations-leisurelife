@@ -177,7 +177,7 @@ function BookNowQuickLink({ center }: { center?: boolean }) {
           paddingBottom: 3,
         }}
       >
-        Book now <span aria-hidden="true">&darr;</span>
+        Start Booking <span aria-hidden="true">&darr;</span>
       </a>
     </div>
   );
@@ -350,7 +350,7 @@ function ItineraryCalendar({ rows }: { rows: ItineraryDayRow[] }) {
 
 export function DealLandingPage({ dealId, page }: { dealId: string; page: DealLandingPageView }) {
   const { hero, chips, factBand, segments, itinerary, pricing, specials } = page;
-  const cta = page.ctaLabel || "Book Now";
+  const cta = page.ctaLabel || "Start Booking";
   // Render the day-by-day schedule as a month calendar when the rows carry real
   // dates; otherwise fall back to the vertical list (legacy deals, coarse ports).
   const hasCalendarDates =

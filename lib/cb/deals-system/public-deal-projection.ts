@@ -759,7 +759,7 @@ export function buildDealLandingPageView(
     itinerary,
     pricing,
     specials,
-    ctaLabel: "Book Now",
+    ctaLabel: "Start Booking",
     bookingUrl: deal.bookingUrl,
     adCards: buildAdCardsShowcase(deal.id, metaAdSynthesis, specials.length > 0),
   };

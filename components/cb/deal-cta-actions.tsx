@@ -20,7 +20,8 @@ interface DealCtaActionsProps {
    * entirely once every caller stops passing it.
    */
   bookingUrl?: string;
-  primaryLabel: string;
+  /** Button text. Defaults to the "Start Booking" theme. */
+  primaryLabel?: string;
   tone?: Tone;
   align?: "left" | "center";
 }
@@ -51,7 +52,7 @@ function buttonStyle(tone: Tone): CSSProperties {
 
 export function DealCtaActions({
   dealId,
-  primaryLabel,
+  primaryLabel = "Start Booking",
   tone = "light",
   align = "left",
 }: DealCtaActionsProps) {
