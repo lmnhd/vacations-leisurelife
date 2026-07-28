@@ -869,6 +869,41 @@ export async function updateDraftStatusWithJournal(
   return { newVersion, updatedAtIso: nowIso, journalEvent: builtJournal.record };
 }
 
+/**
+ * Extends an operator's claim lease without a status transition or version
+ * bump. Called on every gated operator action so a long-running call (e.g.
+ * composing and sending a custom email) doesn't outlive the lease between
+ * claim and outcome recording. Silently no-ops if the operator no longer
+ * holds the claim, since the caller (requireActiveOperatorClaim) already
+ * validated that immediately beforehand and will re-validate on next use.
+ */
+export async function renewClaimLease(
+  clients: DraftStoreClients,
+  config: DraftStoreConfig,
+  draftId: string,
+  operatorSessionId: string,
+  leaseSeconds: number
+): Promise<void> {
+  const pk = draftPk(draftId);
+  const leaseExpiresAtIso = new Date(Date.now() + leaseSeconds * 1000).toISOString();
+  try {
+    await clients.dynamo.send(
+      new UpdateItemCommand({
+        TableName: config.tableName,
+        Key: { PK: { S: pk }, SK: { S: "META" } },
+        UpdateExpression: "SET claimLeaseExpiresAtIso = :leaseExpiresAtIso",
+        ConditionExpression: "assignedOperatorId = :operatorSessionId",
+        ExpressionAttributeValues: {
+          ":leaseExpiresAtIso": { S: leaseExpiresAtIso },
+          ":operatorSessionId": { S: operatorSessionId },
+        },
+      })
+    );
+  } catch (error) {
+    if ((error as { name?: string }).name !== "ConditionalCheckFailedException") throw error;
+  }
+}
+
 // ── Save fallback call key ──────────────────────────────────────────────────
 
 export interface SaveCallKeyInput {

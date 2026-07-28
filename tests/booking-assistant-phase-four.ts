@@ -107,10 +107,22 @@ function run(): void {
     true,
     "An expired processing claim needs an audited cancellation path"
   );
+  // Operator "dismiss from queue" parks a draft in `abandoned` (recoverable),
+  // not terminal `cancelled`, so a guest who was mid-flow can still resume.
   assert.equal(
-    canTransitionBookingStatus("cancelled", "collecting"),
+    canTransitionBookingStatus("agent_processing", "abandoned"),
+    true,
+    "A dismissed active draft must move to abandoned, not terminal cancelled"
+  );
+  assert.equal(
+    canTransitionBookingStatus("abandoned", "collecting"),
     true,
     "A guest-owned draft dismissed from the queue must be recoverable when the guest resumes"
+  );
+  assert.equal(
+    canTransitionBookingStatus("cancelled", "collecting"),
+    false,
+    "cancelled is terminal — a true cancel/delete is never silently revived"
   );
 
   const dashboard = readFileSync(

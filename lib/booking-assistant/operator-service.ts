@@ -37,6 +37,7 @@ import {
   getDraft,
   lookupDraftByCallKeyHmac,
   queryOperatorQueue,
+  renewClaimLease,
   saveFallbackCallKey,
   updateDraftStatusWithJournal,
   type DraftStoreClients,
@@ -508,9 +509,14 @@ export interface DismissDraftResult {
 }
 
 /**
- * Removes an unwanted draft from the active operator queue without deleting
- * the packet or its audit history. This is intended for abandoned test drafts
- * and pre-call drafts that an operator deliberately closes.
+ * Removes an unwanted draft from the active operator queue without deleting the
+ * packet or its audit history. This is intended for stale test drafts and
+ * pre-call drafts an operator deliberately closes.
+ *
+ * Dismissal parks the draft in `abandoned`, NOT terminal `cancelled`: a guest
+ * who was mid-flow when an operator cleaned up the queue can still resume it
+ * (`abandoned → collecting`). A true terminal end (guest cancel / delete) uses
+ * `cancelled` elsewhere.
  */
 export async function dismissDraft(
   clients: DraftStoreClients,
@@ -537,7 +543,7 @@ export async function dismissDraft(
   const updateResult = await updateDraftStatusWithJournal(clients, config, {
     draftId: input.draftId,
     expectedVersion: input.expectedVersion,
-    newStatus: "cancelled",
+    newStatus: "abandoned",
     idempotencyKey: `dismiss-${input.operatorSessionId}-${nowIso}`,
     journalEvent: {
       eventType: "operator_draft_dismissed" as BookingJournalEventType,
@@ -556,7 +562,7 @@ export async function dismissDraft(
     dealId: draft.metadata.dealId,
     eventType: "booking_cancelled",
     draftId: input.draftId,
-    status: "cancelled",
+    status: "abandoned",
   });
   await stopReminderProgram(clients.dynamo, config, input.draftId, "operator_dismissed");
 
@@ -876,6 +882,7 @@ export async function requireActiveOperatorClaim(
   ) {
     throw new Error("An active operator claim is required");
   }
+  await renewClaimLease(clients, config, draftId, operatorSessionId, config.claimLeaseSeconds);
   return draft;
 }
 

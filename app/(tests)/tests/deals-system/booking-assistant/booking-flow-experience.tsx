@@ -79,6 +79,39 @@ import { askBookingQuestion } from "./guest-api-client";
 
 const STORAGE_KEY = "lll-booking-assistant-lab-v1";
 
+// Statuses a guest can safely resume into the intake/finalize flow. Anything
+// else — terminal, cancelled, or agent-side (claimed/processing/calling/etc.) —
+// would either dead-end the guest (e.g. "Invalid status transition:
+// agent_processing → review_ready") or silently continue a booking the guest no
+// longer owns, so we start this deal fresh instead of hydrating it.
+const GUEST_RESUMABLE_STATUSES: readonly string[] = [
+  "started",
+  "collecting",
+  "paused_by_guest",
+  "needs_guest",
+  "review_ready",
+  "ready_to_call_agent",
+];
+
+// Coarse "is this a mobile OS" check on the UA string, done with plain substring
+// matching (no regex, per this file's policy). Only a fallback: the UA-Client-
+// Hints `mobile` flag is preferred where available. Lowercased once so the
+// tokens can be simple lowercase includes.
+const MOBILE_UA_TOKENS = [
+  "android",
+  "iphone",
+  "ipad",
+  "ipod",
+  "iemobile",
+  "blackberry",
+  "windows phone",
+] as const;
+
+function userAgentLooksMobile(userAgent: string): boolean {
+  const ua = userAgent.toLowerCase();
+  return MOBILE_UA_TOKENS.some((token) => ua.includes(token));
+}
+
 export interface BookingAssistantDealContext {
   dealId: string;
   packageId: string;
@@ -93,6 +126,12 @@ export interface BookingAssistantDealContext {
   itinerary: string;
   priceBasis: string;
   sourceBookingUrl: string;
+  /**
+   * Operator-selected hero image for this campaign, laid very faintly behind the
+   * whole flow so a returning guest is reminded which trip this is. Optional:
+   * legacy deals and the prototype have none, and the flow renders plain CREAM.
+   */
+  heroImageUrl?: string;
 }
 
 const DEFAULT_DEAL_CONTEXT: BookingAssistantDealContext = {
@@ -452,6 +491,10 @@ export const BookingFlowExperience = forwardRef<
   const [serverFallbackKey, setServerFallbackKey] = useState<string | null>(null);
   const [serverSavePending, setServerSavePending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  // Set when we skip a resumable server draft because it belongs to a different
+  // deal or is stuck in a non-resumable status, and start this deal fresh. Drives
+  // a small dismissable reassurance notice; the old draft is untouched server-side.
+  const [staleDraftSkipped, setStaleDraftSkipped] = useState(false);
   const serverDraftVersionRef = useRef(0);
   const fieldSaveChainRef = useRef<Promise<void>>(Promise.resolve());
 
@@ -515,8 +558,20 @@ export const BookingFlowExperience = forwardRef<
       if (!restoredLocally) {
         const current = await apiResumeCurrentDraft();
         if (!cancelled && current.success) {
-          const restoredDraft = draftFromConfirmedFields(current.result.fields);
           const metadata = current.result.draft.metadata;
+          // The guest-session cookie points at ONE draft (the last deal started).
+          // Only adopt it if it belongs to THIS deal and is in a status the guest
+          // can still work. Otherwise it's leftover from another deal or already
+          // in an agent-side/terminal state — starting fresh avoids resurfacing
+          // the wrong trip's answers and the dead-end invalid-transition error.
+          const belongsToThisDeal = metadata.dealId === activeDeal.dealId;
+          const isResumable = GUEST_RESUMABLE_STATUSES.includes(metadata.status);
+          if (!belongsToThisDeal || !isResumable) {
+            setStaleDraftSkipped(true);
+            if (!cancelled) setHydrated(true);
+            return;
+          }
+          const restoredDraft = draftFromConfirmedFields(current.result.fields);
           restoredDraft.status = metadata.status as MockDraft["status"];
           restoredDraft.resumeTaskId = metadata.resumeTaskId ?? null;
           const target = metadata.resumeTaskId ?? metadata.nextTaskId ?? nextTaskId(restoredDraft);
@@ -539,15 +594,30 @@ export const BookingFlowExperience = forwardRef<
   }, [storageKey]);
 
   // Detect whether this device can place a phone call, on mount only (window is
-  // unavailable during SSR). Prefer the UA-Client-Hints `mobile` flag; fall back
-  // to a coarse UA-string check. A desktop guest gets the "call this number"
-  // prompt instead of a tel: dial - the signal/agent-mode flow is unchanged.
+  // unavailable during SSR). Signals, most to least reliable:
+  //   1. UA-Client-Hints `mobile` flag (Chromium) - authoritative when present.
+  //   2. UA-string match for a known mobile OS.
+  //   3. Coarse-pointer (touch-primary) device on a phone-sized viewport - this
+  //      catches real touch phones whose UA we didn't match. It does NOT fire in
+  //      Chrome DevTools "Responsive" mode, which resizes the viewport but keeps
+  //      the desktop UA *and* a fine pointer; that emulation intentionally still
+  //      shows the manual-dial prompt (a real phone at that URL would dial).
+  // A desktop guest gets the "call this number" prompt instead of a tel: dial -
+  // the signal/agent-mode flow is identical either way.
   useEffect(() => {
     const uaData = (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData;
-    const dialable =
-      typeof uaData?.mobile === "boolean"
-        ? uaData.mobile
-        : /android|iphone|ipad|ipod|iemobile|blackberry|windows phone/i.test(navigator.userAgent);
+    let dialable: boolean;
+    if (typeof uaData?.mobile === "boolean") {
+      dialable = uaData.mobile;
+    } else if (userAgentLooksMobile(navigator.userAgent)) {
+      dialable = true;
+    } else {
+      const coarsePointer =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(pointer: coarse)").matches;
+      const phoneSized = window.innerWidth <= 820;
+      dialable = coarsePointer && phoneSized;
+    }
     setIsDialableDevice(dialable);
   }, []);
 
@@ -1140,6 +1210,15 @@ export const BookingFlowExperience = forwardRef<
         },
       });
       if (!result.success) {
+        // Self-healing for a stale-state re-submit: if the guest taps "Looks
+        // right" again after the packet was already accepted (typically by going
+        // Back into the flow), the server can report an invalid transition
+        // instead of a fresh success. Rather than dead-end the guest at a raw
+        // "Invalid status transition" message + Restart, re-sync from the server
+        // and, if the draft is already at/after review, carry them forward to the
+        // call-finalize screen exactly as a clean submit would.
+        const recovered = await recoverFromReviewSubmitError(next);
+        if (recovered) return;
         setServerError(result.error);
         setTaskError(result.error);
         emit("system", "review_ready_failed", `Server update failed: ${result.error}`);
@@ -1161,6 +1240,35 @@ export const BookingFlowExperience = forwardRef<
     } finally {
       setServerSavePending(false);
     }
+  }
+
+  /**
+   * Re-sync from the server after a failed review submit and, when the draft has
+   * already advanced to (or past) review, move the guest forward instead of
+   * showing a state-machine error. Returns true when it took over the guest's
+   * next step, false to let the caller fall back to the normal error display.
+   */
+  async function recoverFromReviewSubmitError(reviewedDraft: MockDraft): Promise<boolean> {
+    const current = await apiResumeCurrentDraft();
+    if (!current.success) return false;
+    const metadata = current.result.draft.metadata;
+    // Only recover our own draft for this deal; anything else is a genuine
+    // mismatch the caller should surface.
+    if (metadata.dealId !== activeDeal.dealId || metadata.bookingDraftId !== serverDraftId) {
+      return false;
+    }
+    const alreadyReviewed =
+      metadata.status === "review_ready" || metadata.status === "ready_to_call_agent";
+    if (!alreadyReviewed) return false;
+
+    setServerDraftVersion(metadata.version);
+    setServerError(null);
+    setTaskError("");
+    setDraft({ ...reviewedDraft, preparationAuthorized: true, status: "ready_to_call_agent" });
+    emit("system", "review_ready_recovered", `Re-synced after duplicate submit; server status ${metadata.status}`);
+    emit("assistant", "ready_to_call_presented", "Call-agent-to-finalize screen shown");
+    setScreen("call_finalize");
+    return true;
   }
 
   // --- Section 29 call-agent-to-finalize ------------------------------------
@@ -1392,8 +1500,10 @@ export const BookingFlowExperience = forwardRef<
     windowStartIso?: string;
     windowEndIso?: string;
     timeZone: string;
-  }): Promise<boolean> {
-    if (!serverDraftId || serverDraftVersion <= 0) return false;
+  }): Promise<{ resumeEmailAccepted: boolean; operatorAlertAccepted: boolean }> {
+    if (!serverDraftId || serverDraftVersion <= 0) {
+      throw new Error("Your saved booking session is unavailable. Please refresh this page and try again.");
+    }
     const result = await apiRequestBookingCallback(serverDraftId, serverDraftVersion, input);
     if (!result.success) {
       setServerError(result.error);
@@ -1402,7 +1512,10 @@ export const BookingFlowExperience = forwardRef<
     setServerDraftVersion(result.result.newVersion);
     setDraft((prev) => ({ ...prev, status: "human_requested" }));
     emit("guest", "callback_requested", `Callback preference: ${input.preference}`);
-    return result.result.notificationAccepted;
+    return {
+      resumeEmailAccepted: result.result.notificationAccepted,
+      operatorAlertAccepted: result.result.operatorAlertAccepted === true,
+    };
   }
 
   async function chooseNoAgentsTryLater(): Promise<boolean> {
@@ -1631,6 +1744,39 @@ export const BookingFlowExperience = forwardRef<
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden" style={{ background: CREAM }}>
+      {/* Campaign hero image, laid very faintly behind the entire flow so a guest
+          who leaves and returns is reminded which trip this is. Purely decorative:
+          pointer-events-none, non-interactive, hidden when no image is available.
+          A CREAM scrim over the top keeps it a whisper, not a photo. */}
+      {activeDeal.heroImageUrl && (
+        <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${activeDeal.heroImageUrl})`, opacity: 0.18 }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{ background: `linear-gradient(${CREAM}11, ${CREAM}44)` }}
+          />
+        </div>
+      )}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+      {staleDraftSkipped && (
+        <div className="relative z-20 flex items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span className="flex-1">
+            We started you fresh for this cruise. Any booking you began for a different
+            trip is saved separately and wasn&apos;t changed.
+          </span>
+          <button
+            type="button"
+            onClick={() => setStaleDraftSkipped(false)}
+            aria-label="Dismiss"
+            className="shrink-0 rounded px-2 py-0.5 font-semibold text-amber-800 hover:bg-amber-100"
+          >
+            Got it
+          </button>
+        </div>
+      )}
       <FlowContent
         screen={screen}
         deal={activeDeal}
@@ -1642,6 +1788,7 @@ export const BookingFlowExperience = forwardRef<
         working={working}
         setWorking={setWorking}
         taskError={taskError}
+        submitting={serverSavePending}
         savedFlash={savedFlash}
         emailConfirmed={emailConfirmed}
         voiceMode={voiceMode}
@@ -1683,6 +1830,7 @@ export const BookingFlowExperience = forwardRef<
         onEmit={emit}
         isPrototype={isPrototype}
       />
+      </div>
 
       {/* ---- Bottom sheets ---- */}
       {sheet !== "none" && (
@@ -1739,6 +1887,7 @@ interface FlowContentProps {
   working: WorkingState;
   setWorking: React.Dispatch<React.SetStateAction<WorkingState>>;
   taskError: string;
+  submitting: boolean;
   savedFlash: boolean;
   emailConfirmed: boolean;
   voiceMode: boolean;
@@ -1768,7 +1917,7 @@ interface FlowContentProps {
     windowStartIso?: string;
     windowEndIso?: string;
     timeZone: string;
-  }) => Promise<boolean>;
+  }) => Promise<{ resumeEmailAccepted: boolean; operatorAlertAccepted: boolean }>;
   onNoAgentsTryLater: () => Promise<boolean>;
   onCallLater: () => void;
   callLaterNotice: boolean;
@@ -1877,10 +2026,17 @@ function LandingScreen({ deal, onStart }: { deal: BookingAssistantDealContext; o
 
 function TaskScreen(props: FlowContentProps) {
   const {
-    deal, draft, tasks, currentTask, confirmedCount, working, setWorking, taskError, savedFlash,
+    deal, draft, tasks, currentTask, confirmedCount, working, setWorking, taskError, submitting, savedFlash,
     emailConfirmed, voiceMode, voiceState, heardText, onContinue, onBackStep, onDefer, onOpenOptions,
     onOpenQuestion, onOpenPause, onSubmitReview, onRestart, onEditFromReview, onStartVoice, setDraft,
   } = props;
+
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (taskError) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [taskError]);
 
   if (!currentTask) return null;
   const isReview = currentTask.id === "review";
@@ -1985,7 +2141,7 @@ function TaskScreen(props: FlowContentProps) {
         </div>
 
         {taskError && (
-          <div className="mt-3 rounded-lg bg-[#FDECEA] px-3 py-2 text-[13px] font-medium text-[#B3261E]">
+          <div ref={errorRef} className="mt-3 rounded-lg bg-[#FDECEA] px-3 py-2 text-[13px] font-medium text-[#B3261E]">
             <p>{taskError}</p>
             {isReview && (
               <button
@@ -2016,15 +2172,35 @@ function TaskScreen(props: FlowContentProps) {
 
       {/* Sticky bottom actions */}
       <div className="border-t bg-white px-4 pb-5 pt-3" style={{ borderColor: BORDER }}>
-        <GuestButton primary onClick={isReview ? onSubmitReview : onContinue}>
-          {isReview ? "Looks right - prepare my booking" : "Continue"}
+        <GuestButton primary onClick={isReview ? onSubmitReview : onContinue} disabled={isReview && submitting}>
+          {isReview ? (
+            submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span
+                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  aria-hidden
+                />
+                Preparing your booking…
+              </span>
+            ) : (
+              "Looks right - prepare my booking"
+            )
+          ) : (
+            "Continue"
+          )}
         </GuestButton>
+        {isReview && submitting && (
+          <p className="mt-2 text-center text-[12px]" style={{ color: MUTED }} aria-live="polite">
+            Saving your answers and getting an agent ready. This takes a few seconds - no need to tap again.
+          </p>
+        )}
         <div className="mt-2 flex items-center gap-2">
           {emailConfirmed && (
             <button
               type="button"
               onClick={onOpenPause}
-              className="flex-1 rounded-lg py-2.5 text-[12px] font-semibold"
+              disabled={isReview && submitting}
+              className="flex-1 rounded-lg py-2.5 text-[12px] font-semibold transition-opacity disabled:opacity-40"
               style={{ border: `1px solid ${BORDER}`, color: MUTED, minHeight: 44 }}
             >
               Continue later
@@ -2033,7 +2209,8 @@ function TaskScreen(props: FlowContentProps) {
           <button
             type="button"
             onClick={onOpenOptions}
-            className="flex-1 rounded-lg py-2.5 text-[12px] font-semibold"
+            disabled={isReview && submitting}
+            className="flex-1 rounded-lg py-2.5 text-[12px] font-semibold transition-opacity disabled:opacity-40"
             style={{ border: `1px solid ${BORDER}`, color: MUTED, minHeight: 44 }}
           >
             More options
@@ -2043,7 +2220,8 @@ function TaskScreen(props: FlowContentProps) {
           <button
             type="button"
             onClick={onRestart}
-            className="mt-2 w-full py-2 text-[12px] font-semibold underline"
+            disabled={submitting}
+            className="mt-2 w-full py-2 text-[12px] font-semibold underline transition-opacity disabled:opacity-40"
             style={{ color: MUTED, minHeight: 40 }}
           >
             Restart this booking
@@ -2487,6 +2665,39 @@ function HelpScreen({
 }
 
 /**
+ * Format a phone number for *display* only. The raw value (kept in the tel:
+ * href) must stay E.164 like "+19042573134" so the dial works reliably across
+ * devices/carriers; this just makes it readable, e.g. "+1 (904) 257-3134".
+ * US/NANP 11-digit "+1" numbers get the familiar grouping; anything else is
+ * returned unchanged so we never mangle an international number. No regex here
+ * per this file's policy - we walk the characters by hand.
+ */
+function formatAgentPhoneForDisplay(raw: string): string {
+  const trimmed = raw.trim();
+  const hasPlus = trimmed.startsWith("+");
+  let digits = "";
+  for (const ch of trimmed) {
+    if (ch >= "0" && ch <= "9") digits += ch;
+  }
+  // NANP: a leading "1" country code + 10 national digits.
+  if (digits.length === 11 && digits.startsWith("1")) {
+    const area = digits.slice(1, 4);
+    const prefix = digits.slice(4, 7);
+    const line = digits.slice(7, 11);
+    return `+1 (${area}) ${prefix}-${line}`;
+  }
+  // Bare 10-digit US number (no country code).
+  if (digits.length === 10 && !hasPlus) {
+    const area = digits.slice(0, 3);
+    const prefix = digits.slice(3, 6);
+    const line = digits.slice(6, 10);
+    return `(${area}) ${prefix}-${line}`;
+  }
+  // Unknown shape (international, short code, etc.): leave it exactly as given.
+  return trimmed;
+}
+
+/**
  * Section 29.1 call-agent-to-finalize screen. The end goal: the guest's packet
  * is saved, and one primary action alerts the agent + hands off to a phone
  * call. The three-letter key is a de-emphasized fallback, not the main path.
@@ -2534,6 +2745,7 @@ function CallFinalizeScreen({
   const [noAgentsComplete, setNoAgentsComplete] = useState<"callback" | "later" | null>(null);
   const [noAgentsError, setNoAgentsError] = useState("");
   const [resumeEmailAccepted, setResumeEmailAccepted] = useState(false);
+  const [operatorAlertAccepted, setOperatorAlertAccepted] = useState(false);
   const status = draft.status;
   const pending = status === "call_signal_pending";
   const calling = status === "calling_now";
@@ -2570,7 +2782,16 @@ function CallFinalizeScreen({
     if (callbackChoice === "preferred_window") {
       const start = Date.parse(windowStart);
       const end = Date.parse(windowEnd);
-      if (!Number.isFinite(start) || !Number.isFinite(end) || start <= Date.now() || end <= start) {
+      if (!Number.isFinite(start) || !Number.isFinite(end)) {
+        setNoAgentsError("Please choose both a callback start and end time.");
+        return;
+      }
+      if (start <= Date.now()) {
+        setNoAgentsError("Please choose a callback window in the future.");
+        return;
+      }
+      if (end <= start) {
+        setNoAgentsError("Please choose an end time after the start time.");
         return;
       }
       windowStartIso = new Date(start).toISOString();
@@ -2585,7 +2806,8 @@ function CallFinalizeScreen({
         windowEndIso,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
       });
-      setResumeEmailAccepted(accepted);
+      setResumeEmailAccepted(accepted.resumeEmailAccepted);
+      setOperatorAlertAccepted(accepted.operatorAlertAccepted);
       setNoAgentsComplete("callback");
     } catch (error) {
       setNoAgentsError(error instanceof Error ? error.message : "We could not save the callback request");
@@ -2654,7 +2876,7 @@ function CallFinalizeScreen({
               </p>
               <p className="mt-2" style={{ color: MUTED }}>
                 {noAgentsComplete === "callback"
-                  ? `An agent will call as close to your requested time as possible. ${resumeEmailAccepted ? "We sent a secure resume link to your email." : "Your request is saved; the resume email may be delayed."}`
+                  ? `${operatorAlertAccepted ? "We have alerted the booking team." : "Your request is in the booking team's callback queue."} An agent will call as close to your requested time as possible. ${resumeEmailAccepted ? "We sent a secure resume link to your email." : "Your request is saved; the resume email may be delayed."}`
                   : `${resumeEmailAccepted ? "We emailed you a secure link." : "Your progress is saved; the resume email may be delayed."} Use it whenever you are ready to return - you will not need to complete this form again.`}
               </p>
             </div>
@@ -2669,7 +2891,10 @@ function CallFinalizeScreen({
                   <input
                     type="radio"
                     checked={callbackChoice === "as_soon_as_available"}
-                    onChange={() => setCallbackChoice("as_soon_as_available")}
+                    onChange={() => {
+                      setCallbackChoice("as_soon_as_available");
+                      setNoAgentsError("");
+                    }}
                   />
                   As soon as an agent is available
                 </label>
@@ -2677,7 +2902,10 @@ function CallFinalizeScreen({
                   <input
                     type="radio"
                     checked={callbackChoice === "preferred_window"}
-                    onChange={() => setCallbackChoice("preferred_window")}
+                    onChange={() => {
+                      setCallbackChoice("preferred_window");
+                      setNoAgentsError("");
+                    }}
                   />
                   Choose a date and time window
                 </label>
@@ -2688,9 +2916,12 @@ function CallFinalizeScreen({
                       <input
                         type="datetime-local"
                         value={windowStart}
-                        onChange={(event) => setWindowStart(event.target.value)}
+                        onChange={(event) => {
+                          setWindowStart(event.target.value);
+                          setNoAgentsError("");
+                        }}
                         className="mt-1 w-full rounded-lg border px-3 py-2"
-                        style={{ borderColor: BORDER }}
+                        style={{ borderColor: BORDER, backgroundColor: "#FFFFFF", color: NAVY, colorScheme: "light" }}
                       />
                     </label>
                     <label className="text-[12px] font-semibold">
@@ -2698,9 +2929,12 @@ function CallFinalizeScreen({
                       <input
                         type="datetime-local"
                         value={windowEnd}
-                        onChange={(event) => setWindowEnd(event.target.value)}
+                        onChange={(event) => {
+                          setWindowEnd(event.target.value);
+                          setNoAgentsError("");
+                        }}
                         className="mt-1 w-full rounded-lg border px-3 py-2"
-                        style={{ borderColor: BORDER }}
+                        style={{ borderColor: BORDER, backgroundColor: "#FFFFFF", color: NAVY, colorScheme: "light" }}
                       />
                     </label>
                   </div>
@@ -2828,7 +3062,7 @@ function CallFinalizeScreen({
               className="mt-1 block text-2xl font-bold tracking-wide"
               style={{ color: NAVY }}
             >
-              {desktopCallPrompt}
+              {formatAgentPhoneForDisplay(desktopCallPrompt)}
             </a>
             <button
               type="button"

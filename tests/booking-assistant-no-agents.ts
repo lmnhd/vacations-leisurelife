@@ -35,12 +35,18 @@ function run(): void {
   const signalService = readFileSync("lib/booking-assistant/guest-service.ts", "utf8");
   assert.equal(signalService.includes("availabilityConditionCheck(config.tableName, nowIso)"), true);
   assert.equal(signalService.includes('outcome: "no_agents"'), true);
+  assert.equal(signalService.includes("cancelCurrentIntent"), true);
+  assert.equal(signalService.includes("DraftVersionConflictError"), true);
+
+  const cancelRoute = readFileSync("app/api/booking-assistant/guest/signal-cancel/route.ts", "utf8");
+  assert.equal(cancelRoute.includes('detail.includes("cannot be cancelled")'), true);
 
   const callbackService = readFileSync("lib/booking-assistant/no-agents-service.ts", "utf8");
   assert.equal(callbackService.includes('"callback_requested_receipt"'), true);
   assert.equal(callbackService.includes('"no_agents_try_later_receipt"'), true);
   assert.equal(callbackService.includes('SK: { S: "CALLBACK_ACTIVE" }'), true);
   assert.equal(callbackService.includes("Call key:"), true);
+  assert.equal(callbackService.includes("await sendAdminPushNotification"), true);
 
   const reminderWorker = readFileSync("lib/booking-assistant/reminder-worker.ts", "utf8");
   assert.equal(reminderWorker.includes('availability.mode === "no_agents"'), true);
@@ -52,6 +58,8 @@ function run(): void {
   );
   assert.equal(guestFlow.includes("No agents currently available"), true);
   assert.equal(guestFlow.includes("Have an agent call me"), true);
+  assert.equal(guestFlow.includes("Please choose an end time after the start time."), true);
+  assert.equal(guestFlow.includes('backgroundColor: "#FFFFFF"'), true);
   assert.equal(guestFlow.includes("I'll try again later"), false);
   assert.equal(guestFlow.includes("I&apos;ll try again later"), true);
 

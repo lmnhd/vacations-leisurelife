@@ -52,6 +52,10 @@ export default async function DealBookingAssistantPage({
       itinerary: curated.facts.destination,
       priceBasis: curated.facts.priceFromLabel ?? "Price confirmed with agent",
       sourceBookingUrl: curated.bookingUrl,
+      // Operator-selected campaign hero, laid faintly behind the whole flow so a
+      // returning guest is reminded which trip this is. Prefer the rich design
+      // page's hero, fall back to the tile/summary hero the homepage already uses.
+      heroImageUrl: curated.designPage?.hero.imageUrl ?? curated.heroImageSrc,
     };
     return (
       <BookingAssistantViewport>

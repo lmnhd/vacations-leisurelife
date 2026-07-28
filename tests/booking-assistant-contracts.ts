@@ -26,6 +26,15 @@ function run(): void {
   assert.equal(canTransitionBookingStatus("calling_now", "booking_confirmed"), false);
   assert.equal(canTransitionBookingStatus("booking_confirmed", "collecting"), false);
 
+  // A guest who re-submits review after it already succeeded (e.g. by going Back
+  // into the flow) lands on an already-advanced draft. Re-running the review
+  // transition from ready_to_call_agent is illegal, which is why the review-ready
+  // route must treat these states as an idempotent success instead of attempting
+  // the transition. Neither of these may become "valid" without revisiting that
+  // guard (app/api/booking-assistant/guest/review-ready/route.ts).
+  assert.equal(canTransitionBookingStatus("ready_to_call_agent", "review_ready"), false);
+  assert.equal(canTransitionBookingStatus("review_ready", "review_ready"), false);
+
   for (const status of bookingDraftStatuses) {
     assert.ok(status in bookingStatusTransitions, `Missing transition contract for ${status}`);
   }

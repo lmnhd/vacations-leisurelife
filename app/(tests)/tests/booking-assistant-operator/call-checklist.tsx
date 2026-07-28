@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 interface CallChecklistProps {
   draftId: string;
@@ -10,7 +10,9 @@ interface CallChecklistProps {
   claimLoading: boolean;
   processingLoading: boolean;
   outcomeLoading: boolean;
+  verified: boolean;
   claimed: boolean;
+  revealed: boolean;
   processing: boolean;
   completed: boolean;
 }
@@ -24,8 +26,8 @@ interface ChecklistStep {
 
 const STEPS: ChecklistStep[] = [
   { id: "verify", label: "Verify caller identity", description: "Confirm the caller is the guest — caller ID is NOT authentication. Use approved verification procedure.", phase: "pre_call" },
-  { id: "reveal", label: "Reveal guest packet", description: "Decrypt and review the guest's contact info, travelers, and preferences.", phase: "pre_call" },
-  { id: "claim", label: "Claim the draft", description: "Atomically claim the draft to prevent other operators from working it simultaneously.", phase: "pre_call" },
+  { id: "claim", label: "Claim the draft", description: "Atomically claim the draft to prevent other operators from working it simultaneously. Claiming unlocks the guest packet.", phase: "pre_call" },
+  { id: "reveal", label: "Reveal guest packet", description: "After claiming, decrypt and review the guest's contact info, travelers, and preferences in the Packet Reveal panel.", phase: "pre_call" },
   { id: "start_processing", label: "Start agent processing", description: "Mark the draft as being actively worked. This transitions to agent_processing status.", phase: "pre_call" },
   { id: "open_odysseus", label: "Open fresh Odysseus session", description: "Start a new live cruise booking session. Do NOT reuse a prior session or brn.", phase: "on_call" },
   { id: "recheck_price", label: "Recheck price & availability", description: "Verify live price, cabin availability, taxes/fees, and qualifying rates with the caller.", phase: "on_call" },
@@ -61,7 +63,9 @@ export function CallChecklist({
   claimLoading,
   processingLoading,
   outcomeLoading,
+  verified,
   claimed,
+  revealed,
   processing,
   completed,
 }: CallChecklistProps) {
@@ -69,6 +73,39 @@ export function CallChecklist({
   const [selectedOutcome, setSelectedOutcome] = useState("confirmed");
   const [outcomeNotes, setOutcomeNotes] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Keep the action-step checkboxes in sync with the real draft state. This
+  // makes selecting an already-claimed / in-progress draft show the correct
+  // checkmarks instead of empty boxes, and never lets a box drift out of line
+  // with what the backend has actually recorded.
+  useEffect(() => {
+    setCheckedSteps((prev) => {
+      const next = new Set(prev);
+      const sync = (id: string, on: boolean) => {
+        if (on) next.add(id);
+        else next.delete(id);
+      };
+      sync("verify", verified);
+      sync("claim", claimed);
+      sync("reveal", revealed);
+      sync("start_processing", processing);
+      sync("record_outcome", completed);
+      return next;
+    });
+  }, [verified, claimed, revealed, processing, completed]);
+
+  // Reset the manually-toggled on-call steps when switching drafts.
+  useEffect(() => {
+    setCheckedSteps((prev) => {
+      const next = new Set<string>();
+      // Preserve derived action steps; the effect above re-syncs them anyway.
+      for (const id of ["verify", "claim", "reveal", "start_processing", "record_outcome"]) {
+        if (prev.has(id)) next.add(id);
+      }
+      return next;
+    });
+    setActionError(null);
+  }, [draftId]);
 
   const toggleStep = useCallback((id: string) => {
     setCheckedSteps((prev) => {
@@ -82,8 +119,8 @@ export function CallChecklist({
   const handleClaim = useCallback(async () => {
     setActionError(null);
     try {
+      // Checkbox flips via the state-sync effect once `claimed` turns true.
       await onClaim();
-      setCheckedSteps((prev) => new Set(prev).add("claim"));
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Claim failed");
     }
@@ -92,8 +129,8 @@ export function CallChecklist({
   const handleProcessing = useCallback(async () => {
     setActionError(null);
     try {
+      // Checkbox flips via the state-sync effect once `processing` turns true.
       await onProcessing();
-      setCheckedSteps((prev) => new Set(prev).add("start_processing"));
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Processing start failed");
     }
@@ -102,8 +139,8 @@ export function CallChecklist({
   const handleOutcome = useCallback(async () => {
     setActionError(null);
     try {
+      // Checkbox flips via the state-sync effect once `completed` turns true.
       await onOutcome(selectedOutcome, outcomeNotes);
-      setCheckedSteps((prev) => new Set(prev).add("record_outcome"));
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Outcome recording failed");
     }
@@ -128,7 +165,14 @@ export function CallChecklist({
               <div className="space-y-2">
                 {phaseSteps.map((step) => {
                   const isChecked = checkedSteps.has(step.id);
-                  const isActionStep = step.id === "claim" || step.id === "start_processing" || step.id === "record_outcome";
+                  // Steps whose completion is derived from real draft state — not
+                  // manually toggleable, so their boxes can never drift out of line.
+                  const isActionStep =
+                    step.id === "verify" ||
+                    step.id === "claim" ||
+                    step.id === "reveal" ||
+                    step.id === "start_processing" ||
+                    step.id === "record_outcome";
 
                   return (
                     <div
@@ -157,17 +201,34 @@ export function CallChecklist({
                           </div>
                           <div className="text-[10px] text-slate-500 mt-0.5">{step.description}</div>
 
+                          {step.id === "verify" && verified && (
+                            <span className="mt-1 inline-block text-[10px] text-emerald-400">✓ Caller verified</span>
+                          )}
+
                           {step.id === "claim" && !claimed && (
                             <button
                               onClick={handleClaim}
-                              disabled={claimLoading}
+                              disabled={claimLoading || !verified}
                               className="mt-2 px-3 py-1 text-[11px] bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded text-white font-medium"
                             >
                               {claimLoading ? "Claiming..." : "Claim Draft"}
                             </button>
                           )}
+                          {step.id === "claim" && !claimed && !verified && (
+                            <p className="mt-1 text-[10px] text-slate-500">Verify the caller first.</p>
+                          )}
                           {step.id === "claim" && claimed && (
                             <span className="mt-1 inline-block text-[10px] text-emerald-400">✓ Draft claimed</span>
+                          )}
+
+                          {step.id === "reveal" && !revealed && !claimed && (
+                            <p className="mt-1 text-[10px] text-slate-500">Claim the draft to unlock the packet.</p>
+                          )}
+                          {step.id === "reveal" && !revealed && claimed && (
+                            <p className="mt-1 text-[10px] text-purple-300">Use “Reveal Full Packet” in the Packet Reveal panel.</p>
+                          )}
+                          {step.id === "reveal" && revealed && (
+                            <span className="mt-1 inline-block text-[10px] text-emerald-400">✓ Packet revealed</span>
                           )}
 
                           {step.id === "start_processing" && claimed && !processing && (

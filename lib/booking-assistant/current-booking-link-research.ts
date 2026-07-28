@@ -112,12 +112,12 @@ async function renderBookingPage(
     const page = await context.newPage();
     await page.goto(sourceUrl.toString(), {
       waitUntil: "domcontentloaded",
-      timeout: 30_000,
+      timeout: 15_000,
     });
-    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+    await page.waitForLoadState("networkidle", { timeout: 4_000 }).catch(() => undefined);
     const finalUrl = assertAllowedBookingUrl(page.url());
     const pageTitle = redactDraftValues(collapseWhitespace(await page.title()), draft);
-    const bodyText = await page.locator("body").innerText({ timeout: 10_000 });
+    const bodyText = await page.locator("body").innerText({ timeout: 5_000 });
     const pageExcerpt = redactDraftValues(
       collapseWhitespace(bodyText).slice(0, MAX_EXCERPT_CHARACTERS),
       draft
@@ -141,7 +141,7 @@ export async function inspectCurrentBookingLink(
       Accept: "text/html,application/xhtml+xml",
       "User-Agent": "LeisureLife-Booking-Call-Copilot/1.0",
     },
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(12_000),
   });
 
   if (!response.ok) {

@@ -49,6 +49,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       "review_ready"
     );
 
+    // Idempotent re-submit: the guest can reach "Looks right" again by tapping
+    // Back into the flow after the packet was already accepted (e.g. a slow
+    // network made them think the first tap did nothing). `review_ready` and
+    // `ready_to_call_agent` are the two states this endpoint itself produces, so
+    // seeing either means the review already succeeded. Re-running the
+    // transitions would throw InvalidTransitionError (ready_to_call_agent ->
+    // review_ready) and dead-end the guest at "Restart this booking." Instead we
+    // return success with the current version so the client advances straight to
+    // the call-finalize screen. Nothing is re-written; the packet is untouched.
+    if (
+      activeDraft.metadata.status === "review_ready" ||
+      activeDraft.metadata.status === "ready_to_call_agent"
+    ) {
+      return NextResponse.json({
+        success: true,
+        result: {
+          newVersion: activeDraft.metadata.version,
+          reminderProgramId: null,
+          notificationAccepted: false,
+          alreadyReviewed: true,
+        },
+      });
+    }
+
     const reviewed = await markReviewReady(ctx.clients, operatorService, {
       draftId: body.draftId,
       expectedVersion: activeDraft.metadata.version,

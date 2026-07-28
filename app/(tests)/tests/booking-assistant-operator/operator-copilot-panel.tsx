@@ -34,11 +34,18 @@ const TOOL_LABELS: Record<string, string> = {
   calculate_cruise_cost: "Cruise cost calculator",
 };
 
-export function OperatorCopilotPanel({ activeDraftId }: { activeDraftId: string | null }) {
+export function OperatorCopilotPanel({
+  activeDraftId,
+  onSendToGuest,
+}: {
+  activeDraftId: string | null;
+  onSendToGuest?: (draft: { subject?: string; body: string }) => void;
+}) {
   const [question, setQuestion] = useState("");
   const [result, setResult] = useState<CopilotResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const [history, setHistory] = useState<Array<{
     role: "operator" | "assistant";
     content: string;
@@ -88,26 +95,41 @@ export function OperatorCopilotPanel({ activeDraftId }: { activeDraftId: string 
   }
 
   return (
-    <section className="mb-6 rounded-xl border border-sky-800/70 bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/40 p-5 shadow-lg shadow-sky-950/20">
+    <section className="mb-6 rounded-xl border border-sky-800/70 bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/40 p-3 shadow-lg shadow-sky-950/20">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">Live Call Copilot</p>
-          <h2 className="mt-1 text-xl font-bold text-white">
+          <h2 className="mt-1 text-base font-bold text-white">
             Ask about this cruise, policy, price, or an alternative
           </h2>
-          <p className="mt-1 max-w-3xl text-sm text-slate-400">
+          <p className="mt-1 max-w-3xl text-xs text-slate-400">
             Uses the selected sailing, CB Agent Tools knowledge, live cruise inventory, and current web sources.
           </p>
         </div>
-        <div className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-          activeDraftId
-            ? "border-emerald-700 bg-emerald-950/50 text-emerald-300"
-            : "border-amber-700 bg-amber-950/50 text-amber-300"
-        }`}>
-          {activeDraftId ? "Current booking connected" : "Select a queue card for sailing context"}
+        <div className="flex items-center gap-2">
+          <div className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+            activeDraftId
+              ? "border-emerald-700 bg-emerald-950/50 text-emerald-300"
+              : "border-amber-700 bg-amber-950/50 text-amber-300"
+          }`}>
+            {activeDraftId ? "Current booking connected" : "Select a queue card for sailing context"}
+          </div>
+          <button
+            type="button"
+            onClick={() => setExpanded((current) => !current)}
+            aria-expanded={expanded}
+            className="rounded border border-sky-800 bg-slate-950 px-3 py-1 text-xs font-semibold text-sky-200 hover:border-sky-500 hover:text-white"
+          >
+            {expanded ? "Collapse" : "Open Copilot"}
+          </button>
         </div>
       </div>
 
+      {!expanded && (
+        <p className="mt-2 text-xs text-slate-500">Open only when you need live research or a quick call answer.</p>
+      )}
+
+      <div className={expanded ? "block" : "hidden"}>
       <div className="mt-4 flex flex-col gap-2 md:flex-row">
         <textarea
           value={question}
@@ -162,6 +184,28 @@ export function OperatorCopilotPanel({ activeDraftId }: { activeDraftId: string 
           )}
           <div className="whitespace-pre-wrap text-sm leading-6 text-slate-100">{result.answer}</div>
 
+          {onSendToGuest && activeDraftId && (
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-800 pt-4">
+              <button
+                type="button"
+                onClick={() =>
+                  onSendToGuest({
+                    subject: result.sailingContext
+                      ? `About your ${result.sailingContext.cruiseLine} ${result.sailingContext.ship} sailing`
+                      : undefined,
+                    body: result.answer,
+                  })
+                }
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+              >
+                Send this to guest as email
+              </button>
+              <span className="text-xs text-slate-500">
+                Opens the compose box below with this answer — review and edit before sending.
+              </span>
+            </div>
+          )}
+
           {(result.toolsUsed.length > 0 || result.sources.length > 0) && (
             <div className="mt-5 border-t border-slate-800 pt-4">
               {result.toolsUsed.length > 0 && (
@@ -197,6 +241,7 @@ export function OperatorCopilotPanel({ activeDraftId }: { activeDraftId: string 
         Advisory only. Verify supplier terms before quoting; all holds, reservations, cancellations, and payments remain human-controlled.
         Do not type guest contact, identity, or payment details into the question.
       </p>
+      </div>
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { GuestInfoPanel } from './guest-info-panel';
 import { CallChecklist } from './call-checklist';
 import { OperatorCopilotPanel } from './operator-copilot-panel';
+import { CustomEmailComposer, type CustomEmailComposerHandle } from './custom-email-composer';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -430,6 +431,7 @@ export function BookingAssistantOperatorWorkspace({ embedded = false }: { embedd
   const activeDraftIdRef = useRef<string | null>(null);
   const activeDraftVersionRef = useRef<number | null>(null);
   const activeDraftStatusRef = useRef<string | null>(null);
+  const customEmailComposerRef = useRef<CustomEmailComposerHandle | null>(null);
   const [acknowledgeLoading, setAcknowledgeLoading] = useState(false);
   const [revealedPacket, setRevealedPacket] = useState<RevealResult | null>(null);
   const [verified, setVerified] = useState(false);
@@ -1344,7 +1346,12 @@ export function BookingAssistantOperatorWorkspace({ embedded = false }: { embedd
           </div>
         </section>
 
-        {!embedded && <OperatorCopilotPanel activeDraftId={activeDraftId} />}
+        {!embedded && (
+          <OperatorCopilotPanel
+            activeDraftId={activeDraftId}
+            onSendToGuest={(draft) => customEmailComposerRef.current?.seed(draft)}
+          />
+        )}
 
         {!embedded && false && <div className="mb-6 bg-slate-900 rounded-lg border border-slate-800 p-4">
           <div className="flex items-center justify-between mb-3">
@@ -1816,7 +1823,9 @@ export function BookingAssistantOperatorWorkspace({ embedded = false }: { embedd
                     claimLoading={claimLoading}
                     processingLoading={processingLoading}
                     outcomeLoading={outcomeLoading}
+                    verified={verified}
                     claimed={claimed}
+                    revealed={revealedPacket !== null || activeDraftStatus === 'agent_processing'}
                     processing={processing}
                     completed={outcomeCompleted}
                   />
@@ -1960,6 +1969,14 @@ export function BookingAssistantOperatorWorkspace({ embedded = false }: { embedd
               </>
             )}
           </section>
+        )}
+
+        {!embedded && (
+          <CustomEmailComposer
+            ref={customEmailComposerRef}
+            activeDraftId={activeDraftId}
+            onLog={log}
+          />
         )}
       </div>
     </div>

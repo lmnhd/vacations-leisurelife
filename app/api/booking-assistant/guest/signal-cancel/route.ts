@@ -50,6 +50,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true, result });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Call intent cancel failed";
-    return NextResponse.json({ success: false, error: detail }, { status: 500 });
+    const status = detail.includes("Guest session")
+      ? 403
+      : detail.includes("cannot be cancelled")
+        ? 409
+        : 500;
+    return NextResponse.json({ success: false, error: detail }, { status });
   }
 }

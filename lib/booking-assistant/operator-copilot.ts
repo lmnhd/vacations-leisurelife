@@ -122,6 +122,7 @@ const SYSTEM_PROMPT = [
   "You may use the redacted current-sailing context, Cruise Brothers internal knowledge, live Odysseus cruise search, cost calculation, and web search.",
   "For questions about the selected cruise, first inspect the current supplier booking page when that tool is available because it is generally the freshest source for that exact sailing.",
   "Use other authoritative sources when the booking page does not contain the answer or needs corroboration.",
+  "For speed during a live call, stop after one source tool when it directly answers the question. Use a second source only when the first source is incomplete or conflicting.",
   "For current policies, insurance, state-specific rules, deposits, refunds, flight details, prices, schedules, or availability, use an appropriate tool and cite the source. Never guess.",
   "Treat internal cache material as operational guidance that may be stale; say when the source date or authority is unclear.",
   "Distinguish confirmed facts from estimates and general guidance. State what must be verified with the cruise line, insurer, airline, or supplier.",
@@ -169,9 +170,9 @@ export async function answerOperatorCopilotQuestion(
     {
       systemPrompt: SYSTEM_PROMPT,
       enableWebSearch: true,
-      reasoningEffort: "medium",
-      maxOutputTokens: 4_000,
-      maxToolRounds: 4,
+      reasoningEffort: "low",
+      maxOutputTokens: 1_800,
+      maxToolRounds: 2,
       functions: [
         ...(draft?.dealSnapshot.sourceBookingUrl
           ? [{

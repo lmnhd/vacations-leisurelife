@@ -133,6 +133,7 @@ export interface GuestContinueLaterResponse {
 export interface NoAgentsChoiceResponse {
   newVersion: number;
   notificationAccepted: boolean;
+  operatorAlertAccepted?: boolean;
 }
 
 export interface GuestHelpResponse {
@@ -257,6 +258,7 @@ export async function resumeCurrentDraft(): Promise<ApiResult<{
       bookingDraftId: string;
       version: number;
       status: string;
+      dealId: string;
       nextTaskId?: string;
       resumeTaskId?: string;
     };

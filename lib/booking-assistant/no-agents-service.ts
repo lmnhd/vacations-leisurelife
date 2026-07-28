@@ -28,6 +28,7 @@ export interface RequestBookingCallbackInput {
 export interface NoAgentsChoiceResult {
   newVersion: number;
   notificationAccepted: boolean;
+  operatorAlertAccepted?: boolean;
 }
 
 function cleanBaseUrl(value: string): string {
@@ -178,11 +179,20 @@ export async function requestBookingCallback(
     draft.fallbackCallKey.encryptedRawValue
       ? await clients.encryption.decrypt(draft.fallbackCallKey.encryptedRawValue)
       : undefined;
-  void sendAdminPushNotification(
+  let operatorAlertAccepted = false;
+  try {
+    await sendAdminPushNotification(
     `CALLBACK REQUESTED\n${draft.dealSnapshot.ship} - ${draft.dealSnapshot.sailingDateIso.slice(0, 10)}\nRequested window: ${label}\nGuest phone ending ${phoneEnding}${rawCallKey ? `\nCall key: ${rawCallKey}` : ""}\nNext: Open Bookings, claim this callback request, and return the call.`,
     { title: `Booking Assistant callback - ${draft.dealSnapshot.ship}`, priority: "1" }
-  ).catch(() => undefined);
-  return { newVersion: updated.newVersion, notificationAccepted };
+    );
+    operatorAlertAccepted = true;
+  } catch (error) {
+    console.error(
+      "[booking-assistant] Callback Pushover notification was not delivered:",
+      error instanceof Error ? error.message : "unknown error"
+    );
+  }
+  return { newVersion: updated.newVersion, notificationAccepted, operatorAlertAccepted };
 }
 
 export async function chooseNoAgentsTryLater(

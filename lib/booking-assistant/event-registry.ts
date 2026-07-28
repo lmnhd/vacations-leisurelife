@@ -41,6 +41,7 @@ const DEFINITIONS: readonly BookingEventDefinition[] = [
   { eventType: "operator_timeline_accessed", version: 1, owner: "operator", privacyClass: "protected_metadata", analyticsFields: ["surface"] },
   { eventType: "operator_conversation_accessed", version: 1, owner: "operator", privacyClass: "protected_metadata", analyticsFields: ["surface"] },
   { eventType: "operator_contact_action_recorded", version: 1, owner: "operator", privacyClass: "protected_metadata", analyticsFields: ["action"] },
+  { eventType: "operator_custom_email_sent", version: 1, owner: "operator", privacyClass: "protected_metadata", analyticsFields: ["subjectLength", "bodyLength", "delivered", "source"] },
   { eventType: "operator_field_requested", version: 1, owner: "operator", privacyClass: "protected_metadata", analyticsFields: ["fieldId", "taskId"] },
   { eventType: "operator_field_corrected", version: 1, owner: "operator", privacyClass: "protected_metadata", analyticsFields: ["fieldId", "taskId", "guestConfirmationRequired"] },
   { eventType: "operator_claimed", version: 1, owner: "operator", privacyClass: "protected_metadata", analyticsFields: ["queueWaitSeconds"] },

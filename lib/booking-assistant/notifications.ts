@@ -9,7 +9,8 @@ export type BookingNotificationKind =
   | "ready_to_call_receipt"
   | "ready_to_call_reminder"
   | "callback_requested_receipt"
-  | "no_agents_try_later_receipt";
+  | "no_agents_try_later_receipt"
+  | "custom_operator_message";
 
 export interface BookingNotification {
   kind: BookingNotificationKind;
@@ -20,6 +21,10 @@ export interface BookingNotification {
   fallbackCallKey?: string;
   agencyPhone?: string;
   callbackWindowLabel?: string;
+  /** Operator-authored subject; only used by the custom_operator_message kind. */
+  subject?: string;
+  /** Operator-authored body; only used by the custom_operator_message kind. */
+  body?: string;
   reminderControlsUrl: string;
   idempotencyKey: string;
 }
@@ -35,6 +40,7 @@ const EVENT_NAMES: Record<BookingNotificationKind, string> = {
   ready_to_call_reminder: "LLL Booking Assistant Call Reminder",
   callback_requested_receipt: "LLL Booking Assistant Callback Requested",
   no_agents_try_later_receipt: "LLL Booking Assistant No Agents Progress Saved",
+  custom_operator_message: "LLL Booking Assistant Custom Operator Message",
 };
 
 export function createKlaviyoBookingNotificationTransport(): BookingNotificationTransport {
@@ -52,6 +58,8 @@ export function createKlaviyoBookingNotificationTransport(): BookingNotification
           fallback_call_key: notification.fallbackCallKey,
           agency_phone: notification.agencyPhone,
           callback_window_label: notification.callbackWindowLabel,
+          subject: notification.subject,
+          body: notification.body,
           delivery_id: notification.idempotencyKey,
         },
       });

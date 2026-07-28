@@ -21,6 +21,7 @@ import {
   createDraftWithArtifacts,
   getDraft,
   updateDraftStatusWithJournal,
+  DraftVersionConflictError,
   serializeCabinItem,
   serializeDecisionsItem,
   serializeTravelerItem,
@@ -188,8 +189,10 @@ type GuestReopenReason =
   | "review_ready"
   | "call_signal";
 
+// `cancelled` is intentionally excluded: it is terminal (plan §9.1). A guest who
+// cancelled or deleted their draft starts a fresh one rather than silently
+// reviving it. Only inactivity/expiry states reopen in place.
 const GUEST_REOPENABLE_STATUSES: readonly BookingDraftStatus[] = [
-  "cancelled",
   "abandoned",
   "expired",
 ] as const;
@@ -602,26 +605,53 @@ export async function cancelCallIntent(
   config: GuestStoreConfig,
   input: CancelCallIntentInput
 ): Promise<CancelCallIntentResult> {
+  async function cancelCurrentIntent(): Promise<CancelCallIntentResult> {
+    const currentDraft = await getDraft(clients as DraftStoreClients, config, input.draftId);
+    if (!currentDraft) throw new Error("Booking draft was not found");
+
+    // The browser can cancel while the preceding signal request is still
+    // committing. Resolve from the server's current version so the guest does
+    // not get stranded by an expected-version race.
+    if (currentDraft.metadata.status === "ready_to_call_agent") {
+      return { newVersion: currentDraft.metadata.version };
+    }
+    if (
+      currentDraft.metadata.status !== "call_signal_pending" &&
+      currentDraft.metadata.status !== "calling_now"
+    ) {
+      throw new Error(`A call signal cannot be cancelled while the draft is ${currentDraft.metadata.status}`);
+    }
+
+    const now = Date.now();
+    const updateResult = await updateDraftStatusWithJournal(clients as DraftStoreClients, config, {
+      draftId: input.draftId,
+      expectedVersion: currentDraft.metadata.version,
+      newStatus: "ready_to_call_agent",
+      idempotencyKey: `call-cancel-${input.draftId}-${now}`,
+      journalEvent: {
+        eventType: "call_later_selected" as never,
+        actorType: "guest",
+        occurredAtIso: new Date().toISOString(),
+        privacyClass: "operational",
+        idempotencyKey: `signal-cancel-${input.draftId}-${now}`,
+        payload: { reason: "guest_cancelled_stuck_signal" },
+      },
+    });
+    return { newVersion: updateResult.newVersion };
+  }
+
   // additionalUpdates only SETs — DynamoDB rejects empty-string attribute
   // values, so activeCallAttemptId/callIntentExpiresAtIso are left as-is
   // (stale, harmless) rather than cleared. They're only ever read alongside
   // status === call_signal_pending/calling_now, which this transition exits.
-  const updateResult = await updateDraftStatusWithJournal(clients as DraftStoreClients, config, {
-    draftId: input.draftId,
-    expectedVersion: input.expectedVersion,
-    newStatus: "ready_to_call_agent",
-    idempotencyKey: `call-cancel-${input.draftId}-${Date.now()}`,
-    journalEvent: {
-      eventType: "call_later_selected" as never,
-      actorType: "guest",
-      occurredAtIso: new Date().toISOString(),
-      privacyClass: "operational",
-      idempotencyKey: `signal-cancel-${input.draftId}-${Date.now()}`,
-      payload: { reason: "guest_cancelled_stuck_signal" },
-    },
-  });
-
-  return { newVersion: updateResult.newVersion };
+  try {
+    return await cancelCurrentIntent();
+  } catch (error) {
+    if (error instanceof DraftVersionConflictError) {
+      return cancelCurrentIntent();
+    }
+    throw error;
+  }
 }
 
 // ── Mark review ready ───────────────────────────────────────────────────────

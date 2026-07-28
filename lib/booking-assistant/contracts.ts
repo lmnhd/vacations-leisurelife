@@ -59,20 +59,26 @@ export const bookingStatusTransitions = {
   collecting: ["paused_by_guest", "needs_guest", "human_requested", "review_ready", "reconciliation_review", "cancelled", "abandoned"],
   paused_by_guest: ["collecting", "needs_guest", "human_requested", "review_ready", "reconciliation_review", "cancelled", "abandoned"],
   needs_guest: ["paused_by_guest", "collecting", "human_requested", "review_ready", "reconciliation_review"],
-  human_requested: ["human_requested", "agent_claimed", "collecting", "paused_by_guest", "review_ready", "cancelled"],
-  review_ready: ["ready_to_call_agent", "call_signal_pending", "paused_by_guest", "needs_guest", "human_requested", "cancelled"],
+  // `abandoned` is the operator "dismiss from queue" target across active states:
+  // it removes the draft from the active queue but keeps it guest-recoverable
+  // (`abandoned → collecting`), unlike terminal `cancelled`.
+  human_requested: ["human_requested", "agent_claimed", "collecting", "paused_by_guest", "review_ready", "cancelled", "abandoned"],
+  review_ready: ["ready_to_call_agent", "call_signal_pending", "paused_by_guest", "needs_guest", "human_requested", "cancelled", "abandoned"],
   ready_to_call_agent: ["ready_to_call_agent", "call_signal_pending", "agent_claimed", "needs_guest", "human_requested", "cancelled", "abandoned"],
-  call_signal_pending: ["calling_now", "ready_to_call_agent", "cancelled"],
-  calling_now: ["agent_claimed", "ready_to_call_agent", "needs_guest", "cancelled"],
-  agent_claimed: ["agent_processing", "needs_guest", "cancelled"],
-  agent_processing: ["needs_guest", "payment_failed", "reconciliation_review", "booking_confirmed", "expired", "cancelled"],
+  call_signal_pending: ["calling_now", "ready_to_call_agent", "cancelled", "abandoned"],
+  calling_now: ["agent_claimed", "ready_to_call_agent", "needs_guest", "cancelled", "abandoned"],
+  agent_claimed: ["agent_processing", "needs_guest", "cancelled", "abandoned"],
+  agent_processing: ["needs_guest", "payment_failed", "reconciliation_review", "booking_confirmed", "expired", "cancelled", "abandoned"],
   payment_failed: ["agent_processing", "needs_guest", "cancelled", "reconciliation_review"],
   guest_completion_sent: ["booking_confirmed", "reconciliation_review", "needs_guest", "agent_processing", "expired"],
-  reconciliation_review: ["booking_confirmed", "needs_guest", "cancelled"],
+  reconciliation_review: ["booking_confirmed", "needs_guest", "cancelled", "abandoned"],
   booking_confirmed: [],
   abandoned: ["collecting", "cancelled"],
   expired: ["collecting", "cancelled"],
-  cancelled: ["collecting"],
+  // Terminal (plan §9.1). Cancellation is a deliberate end / privacy exit and is
+  // never silently revived — a returning guest starts a brand-new draft instead.
+  // Reopen-to-continue flows go through `abandoned`/`expired`, not `cancelled`.
+  cancelled: [],
 } as const satisfies Record<BookingDraftStatus, readonly BookingDraftStatus[]>;
 
 export function canTransitionBookingStatus(from: BookingDraftStatus, to: BookingDraftStatus): boolean {
@@ -156,6 +162,7 @@ export const bookingJournalEventTypes = [
   "operator_timeline_accessed",
   "operator_conversation_accessed",
   "operator_contact_action_recorded",
+  "operator_custom_email_sent",
   "operator_field_requested",
   "operator_field_corrected",
   "operator_claimed",

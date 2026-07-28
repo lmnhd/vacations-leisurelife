@@ -71,6 +71,8 @@ export const TASK_MODEL_MAP: Record<string, ModelName> = {
   guest_qa: ModelName.CLAUDE_HAIKU,
   /** Operator call copilot: frontier reasoning, web research, and tool use */
   operator_copilot: ModelName.GPT_5_HIGH,
+  /** Operator-reviewed rewrite of research into a concise guest email */
+  operator_email_polish: ModelName.LEGACY_FALLBACK,
   /** Memory / preference mining extraction */
   memory_extraction: ModelName.GPT_5_INSTANT,
   /** Cruise booking simulation / evaluation */
