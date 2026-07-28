@@ -4,6 +4,8 @@ import type { CSSProperties } from "react";
 
 import { ExternalLink } from "lucide-react";
 
+import { isBookingAssistantCtaEnabled } from "@/lib/booking-assistant/feature-flag";
+
 import { postDealEvent } from "./deal-analytics";
 
 const palette = {
@@ -52,8 +54,12 @@ export function DealCtaActions({
   tone = "light",
   align = "left",
 }: DealCtaActionsProps) {
-  const useDevelopmentBookingAssistant = process.env.NODE_ENV === "development";
-  const primaryHref = useDevelopmentBookingAssistant
+  // Route "Book now" to the in-house Booking Assistant (/deals/[id]/book) when
+  // the feature is enabled, otherwise to the legacy external booking URL. The
+  // enable decision — and the "must match the server /book gate" contract — lives
+  // in lib/booking-assistant/feature-flag so both sides can't drift.
+  const bookingAssistantEnabled = isBookingAssistantCtaEnabled();
+  const primaryHref = bookingAssistantEnabled
     ? `/deals/${dealId}/book`
     : bookingUrl || "#pricing";
   const isMobile = tone === "mobile";
@@ -68,13 +74,13 @@ export function DealCtaActions({
     >
       <a
         href={primaryHref}
-        target={!useDevelopmentBookingAssistant && bookingUrl ? "_blank" : undefined}
-        rel={!useDevelopmentBookingAssistant && bookingUrl ? "noreferrer" : undefined}
+        target={!bookingAssistantEnabled && bookingUrl ? "_blank" : undefined}
+        rel={!bookingAssistantEnabled && bookingUrl ? "noreferrer" : undefined}
         onClick={() => postDealEvent(dealId, "book_now_click")}
         style={{ ...buttonStyle(tone), width: isMobile ? "100%" : undefined }}
       >
-        <ExternalLink size={16} aria-hidden="true" />
-        {useDevelopmentBookingAssistant ? "Start booking" : primaryLabel}
+        {!bookingAssistantEnabled && <ExternalLink size={16} aria-hidden="true" />}
+        {bookingAssistantEnabled ? "Start booking" : primaryLabel}
       </a>
     </div>
   );

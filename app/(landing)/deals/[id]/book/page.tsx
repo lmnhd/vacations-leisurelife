@@ -6,6 +6,7 @@ import {
 } from "@/app/(tests)/tests/deals-system/booking-assistant/booking-flow-experience";
 import { getStoredCbDealDetailById } from "@/lib/cb/cb-deal-details";
 import { getPublicDealPageById } from "@/lib/cb/deals-system/public-deals";
+import { isBookingAssistantServerEnabled } from "@/lib/booking-assistant/feature-flag";
 import { BookingAssistantViewport } from "./booking-assistant-viewport";
 import { BookingPortalBeacon } from "./booking-portal-beacon";
 
@@ -16,17 +17,16 @@ export const dynamic = "force-dynamic";
  * (`BOOKING_ASSISTANT_ENABLED=true`) — the same flag that gates the guest
  * save/signal/resume APIs this flow depends on, so the whole feature turns on
  * and off atomically. When the flag is off the page 404s, matching those APIs.
+ * The enable decision is centralized in lib/booking-assistant/feature-flag so
+ * this gate and the landing-page "Book now" CTA can't drift apart.
  */
-function bookingAssistantEnabled(): boolean {
-  return process.env.BOOKING_ASSISTANT_ENABLED === "true";
-}
 
 export default async function DealBookingAssistantPage({
   params,
 }: {
   params: Promise<{ id?: string | string[] }>;
 }) {
-  if (!bookingAssistantEnabled()) {
+  if (!isBookingAssistantServerEnabled()) {
     notFound();
   }
 
