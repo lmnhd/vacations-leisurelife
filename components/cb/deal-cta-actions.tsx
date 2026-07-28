@@ -2,10 +2,6 @@
 
 import type { CSSProperties } from "react";
 
-import { ExternalLink } from "lucide-react";
-
-import { isBookingAssistantCtaEnabled } from "@/lib/booking-assistant/feature-flag";
-
 import { postDealEvent } from "./deal-analytics";
 
 const palette = {
@@ -17,7 +13,13 @@ type Tone = "hero" | "light" | "dark" | "mobile";
 
 interface DealCtaActionsProps {
   dealId: string;
-  bookingUrl: string;
+  /**
+   * Legacy external booking URL. No longer used for routing — "Book now" always
+   * goes to the in-house Booking Assistant (/deals/[id]/book). Kept as an
+   * optional prop so existing callers compile without change; safe to drop
+   * entirely once every caller stops passing it.
+   */
+  bookingUrl?: string;
   primaryLabel: string;
   tone?: Tone;
   align?: "left" | "center";
@@ -49,19 +51,16 @@ function buttonStyle(tone: Tone): CSSProperties {
 
 export function DealCtaActions({
   dealId,
-  bookingUrl,
   primaryLabel,
   tone = "light",
   align = "left",
 }: DealCtaActionsProps) {
-  // Route "Book now" to the in-house Booking Assistant (/deals/[id]/book) when
-  // the feature is enabled, otherwise to the legacy external booking URL. The
-  // enable decision — and the "must match the server /book gate" contract — lives
-  // in lib/booking-assistant/feature-flag so both sides can't drift.
-  const bookingAssistantEnabled = isBookingAssistantCtaEnabled();
-  const primaryHref = bookingAssistantEnabled
-    ? `/deals/${dealId}/book`
-    : bookingUrl || "#pricing";
+  // "Book now" always routes to the in-house Booking Assistant. This is
+  // unconditional on purpose: the old external Cruise Brothers booking links are
+  // permanently retired, so there is no env flag or environment in which this
+  // should point anywhere else. `primaryLabel` is still honored for the button
+  // text; `bookingUrl` is intentionally ignored.
+  const primaryHref = `/deals/${dealId}/book`;
   const isMobile = tone === "mobile";
 
   return (
@@ -74,13 +73,10 @@ export function DealCtaActions({
     >
       <a
         href={primaryHref}
-        target={!bookingAssistantEnabled && bookingUrl ? "_blank" : undefined}
-        rel={!bookingAssistantEnabled && bookingUrl ? "noreferrer" : undefined}
         onClick={() => postDealEvent(dealId, "book_now_click")}
         style={{ ...buttonStyle(tone), width: isMobile ? "100%" : undefined }}
       >
-        {!bookingAssistantEnabled && <ExternalLink size={16} aria-hidden="true" />}
-        {bookingAssistantEnabled ? "Start booking" : primaryLabel}
+        {primaryLabel}
       </a>
     </div>
   );
