@@ -64,11 +64,12 @@
     "test:trip-manifestation": "npx tsx tests/deal-trip-manifestation.ts",
     "test:deal-copywriter": "npx tsx tests/deal-copywriter.ts",
     "test:deal-funnel-synthesis": "npx tsx tests/deal-funnel-synthesis.ts",
+    "test:deal-meta-ad-synthesis": "npx tsx tests/deal-meta-ad-synthesis.ts",
     "test:deal-page-facts": "npx tsx tests/deal-page-facts.ts",
     "test:deal-google-ads-synthesis": "npx tsx tests/deal-google-ads-synthesis.ts",
     "test:deal-google-ads-distribution": "npx tsx tests/deal-google-ads-distribution.ts",
     "test:deal-community-search": "npx tsx tests/deal-community-search.ts",
-    "test:deals-system:all": "npm run test:deals-schema && npm run test:link-broker && npm run test:link-broker-health && npm run test:promo-extraction && npm run test:package-lookup && npm run test:itinerary-detail && npm run test:retail-discovery-research && npm run test:curated-deal-assembly && npm run test:public-deal-projection && npm run test:deal-pitch-brief && npm run test:deal-discovery && npm run test:trip-manifestation && npm run test:deal-copywriter && npm run test:deal-funnel-synthesis && npm run test:deal-page-facts && npm run test:deal-google-ads-synthesis && npm run test:deal-google-ads-distribution && npm run test:deal-community-search"
+    "test:deals-system:all": "npm run test:deals-schema && npm run test:link-broker && npm run test:link-broker-health && npm run test:promo-extraction && npm run test:package-lookup && npm run test:itinerary-detail && npm run test:retail-discovery-research && npm run test:curated-deal-assembly && npm run test:public-deal-projection && npm run test:deal-pitch-brief && npm run test:deal-discovery && npm run test:trip-manifestation && npm run test:deal-copywriter && npm run test:deal-funnel-synthesis && npm run test:deal-meta-ad-synthesis && npm run test:deal-page-facts && npm run test:deal-google-ads-synthesis && npm run test:deal-google-ads-distribution && npm run test:deal-community-search"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",

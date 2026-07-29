@@ -14,6 +14,7 @@ import type { DealUnifiedManifestsCache, DealUnifiedManifest } from "./deal-unif
 import type { DealAdCopyCache, DealAdCopy } from "./deal-ad-copy-types";
 import type { DealFunnelSynthesisCache, DealFunnelSynthesis } from "./deal-page-design-types";
 import type { DealMetaAdSynthesisCache, DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
+import { isDealMetaAdStylePresetId } from "./deal-meta-ad-style-presets";
 import type { DealMetaDistributionCache, DealMetaDistribution } from "./deal-meta-distribution-types";
 import type { DealGoogleAdsSynthesisCache, DealGoogleAdsSynthesis } from "./deal-google-ads-synthesis-types";
 import type {
@@ -514,6 +515,71 @@ function validateDealMetaAdSynthesis(s: unknown, i: number, errors: string[]): v
   }
   if (typeof m.promptTemplate !== "string" || !m.promptTemplate) {
     errors.push(`syntheses[${i}].promptTemplate missing`);
+  }
+  if (
+    m.recommendedStyleId !== undefined &&
+    !isDealMetaAdStylePresetId(m.recommendedStyleId)
+  ) {
+    errors.push(`syntheses[${i}].recommendedStyleId invalid`);
+  }
+  if (
+    m.selectedStyleId !== undefined &&
+    !isDealMetaAdStylePresetId(m.selectedStyleId)
+  ) {
+    errors.push(`syntheses[${i}].selectedStyleId invalid`);
+  }
+  if (
+    m.styleSelectionSource !== undefined &&
+    !["ai_recommended", "operator", "fallback"].includes(
+      m.styleSelectionSource
+    )
+  ) {
+    errors.push(`syntheses[${i}].styleSelectionSource invalid`);
+  }
+  if (
+    m.styleSelectedAtIso !== undefined &&
+    !isIsoDate(m.styleSelectedAtIso)
+  ) {
+    errors.push(`syntheses[${i}].styleSelectedAtIso must be an ISO date`);
+  }
+  if (m.styleRecommendation !== undefined) {
+    if (!isRecord(m.styleRecommendation)) {
+      errors.push(`syntheses[${i}].styleRecommendation must be an object`);
+    } else {
+      const recommendation = m.styleRecommendation;
+      if (!isDealMetaAdStylePresetId(recommendation.recommendedStyleId)) {
+        errors.push(
+          `syntheses[${i}].styleRecommendation.recommendedStyleId invalid`
+        );
+      }
+      if (
+        typeof recommendation.rationale !== "string" ||
+        !recommendation.rationale.trim()
+      ) {
+        errors.push(
+          `syntheses[${i}].styleRecommendation.rationale missing`
+        );
+      }
+      if (
+        !["high", "medium", "low"].includes(
+          String(recommendation.confidence)
+        )
+      ) {
+        errors.push(
+          `syntheses[${i}].styleRecommendation.confidence invalid`
+        );
+      }
+      if (!isIsoDate(recommendation.generatedAtIso)) {
+        errors.push(
+          `syntheses[${i}].styleRecommendation.generatedAtIso must be an ISO date`
+        );
+      }
+      if (recommendation.modelTask !== "decision") {
+        errors.push(
+          `syntheses[${i}].styleRecommendation.modelTask invalid`
+        );
+      }
+    }
   }
   if (!Array.isArray(m.cards) || m.cards.length === 0) {
     errors.push(`syntheses[${i}].cards must be a non-empty array`);

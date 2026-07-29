@@ -8,6 +8,8 @@ import type {
   DealTripManifest,
 } from "@/lib/cb/deals-system";
 
+import { CampaignSelectBar, type CampaignSelectItem } from "../campaign-select-bar";
+
 /** Default public-visibility window: 90 days from today, as a YYYY-MM-DD date. */
 const DEFAULT_EXPIRY_DAYS = 90;
 
@@ -107,6 +109,45 @@ interface ApproveResponse {
   blockingFailures?: { id: string; label: string; passed: boolean; detail: string; blocking: boolean }[];
 }
 
+/**
+ * The trailing status pill for a manifest in the picker — live / not-live /
+ * not-published / unresolved. Shared by the collapsed chip and the dropdown
+ * rows so the operator can see status without expanding the list.
+ */
+function manifestStatusBadge(
+  manifest: DealTripManifest,
+  liveness: DealLiveness | null,
+  dealCount: number
+) {
+  if (liveness?.live) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/50 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_6px_1px_rgba(110,231,183,0.8)]" />
+        live
+      </span>
+    );
+  }
+  if (dealCount > 0) {
+    return (
+      <span className="rounded-full border border-slate-500/40 bg-slate-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-300">
+        {dealCount > 1 ? `not live (${dealCount})` : "not live"}
+      </span>
+    );
+  }
+  if (manifest.resolvedPackage) {
+    return (
+      <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-200">
+        not published
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full border border-rose-400/40 bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-200">
+      unresolved
+    </span>
+  );
+}
+
 export function PublishView({
   manifests,
   adCopies,
@@ -179,6 +220,37 @@ export function PublishView({
     if (!selectedManifest?.resolvedPackage) return [];
     return dealsByPackageId.get(selectedManifest.resolvedPackage.packageId) ?? [];
   }, [dealsByPackageId, selectedManifest]);
+
+  // The manifest picker items, with a live/not-live status badge each. Built
+  // from the same liveness derivation the section badges use, so the compact
+  // bar and the preview never disagree.
+  const manifestItems = useMemo<CampaignSelectItem[]>(
+    () =>
+      manifests.map((m) => {
+        const manifestDeals = m.resolvedPackage
+          ? dealsByPackageId.get(m.resolvedPackage.packageId) ?? []
+          : [];
+        const manifestDeal = m.resolvedPackage
+          ? chooseBestDealForManifest(m.id, manifestDeals)
+          : null;
+        const liveness = manifestDeal ? dealLiveness(manifestDeal) : null;
+        return {
+          id: m.id,
+          title: m.sailingAngleTitle,
+          subtitle: `${m.isolatedNiche} · ${m.assembleDraft.cruiseLine} · ${m.assembleDraft.destination}`,
+          badge: manifestStatusBadge(m, liveness, manifestDeals.length),
+        };
+      }),
+    [manifests, dealsByPackageId]
+  );
+
+  function selectManifest(manifestId: string) {
+    setSelectedManifestId(manifestId);
+    setAssembledDeal(null);
+    setGates(undefined);
+    setExpirationOverride(undefined);
+    setExpirationInput(defaultExpiryDate());
+  }
 
   const previewDeal = assembledDeal ?? existingDeal;
 
@@ -338,80 +410,18 @@ export function PublishView({
         </div>
       )}
 
-      {/* Manifest picker */}
-      <section className="mb-6 rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-          Select a resolved manifest
-        </p>
-        {resolvedManifests.length === 0 ? (
-          <p className="mt-2 text-sm text-amber-200">
+      {/* Manifest selector — one compact bar, shared across every step page. */}
+      <CampaignSelectBar
+        eyebrow="Resolved manifest"
+        items={manifestItems}
+        selectedId={selectedManifestId}
+        onSelect={selectManifest}
+        emptyState={
+          <p className="text-sm text-amber-200">
             No resolved manifests yet. Resolve a manifest in Step 2 - Trip Manifestation first.
           </p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {manifests.map((m) => {
-              const manifestDeals = m.resolvedPackage
-                ? dealsByPackageId.get(m.resolvedPackage.packageId) ?? []
-                : [];
-              const manifestDeal = m.resolvedPackage
-                ? chooseBestDealForManifest(m.id, manifestDeals)
-                : null;
-              const liveness = manifestDeal ? dealLiveness(manifestDeal) : null;
-              return (
-                <li key={m.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedManifestId(m.id);
-                      setAssembledDeal(null);
-                      setGates(undefined);
-                      setExpirationOverride(undefined);
-                      setExpirationInput(defaultExpiryDate());
-                    }}
-                    className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition ${
-                      selectedManifestId === m.id
-                        ? "border-cyan-300/60 bg-cyan-400/10"
-                        : "border-white/10 bg-white/[0.03] hover:border-white/25"
-                    }`}
-                  >
-                    <span
-                      className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                        selectedManifestId === m.id ? "bg-cyan-300" : "bg-slate-600"
-                      }`}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-xs font-semibold text-white truncate">
-                        {m.sailingAngleTitle}
-                      </span>
-                      <span className="block text-[11px] text-slate-400">
-                        {m.isolatedNiche} - {m.assembleDraft.cruiseLine} - {m.assembleDraft.destination}
-                      </span>
-                    </span>
-                    {liveness?.live ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/50 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-200">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_6px_1px_rgba(110,231,183,0.8)]" />
-                        live
-                      </span>
-                    ) : manifestDeal ? (
-                      <span className="rounded-full border border-slate-500/40 bg-slate-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-300">
-                        {manifestDeals.length > 1 ? `not live (${manifestDeals.length})` : "not live"}
-                      </span>
-                    ) : m.resolvedPackage ? (
-                      <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-200">
-                        not published
-                      </span>
-                    ) : (
-                      <span className="rounded-full border border-rose-400/40 bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-200">
-                        unresolved
-                      </span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+        }
+      />
 
       {selectedManifest && (
         <section className="mb-6 rounded-2xl border border-white/10 bg-slate-950/70 p-5">

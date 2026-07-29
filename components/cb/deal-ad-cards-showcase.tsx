@@ -2,8 +2,8 @@
 
 /**
  * Public showcase for a deal's Meta ad-carousel cards (Step 8), rendered below
- * the (unchanged) ship hero on the premium Deal Page. Three layout treatments —
- * quilt / tab-spotlight / editorial-mosaic — picked deterministically per deal
+ * the (unchanged) ship hero on the premium Deal Page. Two layout treatments —
+ * quilt / tab-spotlight — picked deterministically per deal
  * (`pickAdCardsLayout` in public-deal-projection.ts) so campaign pages carry
  * brand nuance across the many decks running at once, without the layout
  * flickering between visits to the same deal.
@@ -12,6 +12,12 @@
  * cropped to a single featured image — because this section's whole job is to
  * prove "the exact ad you clicked is one of several real, deliberate angles for
  * this sailing," not to pick a winner among them.
+ *
+ * Both layouts render every card at one readable size: all cards equal (quilt)
+ * or one at a time at full size (tab-spotlight). A mixed big-lead-plus-
+ * thumbnails treatment ("editorial-mosaic") was removed 2026-07-28 — the small
+ * cards' headlines were unreadable, so the section stopped conveying several
+ * legible angles. Don't add a layout that renders cards at unequal sizes.
  */
 
 import { useState } from "react";
@@ -83,79 +89,6 @@ function QuiltLayout({ eyebrow, heading, cards }: { eyebrow: string; heading: st
   );
 }
 
-// ── Editorial mosaic: one lead card large, the rest stacked smaller beside it ─
-/**
- * The lead card is the deal's first ready card (cardIndex order — the
- * operator's/generator's own ordering, not a random pick), enlarged to ~60%
- * width with the remaining cards stacked at full visibility beside it. Mirrors
- * the premium page's existing five-segment "one image, one block" rhythm, so
- * this reads as native to the page rather than imported ad-tooling chrome.
- *
- * The lead card's bodyText (when it passed the broad-appeal check) renders as
- * a real paragraph below the image, not squeezed into the gradient caption —
- * desktop has the width to spare, and a proper paragraph reads calmer than
- * text crammed over a photo.
- */
-function EditorialMosaicLayout({
-  eyebrow,
-  heading,
-  cards,
-}: {
-  eyebrow: string;
-  heading: string;
-  cards: DealAdCardView[];
-}) {
-  const [lead, ...rest] = cards;
-  if (!lead) return null;
-
-  return (
-    <SectionShell>
-      <SectionKicker eyebrow={eyebrow} heading={heading} />
-      <div className="grid items-start gap-[clamp(12px,2vw,20px)] [grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))]">
-        <div>
-          <figure className={cardFigureClass}>
-            <Image
-              src={lead.imageUrl}
-              alt={lead.headline}
-              fill
-              priority={false}
-              sizes="(max-width: 860px) 100vw, 55vw"
-              className="object-cover"
-            />
-            <figcaption className={`${captionClass} px-5 py-4 font-serif text-[20px] font-semibold leading-[1.25]`}>
-              {lead.headline}
-            </figcaption>
-          </figure>
-          {lead.bodyText && (
-            <p className="mt-[14px] max-w-[56ch] px-1 text-[16px] leading-[1.65] text-[#0F3042]">
-              {lead.bodyText}
-            </p>
-          )}
-        </div>
-        {rest.length > 0 && (
-          <div className="grid content-start gap-[clamp(8px,1.4vw,14px)] [grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))]">
-            {rest.map((card, i) => (
-              <figure key={`${card.imageUrl}-${i}`} className={cardFigureClass}>
-                <Image
-                  src={card.imageUrl}
-                  alt={card.headline}
-                  fill
-                  loading="lazy"
-                  sizes="(max-width: 700px) 33vw, 180px"
-                  className="object-cover"
-                />
-                <figcaption className={`${captionClass} px-[10px] py-2 text-[11.5px] font-bold leading-[1.3]`}>
-                  {card.headline}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        )}
-      </div>
-    </SectionShell>
-  );
-}
-
 // ── Tab spotlight: one large image at a time, four short labeled tabs ────────
 function TabSpotlightLayout({
   eyebrow,
@@ -222,13 +155,11 @@ function TabSpotlightLayout({
 }
 
 /**
- * Entry point — all three layouts render as a full-width section immediately
- * below the (unchanged) hero.
+ * Entry point — both layouts render as a full-width section immediately below
+ * the (unchanged) hero.
  */
 export function DealAdCardsShowcase({ view }: { view: DealAdCardsShowcaseView }) {
   const { layout, eyebrow, heading, cards } = view;
   if (layout === "tab-spotlight") return <TabSpotlightLayout eyebrow={eyebrow} heading={heading} cards={cards} />;
-  if (layout === "editorial-mosaic")
-    return <EditorialMosaicLayout eyebrow={eyebrow} heading={heading} cards={cards} />;
   return <QuiltLayout eyebrow={eyebrow} heading={heading} cards={cards} />;
 }

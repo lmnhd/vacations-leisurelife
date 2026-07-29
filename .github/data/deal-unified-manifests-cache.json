@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-17T23:11:18.127Z",
+  "generatedAtIso": "2026-07-28T19:36:22.499Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -1671,6 +1671,128 @@
         ],
         "promoStrategy": "Use selected promo intelligence to support \"The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings\" with qualified, public-safe language.",
         "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings. Targeting angle: US friend groups of two to four cabins and experience-driven couples who prioritize itinerary depth and respond to qualified onboard-credit value.. Workbench-selected real sailing chosen for the angle \"The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings\". Grounding facts: MSC Magnifica | 2026-09-12 | CPH | Copenhagen Denmark, Warnemunde (Berlin) Germany, Gdynia (Gdansk-Danzig) Poland. Promo context considered: MSC Cruises MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit | Select MSC Cruises sailings may qualify for onboard credit. | Must be booked between 07/08/2026 and 08/03/2026."
+      }
+    },
+    {
+      "id": "unified-manifest-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-in-22-nights",
+      "generatedAtIso": "2026-07-28T19:36:22.497Z",
+      "expiresOnIso": "2026-10-26",
+      "sourceAngleId": "angle-workbench-cape-town-to-mumbai-silver-muse-1640382",
+      "sourceManifestId": "manifest-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-in-22-nights",
+      "sailingAngleTitle": "This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.",
+      "creativeBrief": {
+        "isolatedNiche": "Affluent, time-flexible US travelers who want one meaningful multi-region journey: experienced cruisers, luxury travelers, culture-led couples, and travelers drawn to Southern Africa, the Indian Ocean, and India.",
+        "researchRationale": "Workbench-selected real sailing chosen for the angle \"This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.\". Grounding facts: Silver Muse | 2026-11-10 | CPT | Cape Town, Port Elizabeth, East London.",
+        "successLogic": "Affluent, time-flexible US travelers who want one meaningful multi-region journey: experienced cruisers, luxury travelers, culture-led couples, and travelers drawn to Southern Africa, the Indian Ocean, and India. can convert because this is a real Silver Muse sailing on 2026-11-10, not a generic cruise sale. The exact package facts give the audience a specific sailing to compare and price-check.",
+        "audienceSignals": [
+          "Real sailing selected in the Campaign Workbench: Silver Muse on Silversea, 22 nights, sailing 2026-11-10.",
+          "Concrete itinerary signal: CPT roundtrip, Cape Town, Port Elizabeth, East London, Durban.",
+          "Operator-selected audience angle: Affluent, time-flexible US travelers who want one meaningful multi-region journey: experienced cruisers, luxury travelers, culture-led couples, and travelers drawn to Southern Africa, the Indian Ocean, and India..",
+          "Targeting seeds chosen for this sailing: Silversea Silver Muse, Cape Town to Mumbai cruise, Indian Ocean luxury cruise, South Africa to India cruise, Mauritius luxury cruise, Seychelles luxury cruise."
+        ],
+        "angle": {
+          "sailingAngleTitle": "This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.",
+          "theCorePitch": "This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.: Silver Muse on Cape Town To Mumbai gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+          "visualAnchor": "The long way is the point: Cape Town light, the open Indian Ocean, Mauritius and Mahe, Kerala texture, then Mumbai after dark. Quiet, cinematic, editorial travel imagery; the route is the hero.",
+          "targetAudienceDescriptor": "Affluent, time-flexible US travelers who want one meaningful multi-region journey: experienced cruisers, luxury travelers, culture-led couples, and travelers drawn to Southern Africa, the Indian Ocean, and India.",
+          "relevantKeywords": [
+            "Silversea Silver Muse",
+            "Cape Town to Mumbai cruise",
+            "Indian Ocean luxury cruise",
+            "South Africa to India cruise",
+            "Mauritius luxury cruise",
+            "Seychelles luxury cruise",
+            "Cochin cruise",
+            "Mumbai cruise",
+            "long luxury voyage"
+          ],
+          "destinationAndTimeOfYearHints": "Cape Town To Mumbai departing 2026-11-10.",
+          "onboardAssetRequirements": "Silver Muse ship assets, destination imagery, itinerary map, and booking-link proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "suggestedBriefId": "brief-1640382-cape-town-to-mumbai",
+          "itineraryName": "Cape Town To Mumbai",
+          "portsOfCall": [
+            "Cape Town",
+            "Port Elizabeth",
+            "East London",
+            "Durban",
+            "Pointe des Galets",
+            "Port Louis",
+            "Port Louis",
+            "Mahe",
+            "Cochin",
+            "Cochin",
+            "New Mangalore",
+            "Mumbai"
+          ],
+          "destination": "Cape Town",
+          "nights": 22,
+          "departurePortHint": "CPT",
+          "sailWindow": {
+            "earliestIso": "2026-11-10",
+            "rationale": "Exact sail date selected in the campaign workbench.",
+            "latestIso": "2026-11-10"
+          },
+          "cruiseLine": "Silversea",
+          "suggestedDealId": "1640382"
+        },
+        "lookupQuery": {
+          "ship": "Silver Muse",
+          "destination": "Cape Town",
+          "line": "Silversea",
+          "date": "2026-11-10",
+          "nights": 22,
+          "port": "CPT",
+          "windowDays": 0
+        },
+        "targetingSeeds": {
+          "inferredMarket": "US",
+          "geoFocus": [
+            "CPT",
+            "Cape Town To Mumbai",
+            "Cape Town",
+            "Port Elizabeth",
+            "East London",
+            "Durban"
+          ],
+          "personaSignals": [
+            "Affluent, time-flexible US travelers who want one meaningful multi-region journey: experienced cruisers, luxury travelers, culture-led couples, and travelers drawn to Southern Africa, the Indian Ocean, and India.",
+            "Silversea travelers",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "Silversea",
+            "Silver Muse"
+          ],
+          "metaInterestSeeds": [
+            "Silversea Silver Muse",
+            "Cape Town to Mumbai cruise",
+            "Indian Ocean luxury cruise",
+            "South Africa to India cruise",
+            "Mauritius luxury cruise",
+            "Seychelles luxury cruise",
+            "Cochin cruise",
+            "Mumbai cruise",
+            "long luxury voyage",
+            "Silversea",
+            "Silver Muse"
+          ],
+          "metaBehaviorSignals": [
+            "engages with Silver Muse ship-specific content"
+          ],
+          "excludedAudienceSignals": [
+            "free cruise",
+            "cruise job",
+            "Avoid broad cruise-interest targeting as the only audience."
+          ]
+        },
+        "appliedPromos": [],
+        "promotionBriefs": [],
+        "promoStrategy": "Lead with \"This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.\" through the verified itinerary and audience fit.",
+        "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.. Targeting angle: Affluent, time-flexible US travelers who want one meaningful multi-region journey: experienced cruisers, luxury travelers, culture-led couples, and travelers drawn to Southern Africa, the Indian Ocean, and India.. Workbench-selected real sailing chosen for the angle \"This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.\". Grounding facts: Silver Muse | 2026-11-10 | CPT | Cape Town, Port Elizabeth, East London."
       }
     }
   ]

@@ -268,13 +268,20 @@ export interface DealAdCardView {
 }
 
 /**
- * The three layout treatments the showcase component can render. Picked once per
- * deal (see `pickAdCardsLayout`), not per page load, so a given deal's page keeps
- * the same look across visits/deploys, while different deals in the same
- * campaign wave naturally vary — the brand-nuance-per-campaign the operator asked
- * for, without a random layout jumping around on refresh.
+ * The layout treatments the showcase component can render. Picked once per deal
+ * (see `pickAdCardsLayout`), not per page load, so a given deal's page keeps the
+ * same look across visits/deploys, while different deals in the same campaign
+ * wave naturally vary — the brand-nuance-per-campaign the operator asked for,
+ * without a random layout jumping around on refresh.
+ *
+ * Every layout here must render its cards at a single readable size: either all
+ * cards at equal size (quilt) or one card at a time at full size
+ * (tab-spotlight). A mixed-size treatment ("editorial-mosaic", removed
+ * 2026-07-28) shrank the non-lead cards to thumbnails whose headlines were
+ * unreadable, which defeats the section's purpose of showing several legible
+ * angles on the sailing. Do not reintroduce a big-plus-small arrangement.
  */
-export type DealAdCardsLayout = "quilt" | "tab-spotlight" | "editorial-mosaic";
+export type DealAdCardsLayout = "quilt" | "tab-spotlight";
 
 export interface DealAdCardsShowcaseView {
   layout: DealAdCardsLayout;
@@ -398,10 +405,10 @@ function imageSetFor(
   };
 }
 
-const AD_CARDS_LAYOUTS: DealAdCardsLayout[] = ["quilt", "tab-spotlight", "editorial-mosaic"];
+const AD_CARDS_LAYOUTS: DealAdCardsLayout[] = ["quilt", "tab-spotlight"];
 
 /**
- * Deterministically pick one of the three ad-cards layouts from the deal id, so
+ * Deterministically pick one of the ad-cards layouts from the deal id, so
  * the choice is stable across renders/deploys for a given deal (no layout
  * flicker on refresh) while still varying across the many deals running at
  * once — the "campaign nuance" the operator wants without real randomness.

@@ -10,9 +10,24 @@
  * time, so one edit re-applies to all 4 cards.
  */
 
+import type { DealMetaAdStylePresetId } from "./deal-meta-ad-style-presets";
+
 export type DealMetaAdImageGenerator = "gpt_image_2" | "gemini3_flash";
 
 export type DealMetaAdCardStatus = "pending" | "generating" | "ready" | "error";
+export type DealMetaStyleConfidence = "high" | "medium" | "low";
+export type DealMetaStyleSelectionSource =
+  | "ai_recommended"
+  | "operator"
+  | "fallback";
+
+export interface DealMetaAdStyleRecommendation {
+  recommendedStyleId: DealMetaAdStylePresetId;
+  rationale: string;
+  confidence: DealMetaStyleConfidence;
+  generatedAtIso: string;
+  modelTask: "decision";
+}
 
 /** A previously-generated (now superseded) image for a card, kept for revert. */
 export interface DealMetaAdImageHistoryEntry {
@@ -27,6 +42,8 @@ export interface DealMetaAdCard {
   cardIndex: number;
   headline: string;
   primaryText: string;
+  /** Operator-defined composition guidance retained across regenerations. */
+  imageDirection?: string;
   status: DealMetaAdCardStatus;
   /** Resolvable URL for the generated image, once ready. */
   imageUrl?: string;
@@ -58,6 +75,15 @@ export interface DealMetaAdSynthesis {
    * placeholders, interpolated per-card at generation time.
    */
   promptTemplate: string;
+  /** AI's persisted default recommendation. Optional for legacy records. */
+  recommendedStyleId?: DealMetaAdStylePresetId;
+  /** Active operator-editable style. Optional records read as the vivid fallback. */
+  selectedStyleId?: DealMetaAdStylePresetId;
+  styleRecommendation?: DealMetaAdStyleRecommendation;
+  styleSelectionSource?: DealMetaStyleSelectionSource;
+  styleSelectedAtIso?: string;
+  /** Non-blocking diagnostic when the recommendation call used the fallback. */
+  styleRecommendationWarning?: string;
   cards: DealMetaAdCard[];
 }
 
@@ -69,7 +95,7 @@ export interface DealMetaAdSynthesisCache {
 
 /** Default prompt template seeded for a new synthesis. */
 export const DEFAULT_META_AD_PROMPT_TEMPLATE =
-  "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}";
+  "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: {{HEADLINE}}\nPrimary text: {{PRIMARY_TEXT}}";
 
 export function interpolateMetaAdPrompt(
   template: string,

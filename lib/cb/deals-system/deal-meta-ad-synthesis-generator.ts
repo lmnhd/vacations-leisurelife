@@ -11,16 +11,38 @@ import { generateGptImage2 } from "@/lib/campaigns/media/generators/gpt-image";
 import { storeAsset } from "@/lib/campaigns/media/storage-client";
 
 import type { DealFunnelSynthesis } from "./deal-page-design-types";
+import { buildDealMetaAdImagePromptForSynthesis } from "./deal-meta-ad-prompt";
+import {
+  DEFAULT_DEAL_META_AD_STYLE_ID,
+  type DealMetaAdStylePresetId,
+} from "./deal-meta-ad-style-presets";
 import {
   DEFAULT_META_AD_PROMPT_TEMPLATE,
-  interpolateMetaAdPrompt,
   type DealMetaAdCard,
+  type DealMetaAdStyleRecommendation,
   type DealMetaAdSynthesis,
+  type DealMetaStyleSelectionSource,
 } from "./deal-meta-ad-synthesis-types";
+
+export function selectedDealMetaAdStyleId(
+  synthesis: Pick<DealMetaAdSynthesis, "selectedStyleId">
+): DealMetaAdStylePresetId {
+  return synthesis.selectedStyleId ?? DEFAULT_DEAL_META_AD_STYLE_ID;
+}
+
+export function dealMetaAdStyleSelectionSource(
+  synthesis: Pick<DealMetaAdSynthesis, "styleSelectionSource">
+): DealMetaStyleSelectionSource {
+  return synthesis.styleSelectionSource ?? "fallback";
+}
 
 /** Build a fresh synthesis (or reset cards) from a funnel synthesis's carousel. */
 export function buildDealMetaAdSynthesis(
-  funnelSynthesis: DealFunnelSynthesis
+  funnelSynthesis: DealFunnelSynthesis,
+  options: {
+    styleRecommendation?: DealMetaAdStyleRecommendation;
+    styleRecommendationWarning?: string;
+  } = {}
 ): DealMetaAdSynthesis {
   const cards: DealMetaAdCard[] = funnelSynthesis.carousel.cards.map((card, cardIndex) => ({
     cardIndex,
@@ -29,6 +51,12 @@ export function buildDealMetaAdSynthesis(
     status: "pending",
   }));
 
+  const styleId =
+    options.styleRecommendation?.recommendedStyleId ??
+    DEFAULT_DEAL_META_AD_STYLE_ID;
+  const styleSelectionSource: DealMetaStyleSelectionSource =
+    options.styleRecommendation ? "ai_recommended" : "fallback";
+
   return {
     id: funnelSynthesis.id,
     dealId: funnelSynthesis.dealId,
@@ -36,6 +64,13 @@ export function buildDealMetaAdSynthesis(
     sourceFunnelSynthesisId: funnelSynthesis.id,
     sailingAngleTitle: funnelSynthesis.sailingAngleTitle,
     promptTemplate: DEFAULT_META_AD_PROMPT_TEMPLATE,
+    recommendedStyleId: styleId,
+    selectedStyleId: styleId,
+    styleRecommendation: options.styleRecommendation,
+    styleSelectionSource,
+    styleSelectedAtIso:
+      options.styleRecommendation?.generatedAtIso ?? new Date().toISOString(),
+    styleRecommendationWarning: options.styleRecommendationWarning,
     cards,
   };
 }
@@ -59,8 +94,11 @@ export async function generateDealMetaAdCardImage(
     throw new Error(`No card with index ${cardIndex} in synthesis "${synthesis.id}".`);
   }
 
-  const interpolated = interpolateMetaAdPrompt(synthesis.promptTemplate, card);
-  const promptUsed = promptSuffix?.trim() ? `${interpolated}\n\n${promptSuffix.trim()}` : interpolated;
+  const promptUsed = buildDealMetaAdImagePromptForSynthesis(
+    synthesis,
+    card,
+    promptSuffix
+  );
   const buffer = await generateGptImage2(promptUsed, { aspect: "1:1" });
 
   const generatedAtIso = new Date().toISOString();

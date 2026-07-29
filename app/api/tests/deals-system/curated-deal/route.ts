@@ -1239,6 +1239,24 @@ function bad(error: string, status = 400) {
   return NextResponse.json({ ok: false, error }, { status });
 }
 
+function withRefreshedApprovalGates(deal: CuratedOdysseusDeal): CuratedOdysseusDeal {
+  const gates = evaluateApprovalGates(deal, {
+    textOnlyLaunchWaived: deal.operatorApproval?.textOnlyLaunchWaived,
+  });
+  return {
+    ...deal,
+    operatorApproval: {
+      dealId: deal.id,
+      status: deal.operatorApproval?.status ?? "needs_review",
+      updatedAtIso: deal.operatorApproval?.updatedAtIso ?? new Date().toISOString(),
+      decidedBy: deal.operatorApproval?.decidedBy ?? "system",
+      decisionNote: deal.operatorApproval?.decisionNote,
+      textOnlyLaunchWaived: deal.operatorApproval?.textOnlyLaunchWaived ?? false,
+      gates,
+    },
+  };
+}
+
 export async function POST(request: Request) {
   const blocked = blockInProduction();
   if (blocked) return blocked;
@@ -1417,9 +1435,8 @@ export async function POST(request: Request) {
               },
             }
           : strategyUpdated;
-      if (strategy || pricingHydration.status === "hydrated") {
-        await upsertCuratedDealRecord(updated);
-      }
+      const gateRefreshed = withRefreshedApprovalGates(updated);
+      await upsertCuratedDealRecord(gateRefreshed);
       const existingPromoApplicability = existing.promoApplicability ?? [];
       const promoApplicability =
         promoRecords.length > 0
@@ -1439,12 +1456,12 @@ export async function POST(request: Request) {
                 }
             )
           : existingPromoApplicability;
-      const pipeline = buildPipelineArtifacts(updated, promoApplicability, strategy, promoRecords);
+      const pipeline = buildPipelineArtifacts(gateRefreshed, promoApplicability, strategy, promoRecords);
       saveDealDiscoveryIdeasCache(
         upsertDealDiscoveryIdea(loadDealDiscoveryIdeasCache(), pipeline.idea)
       );
       await upsertDealTripManifestRecord(pipeline.manifest);
-      return ok(updated, {
+      return ok(gateRefreshed, {
         angleId: pipeline.idea.id,
         manifestId: pipeline.manifest.id,
         handoffAssessment,
@@ -1458,14 +1475,14 @@ export async function POST(request: Request) {
 
     if (action === "set_link_valid") {
       const nowIso = new Date().toISOString();
-      const updated: CuratedOdysseusDeal = {
+      const updated = withRefreshedApprovalGates({
         ...existing,
         linkHealth: {
           status: "valid",
           lastVerifiedAtIso: nowIso,
           capturedAtIso: existing.linkHealth.capturedAtIso ?? nowIso,
         },
-      };
+      });
       await upsertCuratedDealRecord(updated);
       return ok(updated);
     }

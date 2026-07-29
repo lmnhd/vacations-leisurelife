@@ -22,6 +22,9 @@ import type {
   DealCommunityPlatform,
 } from "@/lib/cb/deals-system/deal-community-search";
 
+import { CampaignSelectBar } from "../campaign-select-bar";
+import { ConfigSection } from "../config-section";
+
 const NEGATION_STORAGE_KEY = "deals-system:google-ads-image-negation-rules";
 
 interface NegationRule {
@@ -797,12 +800,6 @@ export function GoogleAdsSynthesisView({
     [syntheses, selectedFunnelId]
   );
   const active = useMemo(() => syntheses.find((s) => s.id === activeId) ?? null, [syntheses, activeId]);
-  // A Google Ads synthesis is 1:1 with its funnel (it shares the funnel's id),
-  // so only show the selected funnel's synthesis.
-  const visibleSyntheses = useMemo(
-    () => syntheses.filter((s) => s.sourceFunnelSynthesisId === selectedFunnelId),
-    [syntheses, selectedFunnelId]
-  );
   // The curated gallery (operator-picked subset of SERP candidates) from the
   // source funnel synthesis — offered as a "use a real photo instead" fallback
   // per image slot, since Google disallows text/graphic overlays on generated
@@ -1092,108 +1089,72 @@ export function GoogleAdsSynthesisView({
         </div>
       )}
 
-      {/* Funnel synthesis picker */}
-      <section className="mb-6 rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-          Select a Step 7 funnel synthesis
-        </p>
-        {funnelSyntheses.length === 0 ? (
-          <p className="mt-2 text-sm text-amber-200">
+      {/* Campaign selector — one compact bar, shared across every step page. */}
+      <CampaignSelectBar
+        eyebrow="Step 7 funnel synthesis"
+        items={funnelSyntheses.map((s) => ({
+          id: s.id,
+          title: s.sailingAngleTitle,
+          subtitle: `${s.carousel.cards.length} carousel card(s)`,
+        }))}
+        selectedId={selectedFunnelId}
+        onSelect={selectFunnel}
+        emptyState={
+          <p className="text-sm text-amber-200">
             No funnel syntheses found yet. Run Step 7 - Funnel Synthesis first.
           </p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {funnelSyntheses.map((s) => (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => selectFunnel(s.id)}
-                  className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition ${
-                    selectedFunnelId === s.id
-                      ? "border-cyan-300/60 bg-cyan-400/10"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/25"
-                  }`}
-                >
-                  <span
-                    className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                      selectedFunnelId === s.id ? "bg-cyan-300" : "bg-slate-600"
-                    }`}
-                  />
-                  <span>
-                    <span className="block text-xs font-semibold text-white">{s.sailingAngleTitle}</span>
-                    <span className="block text-[11px] text-slate-400">
-                      {s.carousel.cards.length} carousel card(s)
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            disabled={busy || !selectedFunnel}
-            onClick={() => void init(false)}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {busy && generatingAspects.size === 0
-              ? "Loading…"
-              : existingSynthesisForSelectedFunnel
-                ? "Load existing synthesis"
-                : "Load from funnel"}
-          </button>
-          {existingSynthesisForSelectedFunnel && (
+        }
+        action={
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              disabled={busy}
-              onClick={() => void init(true)}
-              title="Permanently discards this synthesis's generated images, edited fields, and placements"
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-300/40 bg-rose-400/10 px-4 text-[12px] font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={busy || !selectedFunnel}
+              onClick={() => void init(false)}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Start over
+              {busy && generatingAspects.size === 0
+                ? "Loading…"
+                : existingSynthesisForSelectedFunnel
+                  ? "Load existing synthesis"
+                  : "Load from funnel"}
             </button>
-          )}
-        </div>
-      </section>
+            {existingSynthesisForSelectedFunnel && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void init(true)}
+                title="Permanently discards this synthesis's generated images, edited fields, and placements"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-300/40 bg-rose-400/10 px-4 text-[12px] font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Start over
+              </button>
+            )}
+          </div>
+        }
+      />
 
-      {/* Synthesis tabs — scoped to the selected funnel */}
-      {visibleSyntheses.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {visibleSyntheses.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => {
-                setActiveId(s.id);
-                setFieldDraft({
-                  businessName: s.businessName,
-                  headline: s.headline,
-                  longHeadline: s.longHeadline,
-                  description: s.description,
-                  promptTemplate: s.promptTemplate,
-                });
-              }}
-              className={`rounded-lg border px-3 py-1.5 text-[11px] font-semibold transition ${
-                activeId === s.id
-                  ? "border-cyan-300/60 bg-cyan-400/10 text-cyan-100"
-                  : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25"
-              }`}
-            >
-              {s.sailingAngleTitle}
-            </button>
-          ))}
-        </div>
-      )}
+      {/*
+       * A Google Ads synthesis is 1:1 with its funnel and shares the funnel's
+       * id, so the campaign bar above is the only selector needed — the old
+       * per-synthesis tab row would only ever hold the one entry the bar
+       * already shows. selectFunnel() handles activeId + fieldDraft.
+       */}
 
       {active && (
         <>
           {/* Editable ad text fields */}
-          <section className="mb-6 rounded-2xl border border-amber-400/25 bg-amber-500/[0.04] p-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-300">
-              Responsive Display Ad text fields
-            </p>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <ConfigSection
+            eyebrow="Responsive Display Ad text fields"
+            accent="amber"
+            summary={
+              fieldsDirty
+                ? "Unsaved changes — expand to save"
+                : fieldDraft.headline
+                  ? `Headline — ${fieldDraft.headline}`
+                  : "No headline set"
+            }
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                   Business name
@@ -1295,14 +1256,15 @@ export function GoogleAdsSynthesisView({
                 {generatingAspects.size > 0 ? "Generating…" : "Generate both images"}
               </button>
             </div>
-          </section>
+          </ConfigSection>
 
           {/* Persistent negation panel — applies to every campaign's image generations on this browser */}
-          <section className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-500/[0.04] p-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-rose-300">
-              Negation (applies to all campaigns)
-            </p>
-            <p className="mt-1 text-[11px] text-slate-400">
+          <ConfigSection
+            eyebrow="Negation (applies to all campaigns)"
+            accent="rose"
+            summary={`${negationRules.filter((r) => r.enabled).length} of ${negationRules.length} rule(s) active`}
+          >
+            <p className="text-[11px] text-slate-400">
               Appended to every image prompt after the template above. Saved in this browser and
               reused across all deals/campaigns. The first rule keeps generated images compliant
               with Google&apos;s ban on designed text/graphic overlays in standard Display image
@@ -1358,7 +1320,7 @@ export function GoogleAdsSynthesisView({
                 Add rule
               </button>
             </div>
-          </section>
+          </ConfigSection>
 
           <PlacementsPanel
             key={`placements-${active.id}`}
@@ -1368,7 +1330,15 @@ export function GoogleAdsSynthesisView({
             }
           />
 
-          {/* Image assets */}
+          {/* Image assets — the primary content, now that config is collapsed above. */}
+          <div className="mb-2 mt-6 flex items-baseline justify-between gap-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-300">
+              Image assets
+            </h2>
+            <span className="text-[11px] text-slate-500">
+              {active.images.filter((img) => img.status === "ready" && img.imageUrl).length} of 2 ready
+            </span>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {active.images.map((asset) => (
               <ImagePanel

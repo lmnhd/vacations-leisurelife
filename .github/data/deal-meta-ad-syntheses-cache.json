@@ -1,61 +1,7 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-18T00:07:36.233Z",
+  "generatedAtIso": "2026-07-29T01:10:43.613Z",
   "syntheses": [
-    {
-      "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
-      "dealId": "1578937",
-      "generatedAtIso": "2026-06-19T20:14:26.069Z",
-      "sourceFunnelSynthesisId": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
-      "sailingAngleTitle": "Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
-      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
-      "cards": [
-        {
-          "cardIndex": 0,
-          "headline": "Zero GMs. Nine Nights. One Ocean.",
-          "primaryText": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card0-1781900196650.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nZero GMs. Nine Nights. One Ocean.\n9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-19T20:16:36.650Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 1,
-          "headline": "The Ship's Library Is Your Table",
-          "primaryText": "8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card1-1781900230370.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nThe Ship's Library Is Your Table\n8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-19T20:17:10.370Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 2,
-          "headline": "NYC → Southampton. No Ports Between.",
-          "primaryText": "Mid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card2-1781900195493.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nNYC → Southampton. No Ports Between.\nMid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-19T20:16:35.493Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 3,
-          "headline": "Fill That Leuchtturm for Real",
-          "primaryText": "Ironsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card3-1781900209012.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFill That Leuchtturm for Real\nIronsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-19T20:16:49.012Z",
-          "previousImages": []
-        }
-      ]
-    },
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
       "dealId": "1582993",
@@ -160,60 +106,6 @@
           "generator": "gpt_image_2",
           "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nThe Milestone Sailing, Sorted\nAnniversary? Retirement? Edge-class Sky Suite, concierge-handled Juneau logistics, Seattle roundtrip. One July 24 departure.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
           "generatedAtIso": "2026-06-24T18:24:45.505Z",
-          "previousImages": []
-        }
-      ]
-    },
-    {
-      "id": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
-      "dealId": "1523892",
-      "generatedAtIso": "2026-06-27T23:37:54.455Z",
-      "sourceFunnelSynthesisId": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
-      "sailingAngleTitle": "Buenos Aires as the Overture to the Edge of Antarctica",
-      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
-      "cards": [
-        {
-          "cardIndex": 0,
-          "headline": "Free Buenos Aires Land Program",
-          "primaryText": "Tango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card0-1782603685467.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFree Buenos Aires Land Program\nTango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-27T23:41:25.467Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 1,
-          "headline": "Drake Passage. Heard It. Feel It.",
-          "primaryText": "Half Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card1-1782603689833.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nDrake Passage. Heard It. Feel It.\nHalf Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-27T23:41:29.833Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 2,
-          "headline": "Falklands + Penguins + Patagonia",
-          "primaryText": "Stanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card2-1782603690337.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFalklands + Penguins + Patagonia\nStanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-27T23:41:30.337Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 3,
-          "headline": "All-Inclusive Means All of It",
-          "primaryText": "Suite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card3-1782603692572.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nAll-Inclusive Means All of It\nSuite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-27T23:41:32.572Z",
           "previousImages": []
         }
       ]
@@ -379,6 +271,244 @@
       "sailingAngleTitle": "The Last Ten Nights of Summer - An Overnight in Stockholm and Bonus Onboard Credit on Select Bookings",
       "id": "funnel-1553111-the-last-ten-nights-of-summer-msc-magnifica-baltic-overnight-stockholm-obc",
       "dealId": "1553111"
+    },
+    {
+      "generatedAtIso": "2026-06-19T20:14:26.069Z",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "sourceFunnelSynthesisId": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
+      "cards": [
+        {
+          "primaryText": "9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card0-1781900196650.png",
+          "generatedAtIso": "2026-06-19T20:16:36.650Z",
+          "generator": "gpt_image_2",
+          "headline": "Zero GMs. Nine Nights. One Ocean.",
+          "previousImages": [],
+          "cardIndex": 0,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nZero GMs. Nine Nights. One Ocean.\n9-night transatlantic crossing with 7 unbroken sea days. Your oracle tables finally get the silence they deserve. Jan 2, 2027.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        },
+        {
+          "primaryText": "8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card1-1781900230370.png",
+          "generatedAtIso": "2026-06-19T20:17:10.370Z",
+          "generator": "gpt_image_2",
+          "headline": "The Ship's Library Is Your Table",
+          "previousImages": [],
+          "cardIndex": 1,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nThe Ship's Library Is Your Table\n8,000 volumes, writing desks, wood-paneled quiet. Roll your d10 where no one's FaceTiming three feet away. Bring every spark table you own.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        },
+        {
+          "primaryText": "Mid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card2-1781900195493.png",
+          "generatedAtIso": "2026-06-19T20:16:35.493Z",
+          "generator": "gpt_image_2",
+          "headline": "NYC → Southampton. No Ports Between.",
+          "previousImages": [],
+          "cardIndex": 2,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nNYC → Southampton. No Ports Between.\nMid-winter Atlantic crossing. Short daylight, dramatic skies, empty lounges. More uninterrupted solo RPG hours than any con or long weekend.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        },
+        {
+          "primaryText": "Ironsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1578937/meta-ad-synthesis/funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife/card3-1781900209012.png",
+          "generatedAtIso": "2026-06-19T20:16:49.012Z",
+          "generator": "gpt_image_2",
+          "headline": "Fill That Leuchtturm for Real",
+          "previousImages": [],
+          "cardIndex": 3,
+          "status": "ready",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFill That Leuchtturm for Real\nIronsworn vows. TYOV timelines. Apothecaria reagent draws. 9 nights of salt air in the binding and engine hum under every ink line.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links"
+        }
+      ],
+      "sailingAngleTitle": "Seven Sea Days, One Thousand Years: A Mid-Atlantic Solo RPG Crossing",
+      "id": "funnel-adcopy-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-manife",
+      "dealId": "1578937",
+      "selectedStyleId": "cut_paper_collage",
+      "styleSelectionSource": "operator",
+      "styleSelectedAtIso": "2026-07-29T00:02:17.670Z"
+    },
+    {
+      "id": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
+      "dealId": "1523892",
+      "generatedAtIso": "2026-06-27T23:37:54.455Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
+      "sailingAngleTitle": "Buenos Aires as the Overture to the Edge of Antarctica",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "recommendedStyleId": "current_vivid_flyer",
+      "selectedStyleId": "current_vivid_flyer",
+      "styleSelectionSource": "fallback",
+      "styleSelectedAtIso": "2026-07-29T00:02:44.417Z",
+      "styleRecommendationWarning": "No object generated: response did not match schema.",
+      "cards": [
+        {
+          "cardIndex": 0,
+          "headline": "Free Buenos Aires Land Program",
+          "primaryText": "Tango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card0-1782603685467.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFree Buenos Aires Land Program\nTango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:25.467Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 1,
+          "headline": "Drake Passage. Heard It. Feel It.",
+          "primaryText": "Half Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card1-1782603689833.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nDrake Passage. Heard It. Feel It.\nHalf Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:29.833Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 2,
+          "headline": "Falklands + Penguins + Patagonia",
+          "primaryText": "Stanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card2-1782603690337.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFalklands + Penguins + Patagonia\nStanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:30.337Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 3,
+          "headline": "All-Inclusive Means All of It",
+          "primaryText": "Suite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card3-1782603692572.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nAll-Inclusive Means All of It\nSuite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:32.572Z",
+          "previousImages": []
+        }
+      ]
+    },
+    {
+      "generatedAtIso": "2026-07-29T00:03:11.531Z",
+      "promptTemplate": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: {{HEADLINE}}\nPrimary text: {{PRIMARY_TEXT}}",
+      "sourceFunnelSynthesisId": "funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver",
+      "sailingAngleTitle": "This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.",
+      "styleSelectionSource": "operator",
+      "dealId": "1640382",
+      "recommendedStyleId": "clean_travel_magazine",
+      "selectedStyleId": "current_vivid_flyer",
+      "cards": [
+        {
+          "primaryText": "Silver Muse through Southern Africa, Mauritius, Seychelles, Cochin, and Mumbai. Sail Nov. 10, 2026.",
+          "headline": "Cape Town to Mumbai. 22 Nights.",
+          "generator": "gpt_image_2",
+          "status": "ready",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Cape Town to Mumbai. 22 Nights.\nPrimary text: Silver Muse through Southern Africa, Mauritius, Seychelles, Cochin, and Mumbai. Sail Nov. 10, 2026.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+          "generatedAtIso": "2026-07-29T00:26:55.452Z",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card0-1785284815452.png",
+          "previousImages": [
+            {
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Cape Town to Mumbai. 22 Nights.\nPrimary text: Silver Muse through Southern Africa, Mauritius, Seychelles, Cochin, and Mumbai. Sail Nov. 10, 2026.\n\nCreative direction (Quiet Luxury):\nCreative direction: quiet-luxury editorial advertisement. Use one art-directed destination, dining, suite, or veranda detail, generous ivory space, a high-contrast serif headline, small restrained sans-serif labels, and a deep navy, cream, and muted brass palette. Do not use neon gradients, bubble badges, dense copy blocks, or a busy collage.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generatedAtIso": "2026-07-29T00:07:04.917Z",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card0-1785283624917.png",
+              "generator": "gpt_image_2"
+            },
+            {
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card0-1785283518321.png",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Cape Town to Mumbai. 22 Nights.\nPrimary text: Silver Muse through Southern Africa, Mauritius, Seychelles, Cochin, and Mumbai. Sail Nov. 10, 2026.\n\nCreative direction (Cut-Paper Collage):\nCreative direction: tactile cut-paper travel collage. Use layered colored paper, torn edges, abstract postcard and map shapes, subtle risograph grain, a playful but controlled composition, and three or four muted colors. Do not use glossy 3D treatment, a stock-photo montage, neon gradients, or invented readable travel information.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generator": "gpt_image_2",
+              "generatedAtIso": "2026-07-29T00:05:18.321Z"
+            }
+          ],
+          "cardIndex": 0
+        },
+        {
+          "previousImages": [],
+          "generator": "gpt_image_2",
+          "primaryText": "A 22-night route from Cape Town to Mumbai, with time at sea to let each port matter.",
+          "headline": "This Is What They Meant By Cruise.",
+          "status": "ready",
+          "generatedAtIso": "2026-07-29T00:08:50.180Z",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: This Is What They Meant By Cruise.\nPrimary text: A 22-night route from Cape Town to Mumbai, with time at sea to let each port matter.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+          "cardIndex": 1,
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card1-1785283730180.png"
+        },
+        {
+          "headline": "Sea Days With a Purpose",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card2-1785287441801.png",
+          "primaryText": "The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.",
+          "status": "ready",
+          "generatedAtIso": "2026-07-29T01:10:41.801Z",
+          "imageDirection": "Create an editorial still life, not a person-at-sea scene. Show no people, faces, hands, body silhouettes, railings, decks, pool areas, ship exteriors, or horizon-gazing travelers. Use an art-directed flat lay: an open well-read book, a brass compass, a porcelain espresso cup, and an abstract ocean-route chart on a refined travel desk. Keep map markings decorative and unreadable. Use deep navy water, muted brass, cream paper, and quiet natural light. The composition should make unhurried sea time feel intellectually rich and intentional.",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Sea Days With a Purpose\nPrimary text: The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction:\nCreate an editorial still life, not a person-at-sea scene. Show no people, faces, hands, body silhouettes, railings, decks, pool areas, ship exteriors, or horizon-gazing travelers. Use an art-directed flat lay: an open well-read book, a brass compass, a porcelain espresso cup, and an abstract ocean-route chart on a refined travel desk. Keep map markings decorative and unreadable. Use deep navy water, muted brass, cream paper, and quiet natural light. The composition should make unhurried sea time feel intellectually rich and intentional.\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+          "previousImages": [
+            {
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card2-1785286918723.png",
+              "generator": "gpt_image_2",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Sea Days With a Purpose\nPrimary text: The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nCard-specific composition instruction for Card 3 only:\nCreate an editorial still life, not a person-at-sea scene. Show no people, faces, hands, body silhouettes, railings, decks, pool areas, ship exteriors, or horizon-gazing travelers. Use an art-directed flat lay: an open well-read book, a brass compass, a porcelain espresso cup, and an abstract ocean-route chart on a refined travel desk. Keep map markings decorative and unreadable; do not invent readable geography, dates, fares, ports, logos, or claims. Use deep navy water, muted brass, cream paper, and quiet natural light. The composition should make unhurried sea time feel intellectually rich and intentional.\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generatedAtIso": "2026-07-29T01:01:58.723Z"
+            },
+            {
+              "generatedAtIso": "2026-07-29T00:57:11.401Z",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card2-1785286631401.png",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Sea Days With a Purpose\nPrimary text: The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generator": "gpt_image_2"
+            },
+            {
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Sea Days With a Purpose\nPrimary text: The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generatedAtIso": "2026-07-29T00:54:38.395Z",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card2-1785286478395.png",
+              "generator": "gpt_image_2"
+            },
+            {
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Sea Days With a Purpose\nPrimary text: The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generator": "gpt_image_2",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card2-1785286412143.png",
+              "generatedAtIso": "2026-07-29T00:53:32.143Z"
+            },
+            {
+              "generator": "gpt_image_2",
+              "generatedAtIso": "2026-07-29T00:28:16.208Z",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Sea Days With a Purpose\nPrimary text: The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.\n\nCreative direction (Quiet Luxury):\nCreative direction: quiet-luxury editorial advertisement. Use one art-directed destination, dining, suite, or veranda detail, generous ivory space, a high-contrast serif headline, small restrained sans-serif labels, and a deep navy, cream, and muted brass palette. Do not use neon gradients, bubble badges, dense copy blocks, or a busy collage.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card2-1785284896209.png"
+            },
+            {
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card2-1785283800239.png",
+              "generatedAtIso": "2026-07-29T00:10:00.239Z",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Sea Days With a Purpose\nPrimary text: The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generator": "gpt_image_2"
+            },
+            {
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Sea Days With a Purpose\nPrimary text: The passage between Southern Africa, island ports, and India is part of the experience, not time between stops.\n\nCreative direction (Cut-Paper Collage):\nCreative direction: tactile cut-paper travel collage. Use layered colored paper, torn edges, abstract postcard and map shapes, subtle risograph grain, a playful but controlled composition, and three or four muted colors. Do not use glossy 3D treatment, a stock-photo montage, neon gradients, or invented readable travel information.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generatedAtIso": "2026-07-29T00:05:07.660Z",
+              "generator": "gpt_image_2",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card2-1785283507661.png"
+            }
+          ],
+          "generator": "gpt_image_2",
+          "cardIndex": 2
+        },
+        {
+          "previousImages": [],
+          "generatedAtIso": "2026-07-29T00:25:24.997Z",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Cochin. Mangalore. Mumbai.\nPrimary text: The voyage finishes in India, not where it began. That is what turns a cruise into a real passage.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+          "primaryText": "The voyage finishes in India, not where it began. That is what turns a cruise into a real passage.",
+          "generator": "gpt_image_2",
+          "cardIndex": 3,
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1640382/meta-ad-synthesis/funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver/card3-1785284724997.png",
+          "headline": "Cochin. Mangalore. Mumbai.",
+          "status": "ready"
+        }
+      ],
+      "id": "funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver",
+      "styleSelectedAtIso": "2026-07-29T00:53:43.804Z",
+      "styleRecommendation": {
+        "rationale": "Clean Travel Magazine best matches the brief: it's built for destination-led, longer-itinerary storytelling and mature/affluent audiences, supports a single strong photographic route hero (quiet, cinematic, editorial imagery), and provides spacious typography for the card-level headlines + body copy. It also reads as distinct from the recently overused Current Vivid Flyer and Cut-Paper Collage treatments and adapts cleanly to a square social carousel.",
+        "generatedAtIso": "2026-07-29T00:24:13.512Z",
+        "recommendedStyleId": "clean_travel_magazine",
+        "modelTask": "decision",
+        "confidence": "high"
+      }
     }
   ]
 }

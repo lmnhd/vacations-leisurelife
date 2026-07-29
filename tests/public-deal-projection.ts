@@ -654,8 +654,10 @@ check(
     pageWithAdCards.adCards.cards[3].headline === "Card 3 Headline"
 );
 check(
-  "adCards layout is one of the three known layouts",
-  ["quilt", "tab-spotlight", "editorial-mosaic"].includes(pageWithAdCards?.adCards?.layout ?? "")
+  // Equal-size-only layouts: the mixed big-lead-plus-thumbnails
+  // "editorial-mosaic" was removed because its small cards were unreadable.
+  "adCards layout is one of the two known equal-size layouts",
+  ["quilt", "tab-spotlight"].includes(pageWithAdCards?.adCards?.layout ?? "")
 );
 
 const partialReadySynthesis = metaAdSynthesisFor(approved.id, ["ready", "pending", "error", "ready"]);

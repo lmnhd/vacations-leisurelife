@@ -14,6 +14,8 @@ import {
   type DealLandingSegment,
 } from "@/lib/cb/deals-system/deal-page-design-types";
 
+import { CampaignSelectBar } from "../campaign-select-bar";
+
 const CATEGORY_LABEL: Record<DealImageCategory, string> = Object.fromEntries(
   DEAL_IMAGE_CATEGORY_SPECS.map((s) => [s.category, s.label])
 ) as Record<DealImageCategory, string>;
@@ -40,6 +42,41 @@ function firstSynthesisIdForAdCopy(
 function candidateById(s: DealFunnelSynthesis, id?: string): DealImageCandidate | undefined {
   if (!id) return undefined;
   return s.candidates.find((c) => c.id === id);
+}
+
+// ── Full-screen preview ─────────────────────────────────────────────────────────
+
+function ImageLightbox({
+  url,
+  alt,
+  onClose,
+}: {
+  url: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/50 text-lg text-white transition hover:bg-black/80"
+        aria-label="Close full-screen preview"
+      >
+        ✕
+      </button>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={alt}
+        className="max-h-full max-w-full rounded-lg object-contain shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
 }
 
 // ── Landing page render ────────────────────────────────────────────────────────
@@ -218,6 +255,7 @@ function ImageThumb({
   onToggleGallery,
   onPickHero,
   onAssignLandingImage,
+  onPreviewImage,
   busy,
 }: {
   c: DealImageCandidate;
@@ -228,23 +266,29 @@ function ImageThumb({
     id: string,
     target: "hero" | DealLandingSegmentKey
   ) => void;
+  onPreviewImage: (url: string, alt: string) => void;
   busy: boolean;
 }) {
   const inGallery = synthesis.galleryIds.includes(c.id);
   const isHero = synthesis.heroImageId ? synthesis.heroImageId === c.id : synthesis.galleryIds[0] === c.id;
   return (
     <div className="relative">
+      {/* Thumbnail click zooms — curation lives on the explicit buttons below,
+          so "see it big" and "use it" are separate gestures. */}
       <button
         type="button"
-        disabled={busy}
-        onClick={() => onToggleGallery(c.id)}
-        className={`block h-16 w-full overflow-hidden rounded border transition disabled:opacity-50 ${
+        onClick={() => onPreviewImage(c.imageUrl, c.title ?? "")}
+        title="Click to view full screen"
+        className={`group block h-24 w-full cursor-zoom-in overflow-hidden rounded border transition ${
           inGallery ? "border-cyan-300 ring-1 ring-cyan-300" : "border-white/10 hover:border-white/40"
         }`}
-        title={inGallery ? "Remove from gallery" : "Add to gallery"}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={c.thumbnailUrl} alt={c.title ?? ""} className="h-full w-full object-cover" />
+        <img
+          src={c.thumbnailUrl}
+          alt={c.title ?? ""}
+          className="h-full w-full object-cover transition group-hover:scale-[1.03]"
+        />
       </button>
       {inGallery && (
         <button
@@ -258,6 +302,19 @@ function ImageThumb({
           {isHero ? "★ hero" : "hero?"}
         </button>
       )}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onToggleGallery(c.id)}
+        title={inGallery ? "Remove from gallery" : "Add to gallery"}
+        className={`mt-1.5 h-7 w-full rounded border text-[10px] font-semibold transition disabled:opacity-50 ${
+          inGallery
+            ? "border-cyan-300/50 bg-cyan-400/15 text-cyan-100 hover:bg-cyan-400/25"
+            : "border-white/15 bg-white/[0.04] text-slate-300 hover:border-cyan-300/40 hover:text-cyan-100"
+        }`}
+      >
+        {inGallery ? "✓ In gallery" : "+ Add"}
+      </button>
       <select
         aria-label={`Use ${c.title ?? "image"} on landing page`}
         disabled={busy}
@@ -266,7 +323,7 @@ function ImageThumb({
           const target = event.target.value as "hero" | DealLandingSegmentKey;
           if (target) onAssignLandingImage(c.id, target);
         }}
-        className="mt-1.5 h-7 w-full rounded border border-white/10 bg-slate-950 px-1 text-[9px] text-slate-200 outline-none transition hover:border-cyan-300/40 disabled:opacity-50"
+        className="mt-1 h-7 w-full rounded border border-white/10 bg-slate-950 px-1 text-[9px] text-slate-200 outline-none transition hover:border-cyan-300/40 disabled:opacity-50"
       >
         <option value="">Use on page...</option>
         <option value="hero">Hero image</option>
@@ -280,11 +337,99 @@ function ImageThumb({
   );
 }
 
+function ImageCategoryGroup({
+  cat,
+  items,
+  synthesis,
+  onToggleGallery,
+  onPickHero,
+  onAssignLandingImage,
+  onPreviewImage,
+  onSearchMore,
+  busy,
+}: {
+  cat: DealImageCategory;
+  items: DealImageCandidate[];
+  synthesis: DealFunnelSynthesis;
+  onToggleGallery: (id: string) => void;
+  onPickHero: (id: string) => void;
+  onAssignLandingImage: (id: string, target: "hero" | DealLandingSegmentKey) => void;
+  onPreviewImage: (url: string, alt: string) => void;
+  onSearchMore: (category?: DealImageCategory) => void;
+  busy: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const inGalleryCount = items.filter((c) => synthesis.galleryIds.includes(c.id)).length;
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/20">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left transition hover:opacity-90"
+        >
+          <svg
+            className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${open ? "rotate-90" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300">
+            {CATEGORY_LABEL[cat]}
+          </span>
+          <span className="text-[10px] text-slate-500">{items.length}</span>
+          {inGalleryCount > 0 && (
+            <span className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-1.5 py-0.5 text-[9px] font-semibold text-cyan-100">
+              {inGalleryCount} in gallery
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onSearchMore(cat)}
+          className="shrink-0 text-[10px] font-semibold text-slate-400 underline-offset-2 transition hover:text-cyan-200 hover:underline disabled:opacity-50"
+        >
+          + more
+        </button>
+      </div>
+      {open && (
+        <div className="border-t border-white/10 px-3 py-3">
+          {items.length === 0 ? (
+            <p className="text-[10px] text-slate-600">none yet — “+ more” to search this category</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {items.map((c) => (
+                <ImageThumb
+                  key={c.id}
+                  c={c}
+                  synthesis={synthesis}
+                  onToggleGallery={onToggleGallery}
+                  onPickHero={onPickHero}
+                  onAssignLandingImage={onAssignLandingImage}
+                  onPreviewImage={onPreviewImage}
+                  busy={busy}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ImageSetPanel({
   synthesis,
   onToggleGallery,
   onPickHero,
   onAssignLandingImage,
+  onPreviewImage,
   onSearchMore,
   busy,
 }: {
@@ -295,10 +440,16 @@ function ImageSetPanel({
     id: string,
     target: "hero" | DealLandingSegmentKey
   ) => void;
+  onPreviewImage: (url: string, alt: string) => void;
   /** category omitted = re-search the whole diversified pool. */
   onSearchMore: (category?: DealImageCategory) => void;
   busy: boolean;
 }) {
+  // The whole image set collapses to a single header when you're not curating —
+  // 64 candidates across 8 categories otherwise fill the entire page. Open it,
+  // then open only the category you're working in; each thumbnail zooms.
+  const [open, setOpen] = useState(false);
+
   const byCategory = useMemo(() => {
     const map = new Map<DealImageCategory, DealImageCandidate[]>();
     for (const cat of DEAL_IMAGE_CATEGORIES) map.set(cat, []);
@@ -315,67 +466,61 @@ function ImageSetPanel({
   }, [synthesis.candidates]);
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-          Image set · {synthesis.candidates.length} candidate(s) · {synthesis.galleryIds.length} in gallery
-        </p>
+    <div className="rounded-xl border border-white/10 bg-white/[0.03]">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex min-w-0 flex-1 items-center gap-2.5 text-left transition hover:opacity-90"
+        >
+          <svg
+            className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-90" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">Image set</span>
+          <span className="truncate text-[11px] text-slate-500">
+            {synthesis.candidates.length} candidate(s) · {synthesis.galleryIds.length} in gallery
+          </span>
+        </button>
         <button
           type="button"
           disabled={busy}
           onClick={() => onSearchMore()}
-          className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200 transition hover:border-cyan-300/50 disabled:opacity-50"
+          className="shrink-0 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200 transition hover:border-cyan-300/50 disabled:opacity-50"
         >
           Search all categories (SERP)
         </button>
       </div>
-      {synthesis.candidates.length === 0 ? (
-        <p className="mt-2 text-[11px] text-slate-500">
-          No candidates yet — click “Search all categories (SERP)” to pull a diversified
-          pool of ship and destination photos.
-        </p>
-      ) : (
-        <div className="mt-3 space-y-3">
-          {DEAL_IMAGE_CATEGORIES.map((cat) => {
-            const items = byCategory.get(cat) ?? [];
-            return (
-              <div key={cat}>
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-300">
-                    {CATEGORY_LABEL[cat]}
-                  </span>
-                  <span className="text-[10px] text-slate-600">{items.length}</span>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => onSearchMore(cat)}
-                    className="text-[10px] font-semibold text-slate-400 underline-offset-2 transition hover:text-cyan-200 hover:underline disabled:opacity-50"
-                  >
-                    + more
-                  </button>
-                </div>
-                {items.length === 0 ? (
-                  <p className="text-[10px] text-slate-600">none yet — “+ more” to search this category</p>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-                    {items.map((c) => (
-                      <ImageThumb
-                        key={c.id}
-                        c={c}
-                        synthesis={synthesis}
-                        onToggleGallery={onToggleGallery}
-                        onPickHero={onPickHero}
-                        onAssignLandingImage={onAssignLandingImage}
-                        busy={busy}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {open &&
+        (synthesis.candidates.length === 0 ? (
+          <p className="border-t border-white/10 px-4 py-3 text-[11px] text-slate-500">
+            No candidates yet — click “Search all categories (SERP)” to pull a diversified
+            pool of ship and destination photos.
+          </p>
+        ) : (
+          <div className="space-y-2 border-t border-white/10 px-4 py-3">
+            {DEAL_IMAGE_CATEGORIES.map((cat) => (
+              <ImageCategoryGroup
+                key={cat}
+                cat={cat}
+                items={byCategory.get(cat) ?? []}
+                synthesis={synthesis}
+                onToggleGallery={onToggleGallery}
+                onPickHero={onPickHero}
+                onAssignLandingImage={onAssignLandingImage}
+                onPreviewImage={onPreviewImage}
+                onSearchMore={onSearchMore}
+                busy={busy}
+              />
+            ))}
+          </div>
+        ))}
     </div>
   );
 }
@@ -483,6 +628,7 @@ export function FunnelSynthesisView({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
 
   async function copyClaudeDesignPayload() {
     if (!active) return;
@@ -698,56 +844,35 @@ export function FunnelSynthesisView({
         </div>
       )}
 
-      {/* Ad copy picker */}
-      <section className="mb-6 rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-          Select an ad copy to synthesize
-        </p>
-        {adCopies.length === 0 ? (
-          <p className="mt-2 text-sm text-amber-200">
+      {/* Campaign selector — one compact bar, shared across every step page. */}
+      <CampaignSelectBar
+        eyebrow="Ad copy to synthesize"
+        items={adCopies.map((a) => {
+          const sel = a.selectedVariantIndex ?? 0;
+          return {
+            id: a.id,
+            title: a.campaignName,
+            subtitle: `${a.targetAudienceTag} · final ad: ${a.variants[sel]?.variantLabel ?? "—"}`,
+          };
+        })}
+        selectedId={selectedAdCopyId}
+        onSelect={selectAdCopy}
+        emptyState={
+          <p className="text-sm text-amber-200">
             No ad copy cached yet. Run Step 3 · Ad Copywriter first.
           </p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {adCopies.map((a) => {
-              const sel = a.selectedVariantIndex ?? 0;
-              return (
-                <li key={a.id}>
-                  <button
-                    type="button"
-                    onClick={() => selectAdCopy(a.id)}
-                    className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition ${
-                      selectedAdCopyId === a.id
-                        ? "border-cyan-300/60 bg-cyan-400/10"
-                        : "border-white/10 bg-white/[0.03] hover:border-white/25"
-                    }`}
-                  >
-                    <span
-                      className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                        selectedAdCopyId === a.id ? "bg-cyan-300" : "bg-slate-600"
-                      }`}
-                    />
-                    <span>
-                      <span className="block text-xs font-semibold text-white">{a.campaignName}</span>
-                      <span className="block text-[11px] text-slate-400">
-                        {a.targetAudienceTag} · final ad: {a.variants[sel]?.variantLabel ?? "—"}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <button
-          type="button"
-          disabled={busy || !selectedAdCopy}
-          onClick={() => void synthesize()}
-          className="mt-4 inline-flex h-11 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {busy ? "Synthesizing…" : "Synthesize funnel (landing + carousel)"}
-        </button>
-      </section>
+        }
+        action={
+          <button
+            type="button"
+            disabled={busy || !selectedAdCopy}
+            onClick={() => void synthesize()}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? "Synthesizing…" : "Synthesize funnel (landing + carousel)"}
+          </button>
+        }
+      />
 
       {/* Synthesis tabs — scoped to the selected ad copy */}
       {visibleSyntheses.length > 0 && (
@@ -795,6 +920,7 @@ export function FunnelSynthesisView({
               onToggleGallery={toggleGallery}
               onPickHero={(id) => void selectImages({ heroImageId: id })}
               onAssignLandingImage={assignLandingImage}
+              onPreviewImage={(url, alt) => setPreviewImage({ url, alt })}
               onSearchMore={(category) => void searchMore(category)}
             />
           </div>
@@ -827,6 +953,14 @@ export function FunnelSynthesisView({
             </details>
           )}
         </>
+      )}
+
+      {previewImage && (
+        <ImageLightbox
+          url={previewImage.url}
+          alt={previewImage.alt}
+          onClose={() => setPreviewImage(null)}
+        />
       )}
     </div>
   );

@@ -3,8 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { DealFunnelSynthesis } from "@/lib/cb/deals-system/deal-page-design-types";
+import { buildDealMetaAdImagePrompt } from "@/lib/cb/deals-system/deal-meta-ad-prompt";
 import {
-  interpolateMetaAdPrompt,
+  DEAL_META_AD_STYLE_PRESETS,
+  getDealMetaAdStylePreset,
+  type DealMetaAdStylePresetId,
+} from "@/lib/cb/deals-system/deal-meta-ad-style-presets";
+import {
   type DealMetaAdCard,
   type DealMetaAdSynthesis,
 } from "@/lib/cb/deals-system/deal-meta-ad-synthesis-types";
@@ -12,6 +17,9 @@ import type {
   DealMetaDistribution,
   DealMetaDistributionPlan,
 } from "@/lib/cb/deals-system/deal-meta-distribution-types";
+
+import { CampaignSelectBar } from "../campaign-select-bar";
+import { ConfigSection } from "../config-section";
 
 const CAROUSEL_HEADLINE_MAX = 40;
 const CAROUSEL_PRIMARY_TEXT_MAX = 125;
@@ -59,30 +67,42 @@ interface DistributionDispatchResponse {
 function CardPanel({
   card,
   promptTemplate,
+  selectedStyleId,
   negationText,
   busy,
   isGenerating,
   isLocked,
   onGenerate,
+  onSaveDirection,
   onToggleLock,
   onPreviewImage,
   onRevert,
 }: {
   card: DealMetaAdCard;
   promptTemplate: string;
+  selectedStyleId?: DealMetaAdStylePresetId;
   negationText: string;
   busy: boolean;
   isGenerating: boolean;
   isLocked: boolean;
   onGenerate: (cardIndex: number) => void;
+  onSaveDirection: (cardIndex: number, imageDirection: string) => void;
   onToggleLock: (cardIndex: number) => void;
   onPreviewImage: (url: string, alt: string) => void;
   onRevert: (cardIndex: number, historyIndex: number) => void;
 }) {
   const hOver = card.headline.length > CAROUSEL_HEADLINE_MAX;
   const pOver = card.primaryText.length > CAROUSEL_PRIMARY_TEXT_MAX;
-  const interpolated = interpolateMetaAdPrompt(promptTemplate, card);
-  const preview = negationText.trim() ? `${interpolated}\n\n${negationText.trim()}` : interpolated;
+  const [imageDirectionDraft, setImageDirectionDraft] = useState(card.imageDirection ?? "");
+  useEffect(() => {
+    setImageDirectionDraft(card.imageDirection ?? "");
+  }, [card.cardIndex, card.imageDirection]);
+  const preview = buildDealMetaAdImagePrompt({
+    promptTemplate,
+    card,
+    selectedStyleId,
+    globalNegations: negationText,
+  });
 
   return (
     <div
@@ -128,6 +148,26 @@ function CardPanel({
       <p className={`text-[10px] ${pOver ? "text-amber-300" : "text-slate-500"}`}>
         primary text {card.primaryText.length}/{CAROUSEL_PRIMARY_TEXT_MAX}
       </p>
+
+      <label className="mt-3 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+        Image direction
+      </label>
+      <textarea
+        value={imageDirectionDraft}
+        onChange={(event) => setImageDirectionDraft(event.target.value)}
+        rows={3}
+        aria-label={`Image direction for Card ${card.cardIndex + 1}`}
+        placeholder="Describe a distinct composition for this card."
+        className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 p-2 text-[11px] leading-4 text-slate-200 focus:border-fuchsia-300/50 focus:outline-none"
+      />
+      <button
+        type="button"
+        disabled={busy || imageDirectionDraft === (card.imageDirection ?? "")}
+        onClick={() => onSaveDirection(card.cardIndex, imageDirectionDraft)}
+        className="mt-2 inline-flex h-8 w-full items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] text-[10px] font-semibold text-slate-200 transition hover:border-white/30 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Save image direction
+      </button>
 
       <div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-black/30">
         {card.imageUrl ? (
@@ -563,14 +603,10 @@ export function MetaAdSynthesisView({
     [funnelSyntheses, selectedFunnelId]
   );
   const active = useMemo(() => syntheses.find((s) => s.id === activeId) ?? null, [syntheses, activeId]);
-  // A meta-ad synthesis is 1:1 with its funnel (it shares the funnel's id), so the
-  // tab row and panels must only show the selected funnel's synthesis — never a
-  // different funnel's, or the picker and the panels below would disagree.
-  const visibleSyntheses = useMemo(
-    () => syntheses.filter((s) => s.sourceFunnelSynthesisId === selectedFunnelId),
-    [syntheses, selectedFunnelId]
+  const activeStyle = getDealMetaAdStylePreset(active?.selectedStyleId);
+  const recommendedStyle = getDealMetaAdStylePreset(
+    active?.recommendedStyleId
   );
-
   function selectFunnel(funnelId: string) {
     setSelectedFunnelId(funnelId);
     // Surface this funnel's already-loaded synthesis if one exists, or clear the
@@ -631,6 +667,91 @@ export function MetaAdSynthesisView({
       setMessage({ tone: "ok", text: "Prompt template saved." });
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveCardDirection(cardIndex: number, imageDirection: string) {
+    if (!active) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post({
+        action: "update_card_direction",
+        synthesisId: active.id,
+        cardIndex,
+        imageDirection,
+      });
+      if (!data.ok || !data.synthesis) {
+        throw new Error(data.error ?? "Saving image direction failed.");
+      }
+      applySynthesis(data.synthesis);
+      setMessage({ tone: "ok", text: `Card ${cardIndex + 1} image direction saved.` });
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateStyle(
+    selectedStyleId: DealMetaAdStylePresetId,
+    useRecommendation: boolean = false
+  ) {
+    if (!active) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post({
+        action: "update_style",
+        synthesisId: active.id,
+        selectedStyleId,
+        useRecommendation,
+      });
+      if (!data.ok || !data.synthesis) {
+        throw new Error(data.error ?? "Saving creative direction failed.");
+      }
+      applySynthesis(data.synthesis);
+      setMessage({
+        tone: "ok",
+        text: `${getDealMetaAdStylePreset(selectedStyleId).label} is now active. Existing images were not changed.`,
+      });
+    } catch (err) {
+      setMessage({
+        tone: "error",
+        text: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recommendStyle() {
+    if (!active) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post({
+        action: "recommend_style",
+        synthesisId: active.id,
+      });
+      if (!data.ok || !data.synthesis) {
+        throw new Error(data.error ?? "Style recommendation failed.");
+      }
+      applySynthesis(data.synthesis);
+      const recommendation = getDealMetaAdStylePreset(
+        data.synthesis.recommendedStyleId
+      );
+      setMessage({
+        tone: "ok",
+        text: `New AI recommendation: ${recommendation.label}. Review it below, then choose Use recommendation if you want to make it active.`,
+      });
+    } catch (err) {
+      setMessage({
+        tone: "error",
+        text: err instanceof Error ? err.message : String(err),
+      });
     } finally {
       setBusy(false);
     }
@@ -770,85 +891,53 @@ export function MetaAdSynthesisView({
         </div>
       )}
 
-      {/* Funnel synthesis picker */}
-      <section className="mb-6 rounded-2xl border border-white/10 bg-slate-950/70 p-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-          Select a Step 7 funnel synthesis
-        </p>
-        {funnelSyntheses.length === 0 ? (
-          <p className="mt-2 text-sm text-amber-200">
+      {/* Campaign selector — one compact bar, shared across every step page. */}
+      <CampaignSelectBar
+        eyebrow="Step 7 funnel synthesis"
+        items={funnelSyntheses.map((s) => ({
+          id: s.id,
+          title: s.sailingAngleTitle,
+          subtitle: `${s.carousel.cards.length} carousel card(s)`,
+        }))}
+        selectedId={selectedFunnelId}
+        onSelect={selectFunnel}
+        emptyState={
+          <p className="text-sm text-amber-200">
             No funnel syntheses found yet. Run Step 7 - Funnel Synthesis first.
           </p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {funnelSyntheses.map((s) => (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => selectFunnel(s.id)}
-                  className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition ${
-                    selectedFunnelId === s.id
-                      ? "border-cyan-300/60 bg-cyan-400/10"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/25"
-                  }`}
-                >
-                  <span
-                    className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                      selectedFunnelId === s.id ? "bg-cyan-300" : "bg-slate-600"
-                    }`}
-                  />
-                  <span>
-                    <span className="block text-xs font-semibold text-white">{s.sailingAngleTitle}</span>
-                    <span className="block text-[11px] text-slate-400">
-                      {s.carousel.cards.length} carousel card(s)
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <button
-          type="button"
-          disabled={busy || !selectedFunnel}
-          onClick={() => void init()}
-          className="mt-4 inline-flex h-11 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {busy && generatingCards.size === 0 ? "Loading…" : "Load carousel cards"}
-        </button>
-      </section>
+        }
+        action={
+          <button
+            type="button"
+            disabled={busy || !selectedFunnel}
+            onClick={() => void init()}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy && generatingCards.size === 0 ? "Loading…" : "Load carousel cards"}
+          </button>
+        }
+      />
 
-      {/* Synthesis tabs — scoped to the selected funnel */}
-      {visibleSyntheses.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {visibleSyntheses.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => {
-                setActiveId(s.id);
-                setPromptDraft(s.promptTemplate);
-              }}
-              className={`rounded-lg border px-3 py-1.5 text-[11px] font-semibold transition ${
-                activeId === s.id
-                  ? "border-cyan-300/60 bg-cyan-400/10 text-cyan-100"
-                  : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25"
-              }`}
-            >
-              {s.sailingAngleTitle}
-            </button>
-          ))}
-        </div>
-      )}
+      {/*
+       * A meta-ad synthesis is 1:1 with its funnel and shares the funnel's id,
+       * so the campaign bar above is the only selector needed — the old
+       * per-synthesis tab row would only ever hold the one entry the bar
+       * already shows. selectFunnel() handles activeId + promptDraft.
+       */}
 
       {active && (
         <>
           {/* Editable prompt template */}
-          <section className="mb-6 rounded-2xl border border-violet-400/25 bg-violet-500/[0.04] p-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-violet-300">
-              Image prompt template
-            </p>
-            <p className="mt-1 text-[11px] text-slate-400">
+          <ConfigSection
+            eyebrow="Image prompt template"
+            accent="violet"
+            summary={
+              promptDraft !== active.promptTemplate
+                ? "Unsaved changes — expand to save"
+                : `${active.promptTemplate.trim().split(/\s+/).length} words`
+            }
+          >
+            <p className="text-[11px] text-slate-400">
               Use <code className="text-violet-200">{"{{HEADLINE}}"}</code> and{" "}
               <code className="text-violet-200">{"{{PRIMARY_TEXT}}"}</code> — interpolated per card
               when you generate its image.
@@ -858,7 +947,7 @@ export function MetaAdSynthesisView({
               onChange={(e) => setPromptDraft(e.target.value)}
               rows={5}
               aria-label="Image prompt template"
-              placeholder="Generate a vivid square ad flyer promoting the following Cruise Package:&#10;{{HEADLINE}}&#10;{{PRIMARY_TEXT}}"
+              placeholder="Generate one square Meta carousel ad image for this cruise campaign.&#10;Headline: {{HEADLINE}}&#10;Primary text: {{PRIMARY_TEXT}}"
               className="mt-3 w-full rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-5 text-slate-200 focus:border-violet-300/50 focus:outline-none"
             />
             <div className="mt-3 flex flex-wrap gap-2">
@@ -883,14 +972,114 @@ export function MetaAdSynthesisView({
                     : "Generate all 4 (parallel)"}
               </button>
             </div>
-          </section>
+          </ConfigSection>
 
-          {/* Persistent negation panel — applies to every campaign's image generations on this browser */}
-          <section className="mb-6 rounded-2xl border border-rose-400/25 bg-rose-500/[0.04] p-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-rose-300">
-              Negation (applies to all campaigns)
+          {/* Campaign-wide creative direction. Selection alone never generates an image. */}
+          <ConfigSection
+            eyebrow="Creative Direction"
+            accent="cyan"
+            summary={`Active — ${activeStyle.label}`}
+          >
+            <p className="max-w-3xl text-[11px] leading-5 text-slate-400">
+              AI recommends one campaign-wide visual family. You can change it before
+              generation. Changing this selection never regenerates or replaces an image
+              by itself.
             </p>
-            <p className="mt-1 text-[11px] text-slate-400">
+
+            <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-300">
+                  AI recommendation
+                </span>
+                <span className="text-sm font-semibold text-white">
+                  {recommendedStyle.label}
+                </span>
+                {active.styleRecommendation?.confidence && (
+                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-slate-400">
+                    {active.styleRecommendation.confidence} confidence
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-300">
+                {active.styleRecommendation?.rationale ??
+                  "This legacy synthesis is using the Current Vivid Flyer fallback. Load the carousel cards or request a new recommendation to add an intelligent default."}
+              </p>
+              {active.styleRecommendationWarning && (
+                <p className="mt-2 text-[11px] text-amber-300">
+                  Recommendation fallback: {active.styleRecommendationWarning}
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {active.selectedStyleId !== active.recommendedStyleId && (
+                  <button
+                    type="button"
+                    disabled={busy || !active.recommendedStyleId}
+                    onClick={() => void updateStyle(recommendedStyle.id, true)}
+                    className="rounded-lg border border-violet-300/40 bg-violet-400/10 px-3 py-1.5 text-[11px] font-semibold text-violet-100 transition hover:bg-violet-400/20 disabled:opacity-50"
+                  >
+                    Use recommendation
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void recommendStyle()}
+                  className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-slate-200 transition hover:bg-white/[0.08] disabled:opacity-50"
+                >
+                  Recommend again
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {DEAL_META_AD_STYLE_PRESETS.map((preset) => {
+                const selected = preset.id === activeStyle.id;
+                const recommended = preset.id === active.recommendedStyleId;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void updateStyle(preset.id)}
+                    className={`rounded-xl border p-3 text-left transition disabled:opacity-50 ${
+                      selected
+                        ? "border-cyan-300/60 bg-cyan-400/10"
+                        : "border-white/10 bg-black/20 hover:border-white/25 hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`text-xs font-semibold ${
+                          selected ? "text-cyan-100" : "text-slate-200"
+                        }`}
+                      >
+                        {preset.label}
+                      </span>
+                      {recommended && (
+                        <span className="rounded-full border border-violet-300/30 bg-violet-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-violet-200">
+                          AI pick
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-4 text-slate-400">
+                      {preset.summary}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="mt-3 text-[10px] uppercase tracking-[0.14em] text-slate-500">
+              Selection source: {active.styleSelectionSource ?? "fallback"}
+            </p>
+          </ConfigSection>
+
+          <ConfigSection
+            eyebrow="Negation (applies to all campaigns)"
+            accent="rose"
+            summary={`${negationRules.filter((r) => r.enabled).length} of ${negationRules.length} rule(s) active`}
+          >
+            <p className="text-[11px] text-slate-400">
               Appended to every card&apos;s prompt after the template above, e.g. things to keep out of
               every generated image. Saved in this browser and reused across all deals/campaigns.
             </p>
@@ -950,20 +1139,31 @@ export function MetaAdSynthesisView({
                 Add rule
               </button>
             </div>
-          </section>
+          </ConfigSection>
 
-          {/* Carousel cards */}
+          {/* Carousel cards — the primary content, now that config is collapsed above. */}
+          <div className="mb-2 mt-6 flex items-baseline justify-between gap-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-fuchsia-300">
+              Carousel cards
+            </h2>
+            <span className="text-[11px] text-slate-500">
+              {active.cards.filter((c) => c.status === "ready" && c.imageUrl).length} of{" "}
+              {active.cards.length} ready
+            </span>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {active.cards.map((card) => (
               <CardPanel
                 key={card.cardIndex}
                 card={card}
                 promptTemplate={promptDraft}
+                selectedStyleId={active.selectedStyleId}
                 negationText={negationText}
                 busy={busy}
                 isGenerating={generatingCards.has(card.cardIndex)}
                 isLocked={lockedCards.has(card.cardIndex)}
                 onGenerate={(idx) => void generateImage(idx)}
+                onSaveDirection={(idx, imageDirection) => void saveCardDirection(idx, imageDirection)}
                 onToggleLock={toggleLock}
                 onPreviewImage={(url, alt) => setPreviewImage({ url, alt })}
                 onRevert={(idx, historyIdx) => void revertImage(idx, historyIdx)}

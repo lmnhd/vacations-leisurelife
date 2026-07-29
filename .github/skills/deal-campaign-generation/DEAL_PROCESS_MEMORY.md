@@ -151,3 +151,9 @@ Record operator-driven workflow corrections, recurring friction, temporary rules
 - Trigger: A guest could move forward through intake but had no direct way to return to the previous step and correct an earlier answer.
 - Operating rule: Show a large, plainly labeled `Back` control on every task after the first. Back preloads the saved answer, preserves all unrelated confirmed data, and records the navigation. When an upstream correction changes task requirements, reopen only the dependent steps. The ready-to-call screen also provides a review/change path until call handoff begins.
 - Refactor implication: Do not rely on final-review edit links or browser history as the only correction path. Forward and backward task navigation are both required parts of the mobile booking contract.
+
+## 2026-07-28 - Meta carousel style defaults should be intelligent and operator-editable
+
+- Trigger: GPT Image 2 continued producing attractive Deal carousel flyers, but unrelated campaigns increasingly shared the same glossy collage, typography, badge, and color treatment because the Step 8 prompt supplied no distinct design direction.
+- Operating rule: Give each new Deal Meta synthesis an AI-recommended default from a controlled creative-direction preset library. Make the recommendation, rationale, and active style visible before image spend. The operator may override or restore it at any time, and changing the style must not automatically regenerate images.
+- Implementation: The bounded style decision now runs once during Step 8 initialization through the LLM Gateway, using campaign context plus recent style usage. The AI recommendation is persisted separately from the active operator selection so intelligent defaults improve variety without weakening operator control or carousel coherence.
