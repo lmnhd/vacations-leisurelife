@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface CopilotSource {
   title: string;
@@ -27,6 +27,38 @@ const QUICK_QUESTIONS = [
   "Find the best replacement cruises close to this sailing.",
 ];
 
+/**
+ * Saved questions live in localStorage, not DynamoDB: they are operator UI
+ * convenience for this one local console, carry no guest data, and should not
+ * cost a round trip to open the menu. Questions accumulate as they are asked,
+ * so the list grows into a personal shortcut set over time.
+ */
+const SAVED_QUESTIONS_STORAGE_KEY = "lll.operator-copilot.saved-questions";
+const MAX_SAVED_QUESTIONS = 50;
+
+function readSavedQuestions(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(SAVED_QUESTIONS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((entry): entry is string => typeof entry === "string");
+  } catch {
+    // A corrupt or unavailable store must never break the copilot.
+    return [];
+  }
+}
+
+function writeSavedQuestions(questions: string[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SAVED_QUESTIONS_STORAGE_KEY, JSON.stringify(questions));
+  } catch {
+    // Private mode / quota — the in-memory list still works for this session.
+  }
+}
+
 const TOOL_LABELS: Record<string, string> = {
   inspect_current_booking_link: "Current supplier booking page",
   search_cruise_brothers_knowledge: "CB Agent Tools knowledge",
@@ -50,12 +82,67 @@ export function OperatorCopilotPanel({
     role: "operator" | "assistant";
     content: string;
   }>>([]);
+  const [savedQuestions, setSavedQuestions] = useState<string[]>([]);
+  const [questionMenuOpen, setQuestionMenuOpen] = useState(false);
+  const questionMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Read on mount rather than in useState's initializer: localStorage is not
+  // available during the server render, and seeding state from it directly
+  // would desync hydration.
+  useEffect(() => {
+    setSavedQuestions(readSavedQuestions());
+  }, []);
 
   useEffect(() => {
     setResult(null);
     setHistory([]);
     setError(null);
   }, [activeDraftId]);
+
+  // Close the menu on outside click or Escape, so it never sits open over the
+  // console while the operator is working the rest of the page.
+  useEffect(() => {
+    if (!questionMenuOpen) return;
+    function onPointerDown(event: MouseEvent): void {
+      if (!questionMenuRef.current?.contains(event.target as Node)) {
+        setQuestionMenuOpen(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") setQuestionMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [questionMenuOpen]);
+
+  function saveQuestion(value: string): void {
+    const trimmed = value.trim();
+    if (trimmed.length < 2) return;
+    // Presets are always listed, so saving them again would only duplicate.
+    if (QUICK_QUESTIONS.includes(trimmed)) return;
+    setSavedQuestions((current) => {
+      // Most recent first, de-duplicated case-insensitively so re-asking a
+      // question promotes it rather than adding a near-identical twin.
+      const withoutDuplicate = current.filter(
+        (entry) => entry.toLowerCase() !== trimmed.toLowerCase()
+      );
+      const next = [trimmed, ...withoutDuplicate].slice(0, MAX_SAVED_QUESTIONS);
+      writeSavedQuestions(next);
+      return next;
+    });
+  }
+
+  function removeSavedQuestion(value: string): void {
+    setSavedQuestions((current) => {
+      const next = current.filter((entry) => entry !== value);
+      writeSavedQuestions(next);
+      return next;
+    });
+  }
 
   async function ask(questionOverride?: string): Promise<void> {
     const value = (questionOverride ?? question).trim();
@@ -82,6 +169,9 @@ export function OperatorCopilotPanel({
         throw new Error(payload.error ?? "The call copilot could not answer.");
       }
       setResult(payload.result);
+      // Save only after a successful answer so failed or malformed questions
+      // don't accumulate in the shortcut list.
+      saveQuestion(value);
       setHistory((current) => [
         ...current,
         { role: "operator", content: value },
@@ -134,8 +224,93 @@ export function OperatorCopilotPanel({
         <p className="mt-2 text-xs text-slate-500">Open only when you need live research or a quick call answer.</p>
       )}
 
-      <div className={expanded ? "block" : "hidden"}>
-      <div className="mt-4 flex flex-col gap-2 md:flex-row">
+      {/* Expanded, this panel is tall enough to cover the console while stuck,
+          so its body scrolls internally instead of pushing past the viewport. */}
+      {/* Saved questions collapse into a menu so the panel stays compact when
+          split-screened against the supplier booking page. Deliberately OUTSIDE
+          the scrolling body below — an absolutely positioned dropdown would be
+          clipped by that container's overflow. */}
+      <div className={expanded ? "relative z-50 mt-3" : "hidden"} ref={questionMenuRef}>
+        <button
+          type="button"
+          onClick={() => setQuestionMenuOpen((current) => !current)}
+          aria-expanded={questionMenuOpen}
+          aria-haspopup="listbox"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-sky-600 hover:text-white"
+        >
+          Saved questions
+          <span className="rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">
+            {QUICK_QUESTIONS.length + savedQuestions.length}
+          </span>
+          <span aria-hidden="true" className="text-[10px]">{questionMenuOpen ? "▲" : "▼"}</span>
+        </button>
+
+        {questionMenuOpen && (
+          <div
+            role="listbox"
+            className="absolute left-0 z-50 mt-1 max-h-72 w-full max-w-2xl overflow-y-auto rounded-lg border border-slate-700 bg-slate-950 p-1 shadow-xl shadow-black/50"
+          >
+            {savedQuestions.length > 0 && (
+              <p className="px-2 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Your saved questions
+              </p>
+            )}
+            {savedQuestions.map((savedQuestion) => (
+              <div key={savedQuestion} className="group flex items-center gap-1 rounded hover:bg-slate-900">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  disabled={loading}
+                  onClick={() => {
+                    setQuestionMenuOpen(false);
+                    void ask(savedQuestion);
+                  }}
+                  className="flex-1 truncate px-2 py-1.5 text-left text-xs text-slate-300 hover:text-white disabled:opacity-50"
+                  title={savedQuestion}
+                >
+                  {savedQuestion}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeSavedQuestion(savedQuestion)}
+                  aria-label={`Remove saved question: ${savedQuestion}`}
+                  title="Remove from saved questions"
+                  className="mr-1 rounded px-1.5 py-0.5 text-xs text-slate-600 hover:bg-rose-950/60 hover:text-rose-300"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+
+            <p className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Presets
+            </p>
+            {QUICK_QUESTIONS.map((quickQuestion) => (
+              <button
+                key={quickQuestion}
+                type="button"
+                role="option"
+                aria-selected={false}
+                disabled={loading}
+                onClick={() => {
+                  setQuestionMenuOpen(false);
+                  void ask(quickQuestion);
+                }}
+                className="block w-full truncate rounded px-2 py-1.5 text-left text-xs text-slate-300 hover:bg-slate-900 hover:text-white disabled:opacity-50"
+                title={quickQuestion}
+              >
+                {quickQuestion}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Expanded, this panel is tall enough to cover the console while stuck,
+          so its body scrolls internally instead of pushing past the viewport. */}
+      <div className={expanded ? "block max-h-[60vh] overflow-y-auto" : "hidden"}>
+      <div className="mt-2 flex flex-col gap-2 md:flex-row">
         <textarea
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
@@ -157,20 +332,6 @@ export function OperatorCopilotPanel({
         >
           {loading ? "Researching..." : "Ask Copilot"}
         </button>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {QUICK_QUESTIONS.map((quickQuestion) => (
-          <button
-            key={quickQuestion}
-            type="button"
-            disabled={loading}
-            onClick={() => void ask(quickQuestion)}
-            className="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1.5 text-xs text-slate-300 hover:border-sky-600 hover:text-white disabled:opacity-50"
-          >
-            {quickQuestion}
-          </button>
-        ))}
       </div>
 
       {error && (
