@@ -14,6 +14,9 @@
  *   action "hide"            -> hide an otherwise-eligible Deal from the homepage
  *   action "unhide"          -> clear the hide flag
  *   action "delete"          -> remove a duplicate/test Deal from the operator workbench
+ *   action "purge"           -> irreversibly remove a Deal AND every record keyed
+ *                               to it (brief, manifest, syntheses, activity
+ *                               events); requires confirmDealId to match dealId
  *   action "send_to_pipeline" -> create a resolved trip manifest for the main pipeline
  *   action "refresh_link"    -> mark link health stale, pending operator re-verification
  *   action "request_capture" -> flag the Deal for an operator CBAT/Odysseus capture
@@ -43,6 +46,7 @@ import {
   getDealBrief,
   getPromoRecordsByIds,
   loadDealDiscoveryIdeasCache,
+  purgeDealCampaign,
   rejectCuratedDeal,
   saveDealDiscoveryIdeasCache,
   upsertDealDiscoveryIdea,
@@ -81,6 +85,8 @@ const REAL_CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome
 interface Body {
   action?: unknown;
   dealId?: unknown;
+  /** Echoed deal id required by the irreversible "purge" action. */
+  confirmDealId?: unknown;
   briefId?: unknown;
   packageId?: unknown;
   siid?: unknown;
@@ -1532,6 +1538,17 @@ export async function POST(request: Request) {
     if (action === "delete") {
       await deleteCuratedDealRecord(existing.id);
       return NextResponse.json({ ok: true, deleted: true, dealId: existing.id });
+    }
+
+    if (action === "purge") {
+      // Irreversible and wider than "delete": this also destroys the activity
+      // history, which cannot be re-derived from Odysseus. Require the caller
+      // to echo the deal id so a mis-wired click can't wipe a campaign.
+      if (str(body.confirmDealId) !== existing.id) {
+        return bad("purge requires confirmDealId to match dealId.");
+      }
+      const purged = await purgeDealCampaign(existing.id);
+      return NextResponse.json({ ok: true, purged });
     }
 
     if (action === "refresh_link") {

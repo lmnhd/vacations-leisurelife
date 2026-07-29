@@ -1,3 +1,7 @@
 While I'm thinking about it, when the landing page comes up on a desktop computer, the call agent button should pop up the phone number and tell the person to call instead of trying to trigger the call. This should follow the same rules as the call flow, considering the agent mode. 
 
 The Klaviyo delivery needs one new flow/template in the Klaviyo dashboard triggered by the new event (e.g. LLL Booking Assistant Custom Operator Message), with the template rendering {{ event.subject }} and {{ event.body }}. The code will fire the event; Klaviyo renders and sends. That's the same pattern as your existing 6 notification kinds, so nothing new operationally — just one template to author.
+
+
+Thank you for calling Leisure Life Interactive. 
+Do you have a three-letter call code? 

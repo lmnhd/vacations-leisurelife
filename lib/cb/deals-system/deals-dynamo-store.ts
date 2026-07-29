@@ -20,6 +20,7 @@ import {
 import { chatDynamoDocumentClient } from "@/lib/chat/dynamo-client";
 
 import type { CuratedOdysseusDeal, OdysseusDealBrief } from "./curated-deal-types";
+import { deleteDealEvents } from "./deal-events-store";
 import type { DealTripManifest } from "./deal-trip-manifest-types";
 import { manifestsBelongToSameDealCampaign } from "./deal-trip-manifest-identity";
 import type { DealFunnelSynthesis } from "./deal-page-design-types";
@@ -247,6 +248,59 @@ export async function upsertCuratedDealRecord(deal: CuratedOdysseusDeal): Promis
 
 export async function deleteCuratedDealRecord(id: string): Promise<void> {
   return deleteItem(`DEAL#${id}`);
+}
+
+/** What a full-campaign purge removed, per record type. */
+export interface PurgedDealCampaign {
+  dealId: string;
+  deal: boolean;
+  brief: boolean;
+  manifest: boolean;
+  funnelSynthesis: boolean;
+  metaAdSynthesis: boolean;
+  events: number;
+}
+
+/**
+ * Remove a Deal and every record keyed to it: brief, trip manifest, funnel
+ * synthesis, Meta ad synthesis, and the whole activity-events partition. The
+ * deal's campaign strategy / hook lives on the DEAL# record itself, so it goes
+ * with it.
+ *
+ * Order matters. The DEAL# record is deleted FIRST because it is the only one
+ * the public surface reads (`isDealHomepageEligible` → public-deals): if a
+ * later step fails, the deal is already off the homepage and the leftovers are
+ * invisible orphans an operator can re-purge, rather than a live deal whose
+ * supporting records have been shot out from under it.
+ *
+ * Callers must confirm intent first — this is not recoverable.
+ */
+export async function purgeDealCampaign(dealId: string): Promise<PurgedDealCampaign> {
+  const [brief, manifest, funnelSynthesis, metaAdSynthesis] = await Promise.all([
+    getDealBrief(dealId),
+    getDealTripManifest(dealId),
+    getDealFunnelSynthesis(dealId),
+    getDealMetaAdSynthesis(dealId),
+  ]);
+
+  await deleteCuratedDealRecord(dealId);
+
+  if (brief) await deleteDealBriefRecord(dealId);
+  if (manifest) await deleteDealTripManifestRecord(dealId);
+  if (funnelSynthesis) await deleteDealFunnelSynthesisRecord(dealId);
+  if (metaAdSynthesis) await deleteDealMetaAdSynthesisRecord(dealId);
+
+  const events = await deleteDealEvents(dealId);
+
+  return {
+    dealId,
+    deal: true,
+    brief: Boolean(brief),
+    manifest: Boolean(manifest),
+    funnelSynthesis: Boolean(funnelSynthesis),
+    metaAdSynthesis: Boolean(metaAdSynthesis),
+    events,
+  };
 }
 
 // ── Odysseus Deal Briefs ─────────────────────────────────────────────────────

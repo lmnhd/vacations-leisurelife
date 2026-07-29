@@ -12,7 +12,7 @@
  * experience — exactly the contract the campaign page-view beacon follows.
  */
 
-import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { BatchWriteCommand, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
 
 import { chatDynamoDocumentClient } from "@/lib/chat/dynamo-client";
@@ -101,6 +101,52 @@ export async function listDealEvents(dealId: string): Promise<DealEvent[]> {
     console.error(`[deal-events-store] Failed to list events for ${dealId}:`, error);
     return [];
   }
+}
+
+/**
+ * Delete every activity event for one deal (its whole events partition).
+ *
+ * Used only by the operator's purge action — the analytics timeline is the one
+ * part of a deal that is never re-derivable from upstream, so nothing else in
+ * the app may call this. Returns the number of events removed. Unlike the
+ * best-effort writers above, failures propagate: a purge that silently left
+ * events behind would be reported to the operator as a completed delete.
+ */
+export async function deleteDealEvents(dealId: string): Promise<number> {
+  const events = await listDealEvents(dealId);
+  if (events.length === 0) return 0;
+
+  // BatchWriteItem caps at 25 items per call.
+  let deleted = 0;
+  for (let index = 0; index < events.length; index += 25) {
+    const chunk = events.slice(index, index + 25);
+    let unprocessed: Record<string, unknown[]> | undefined = {
+      [TABLE_NAME]: chunk.map((event) => ({
+        DeleteRequest: { Key: { PK: event.PK, SK: event.SK } },
+      })),
+    };
+
+    // BatchWrite can partially succeed; retry whatever Dynamo hands back.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const items = unprocessed?.[TABLE_NAME];
+      if (!items || items.length === 0) break;
+      const response = await chatDynamoDocumentClient.send(
+        new BatchWriteCommand({ RequestItems: unprocessed as never })
+      );
+      unprocessed = response.UnprocessedItems as Record<string, unknown[]> | undefined;
+      if (!unprocessed?.[TABLE_NAME]?.length) break;
+      await new Promise((resolve) => setTimeout(resolve, 150 * 2 ** attempt));
+    }
+
+    if (unprocessed?.[TABLE_NAME]?.length) {
+      throw new Error(
+        `Failed to delete ${unprocessed[TABLE_NAME].length} activity events for ${dealId}.`
+      );
+    }
+    deleted += chunk.length;
+  }
+
+  return deleted;
 }
 
 // ─── Aggregation ─────────────────────────────────────────────────────────────

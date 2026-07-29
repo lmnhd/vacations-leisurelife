@@ -94,8 +94,13 @@ export function OperatorCopilotPanel({
     }
   }
 
+  // Sticks below the fixed Test Lab header (h-14) so the copilot stays
+  // reachable while the operator scrolls the console during a live call —
+  // typically split-screened against the CB Agent Tools booking page.
+  // z-40 keeps it under that header (z-50) but above the console content.
+  // The gradient is opaque so scrolled content can't show through.
   return (
-    <section className="mb-6 rounded-xl border border-sky-800/70 bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/40 p-3 shadow-lg shadow-sky-950/20">
+    <section className="sticky top-14 z-40 mb-6 rounded-xl border border-sky-800/70 bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950/40 p-3 shadow-lg shadow-sky-950/20">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">Live Call Copilot</p>

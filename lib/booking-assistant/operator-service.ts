@@ -438,20 +438,25 @@ export async function revealPacket(
   config: OperatorServiceConfig,
   input: RevealPacketInput
 ): Promise<RevealedPacket> {
-  const draft = await getDraft(clients, config, input.draftId);
-  if (!draft) {
-    throw new Error(`Draft not found: ${input.draftId}`);
-  }
-
-  const leaseExpiresAt = draft.metadata.claimLeaseExpiresAtIso
-    ? Date.parse(draft.metadata.claimLeaseExpiresAtIso)
-    : Number.NaN;
-  if (
-    (draft.metadata.status !== "agent_claimed" && draft.metadata.status !== "agent_processing") ||
-    draft.metadata.assignedOperatorId !== input.operatorSessionId ||
-    !Number.isFinite(leaseExpiresAt) ||
-    leaseExpiresAt <= Date.now()
-  ) {
+  // Same claim gate every other operator action uses: the packet is revealed
+  // only to the operator holding a live lease on this draft. Reveal must also
+  // work in `reconciliation_review` — reconciling the authoritative booking
+  // reference is exactly the task that requires reading the packet, and a draft
+  // can never transition back to `agent_claimed` to earn the right a second
+  // time (see BOOKING_DRAFT_STATUS_TRANSITIONS in contracts.ts).
+  let draft: BookingDraft;
+  try {
+    draft = await requireActiveOperatorClaim(
+      clients,
+      config,
+      input.draftId,
+      input.operatorSessionId
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message === "Booking draft was not found") {
+      throw new Error(`Draft not found: ${input.draftId}`);
+    }
     throw new Error("Active operator claim is required before packet reveal");
   }
 
@@ -869,19 +874,31 @@ export async function requireActiveOperatorClaim(
 ): Promise<BookingDraft> {
   const draft = await getDraft(clients, config, draftId);
   if (!draft) throw new Error("Booking draft was not found");
-  const leaseExpiresAt = Date.parse(draft.metadata.claimLeaseExpiresAtIso ?? "");
+
   if (
-    draft.metadata.assignedOperatorId !== operatorSessionId ||
-    !Number.isFinite(leaseExpiresAt) ||
-    leaseExpiresAt <= Date.now() ||
-    (
-      draft.metadata.status !== "agent_claimed" &&
-      draft.metadata.status !== "agent_processing" &&
-      draft.metadata.status !== "reconciliation_review"
-    )
+    draft.metadata.status !== "agent_claimed" &&
+    draft.metadata.status !== "agent_processing" &&
+    draft.metadata.status !== "reconciliation_review"
   ) {
     throw new Error("An active operator claim is required");
   }
+
+  // The claim lease exists to keep two operators off the same draft. This pilot
+  // has exactly one operator (`local-operator-console`, hardcoded in
+  // operator-route-context), so a lapsed lease means "the operator stepped
+  // away", never "someone else may be mid-call". Refusing on expiry stranded
+  // drafts permanently: reconciliation waits on a supplier confirmation that can
+  // take days, `reconciliation_review` has no transition back to `agent_claimed`
+  // to re-claim through, and renewal itself required a live lease — so the only
+  // exit was editing DynamoDB by hand.
+  //
+  // The assigned-operator check below is what still matters, and it is kept:
+  // an unclaimed draft (no assignedOperatorId) is still refused, so reveal
+  // always follows a real, journaled claim. Only the expiry is self-healing.
+  if (draft.metadata.assignedOperatorId !== operatorSessionId) {
+    throw new Error("An active operator claim is required");
+  }
+
   await renewClaimLease(clients, config, draftId, operatorSessionId, config.claimLeaseSeconds);
   return draft;
 }
