@@ -11,8 +11,8 @@ export function CampaignTrustFooter() {
     const tollFreePhone = process.env.NEXT_PUBLIC_LLI_TOLL_FREE?.trim();
 
     return (
-        <footer className="border-t border-slate-200 bg-white text-slate-700">
-            <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 lg:px-8">
+        <footer className="bg-white border-t border-slate-200 text-slate-700">
+            <div className="px-4 py-10 mx-auto max-w-7xl md:px-6 lg:px-8">
                 <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-start">
                     <div className="grid gap-2 text-sm leading-7">
                         <p className="font-semibold text-slate-950">
@@ -23,7 +23,7 @@ export function CampaignTrustFooter() {
                             Leisure Life Interactive is a registered trade name of HALIMEDE LLC.
                         </p>
                         <p>
-                            Corporate Address: 2280 SHEPARD ST APT 405, JACKSONVILLE, FL 32211.
+                            Corporate Address: 2280 SHEPARD ST. JACKSONVILLE, FL 32211.
                         </p>
                         <p>
                             Contact:{' '}
@@ -46,17 +46,17 @@ export function CampaignTrustFooter() {
                             ) : null}
                         </p>
                     </div>
-                    <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm md:justify-end">
-                        <Link href="/privacy" className="hover:text-slate-950 underline underline-offset-4">
+                    <nav className="flex flex-wrap text-sm gap-x-5 gap-y-2 md:justify-end">
+                        <Link href="/privacy" className="underline hover:text-slate-950 underline-offset-4">
                             Privacy Policy
                         </Link>
-                        <Link href="/terms" className="hover:text-slate-950 underline underline-offset-4">
+                        <Link href="/terms" className="underline hover:text-slate-950 underline-offset-4">
                             Terms of Service
                         </Link>
-                        <Link href="/sms-consent" className="hover:text-slate-950 underline underline-offset-4">
+                        <Link href="/sms-consent" className="underline hover:text-slate-950 underline-offset-4">
                             SMS Consent
                         </Link>
-                        <Link href="/data-deletion" className="hover:text-slate-950 underline underline-offset-4">
+                        <Link href="/data-deletion" className="underline hover:text-slate-950 underline-offset-4">
                             Data Deletion
                         </Link>
                     </nav>
