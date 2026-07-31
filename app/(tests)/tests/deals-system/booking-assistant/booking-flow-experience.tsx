@@ -2019,7 +2019,7 @@ function LandingScreen({ deal, onStart }: { deal: BookingAssistantDealContext; o
           <ul className="mt-2 list-disc space-y-1.5 pl-5 font-semibold">
             <li>Your information is collected and saved here as you answer.</li>
             <li>You finalize your booking by phone with an agent - this form does not complete it.</li>
-            <li>No payment details are ever collected here.</li>
+            <li>Payment will be collected by the agent.</li>
           </ul>
         </div>
         <GuestButton primary onClick={onStart}>
