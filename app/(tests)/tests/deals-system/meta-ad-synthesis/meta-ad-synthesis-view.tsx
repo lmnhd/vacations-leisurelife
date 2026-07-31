@@ -2,16 +2,30 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { DealFunnelSynthesis } from "@/lib/cb/deals-system/deal-page-design-types";
-import { buildDealMetaAdImagePrompt } from "@/lib/cb/deals-system/deal-meta-ad-prompt";
+import type {
+  DealFunnelSynthesis,
+  DealImageCandidate,
+} from "@/lib/cb/deals-system/deal-page-design-types";
+import {
+  buildDealMetaAdImagePrompt,
+  isOnlyNegativeDirection,
+} from "@/lib/cb/deals-system/deal-meta-ad-prompt";
+import {
+  buildReferenceManifest,
+  resolveDealMetaAdReferences,
+} from "@/lib/cb/deals-system/deal-meta-ad-references";
 import {
   DEAL_META_AD_STYLE_PRESETS,
   getDealMetaAdStylePreset,
   type DealMetaAdStylePresetId,
 } from "@/lib/cb/deals-system/deal-meta-ad-style-presets";
 import {
+  DEAL_META_REFERENCE_ROLE_LABELS,
   type DealMetaAdCard,
+  type DealMetaAdGenerationMode,
   type DealMetaAdSynthesis,
+  type DealMetaImageReference,
+  type DealMetaReferenceRole,
 } from "@/lib/cb/deals-system/deal-meta-ad-synthesis-types";
 import type {
   DealMetaDistribution,
@@ -64,8 +78,256 @@ interface DistributionDispatchResponse {
   distribution?: DealMetaDistribution;
 }
 
+const REFERENCE_ROLE_OPTIONS: DealMetaReferenceRole[] = [
+  "ship_identity",
+  "destination_truth",
+  "composition",
+  "style",
+  "object",
+];
+
+/**
+ * Picker for attaching a reference. Release 1 offers only already-owned,
+ * fetchable sources — this card's own history and the Step 7 funnel gallery.
+ * Uploads and URL imports land in Release 2 behind the hardened import path.
+ */
+function ReferencePickerModal({
+  title,
+  candidates,
+  cardHistory,
+  lockedRole,
+  onPick,
+  onClose,
+}: {
+  title: string;
+  candidates: DealImageCandidate[];
+  cardHistory: { imageUrl: string; label: string; cardIndex?: number }[];
+  /** When set, the role is fixed (the ship anchor is ship_identity by definition). */
+  lockedRole?: DealMetaReferenceRole;
+  onPick: (reference: {
+    assetUrl: string;
+    thumbnailUrl?: string;
+    role: DealMetaReferenceRole;
+    source: "funnel_candidate" | "card_history";
+    sourceCandidateId?: string;
+    sourceCardIndex?: number;
+    originalSourceUrl?: string;
+    title?: string;
+  }) => void;
+  onClose: () => void;
+}) {
+  const [role, setRole] = useState<DealMetaReferenceRole>(lockedRole ?? "composition");
+  const [tab, setTab] = useState<"gallery" | "history">(
+    cardHistory.length > 0 && !lockedRole ? "history" : "gallery"
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-2xl border border-white/15 bg-[#0b1020] p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close reference picker"
+            className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-slate-300 hover:bg-white/10"
+          >
+            ✕
+          </button>
+        </div>
+
+        {lockedRole ? (
+          <p className="mt-2 text-[11px] text-slate-400">
+            Role is fixed to{" "}
+            <span className="text-cyan-200">{DEAL_META_REFERENCE_ROLE_LABELS[lockedRole]}</span> — the
+            anchor exists to keep the real ship credible. Pick a different role on a card if you
+            want this image used another way.
+          </p>
+        ) : (
+          <div className="mt-3">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Role — what is this reference for?
+            </label>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {REFERENCE_ROLE_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setRole(option)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                    role === option
+                      ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
+                      : "border-white/15 bg-black/20 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  {DEAL_META_REFERENCE_ROLE_LABELS[option]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[10px] leading-4 text-slate-500">
+              A reference steers the look. It never establishes an amenity, itinerary, fare, or
+              inclusion that the card copy doesn&apos;t already support.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4 flex gap-2 border-b border-white/10 pb-2">
+          <button
+            type="button"
+            onClick={() => setTab("gallery")}
+            className={`rounded px-2 py-1 text-[11px] font-semibold ${
+              tab === "gallery" ? "bg-white/10 text-white" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Funnel gallery ({candidates.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("history")}
+            className={`rounded px-2 py-1 text-[11px] font-semibold ${
+              tab === "history" ? "bg-white/10 text-white" : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Card images ({cardHistory.length})
+          </button>
+        </div>
+
+        {tab === "gallery" && (
+          <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {candidates.map((candidate) => (
+              <button
+                key={candidate.id}
+                type="button"
+                onClick={() =>
+                  onPick({
+                    assetUrl: candidate.imageUrl,
+                    thumbnailUrl: candidate.thumbnailUrl,
+                    role,
+                    source: "funnel_candidate",
+                    sourceCandidateId: candidate.id,
+                    originalSourceUrl: candidate.contextUrl,
+                    title: candidate.title,
+                  })
+                }
+                className="group overflow-hidden rounded-lg border border-white/10 text-left transition hover:border-cyan-300/50"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={candidate.thumbnailUrl || candidate.imageUrl}
+                  alt={candidate.title ?? "Funnel candidate"}
+                  className="aspect-square w-full object-cover"
+                />
+                <span className="block px-1.5 py-1 text-[9px] uppercase tracking-[0.1em] text-slate-500">
+                  {candidate.provenance === "serpapi_search" ? "search" : candidate.provenance.replace(/_/g, " ")}
+                </span>
+              </button>
+            ))}
+            {candidates.length === 0 && (
+              <p className="col-span-full text-[11px] text-slate-500">
+                No funnel candidates on this synthesis.
+              </p>
+            )}
+          </div>
+        )}
+
+        {tab === "history" && (
+          <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {cardHistory.map((entry, i) => (
+              <button
+                key={`${entry.imageUrl}-${i}`}
+                type="button"
+                onClick={() =>
+                  onPick({
+                    assetUrl: entry.imageUrl,
+                    role,
+                    source: "card_history",
+                    sourceCardIndex: entry.cardIndex,
+                    title: entry.label,
+                  })
+                }
+                className="group overflow-hidden rounded-lg border border-white/10 text-left transition hover:border-cyan-300/50"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={entry.imageUrl} alt={entry.label} className="aspect-square w-full object-cover" />
+                <span className="block px-1.5 py-1 text-[9px] uppercase tracking-[0.1em] text-slate-500">
+                  {entry.label}
+                </span>
+              </button>
+            ))}
+            {cardHistory.length === 0 && (
+              <p className="col-span-full text-[11px] text-slate-500">
+                No generated card images yet.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Thumbnails of a card's attached references, with role labels and removal. */
+function ReferenceStrip({
+  references,
+  busy,
+  onRemove,
+  onPreviewImage,
+}: {
+  references: DealMetaImageReference[];
+  busy: boolean;
+  onRemove: (referenceId: string) => void;
+  onPreviewImage: (url: string, alt: string) => void;
+}) {
+  if (references.length === 0) return null;
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {references.map((reference) => (
+        <span
+          key={reference.id}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-300/30 bg-cyan-400/5 py-1 pl-1 pr-1.5"
+        >
+          <button
+            type="button"
+            onClick={() =>
+              onPreviewImage(reference.assetUrl, reference.title ?? reference.role)
+            }
+            className="h-7 w-7 overflow-hidden rounded cursor-zoom-in"
+            title={reference.title ?? "Reference image"}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={reference.thumbnailUrl || reference.assetUrl}
+              alt={reference.title ?? "Reference"}
+              className="h-full w-full object-cover"
+            />
+          </button>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-cyan-200">
+            {DEAL_META_REFERENCE_ROLE_LABELS[reference.role]}
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onRemove(reference.id)}
+            aria-label={`Remove ${DEAL_META_REFERENCE_ROLE_LABELS[reference.role]} reference`}
+            className="text-slate-400 transition hover:text-rose-200 disabled:opacity-40"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function CardPanel({
   card,
+  synthesis,
   promptTemplate,
   selectedStyleId,
   negationText,
@@ -77,19 +339,36 @@ function CardPanel({
   onToggleLock,
   onPreviewImage,
   onRevert,
+  onOpenReferencePicker,
+  onRemoveReference,
+  onToggleAnchorOptOut,
 }: {
   card: DealMetaAdCard;
+  synthesis: DealMetaAdSynthesis;
   promptTemplate: string;
   selectedStyleId?: DealMetaAdStylePresetId;
   negationText: string;
   busy: boolean;
   isGenerating: boolean;
   isLocked: boolean;
-  onGenerate: (cardIndex: number) => void;
+  /**
+   * `pendingDirection` is the textarea draft when it differs from what is
+   * stored. Generation must persist it first — otherwise the obvious gesture
+   * (type a direction, hit Regenerate) silently renders the OLD prompt and the
+   * model looks like it is ignoring the operator.
+   */
+  onGenerate: (
+    cardIndex: number,
+    mode: DealMetaAdGenerationMode,
+    pendingDirection?: string
+  ) => void;
   onSaveDirection: (cardIndex: number, imageDirection: string) => void;
   onToggleLock: (cardIndex: number) => void;
   onPreviewImage: (url: string, alt: string) => void;
   onRevert: (cardIndex: number, historyIndex: number) => void;
+  onOpenReferencePicker: (cardIndex: number) => void;
+  onRemoveReference: (cardIndex: number, referenceId: string) => void;
+  onToggleAnchorOptOut: (cardIndex: number, disabled: boolean) => void;
 }) {
   const hOver = card.headline.length > CAROUSEL_HEADLINE_MAX;
   const pOver = card.primaryText.length > CAROUSEL_PRIMARY_TEXT_MAX;
@@ -97,11 +376,29 @@ function CardPanel({
   useEffect(() => {
     setImageDirectionDraft(card.imageDirection ?? "");
   }, [card.cardIndex, card.imageDirection]);
+  const directionDirty = imageDirectionDraft.trim() !== (card.imageDirection ?? "").trim();
+  const directionIsOnlyNegative = isOnlyNegativeDirection(imageDirectionDraft);
+
+  const cardReferences = card.references ?? [];
+  const anchorApplies = Boolean(synthesis.shipIdentityReference) && !card.disableShipAnchor;
+  // What the NEXT reference-driven generation would actually send, computed with
+  // the same resolver the server uses so the preview can't drift from reality.
+  const resolvedForVariation = resolveDealMetaAdReferences(synthesis, card, "new_variation");
+  const hasReferences = resolvedForVariation.length > 0;
+
+  // Preview the prompt the NEXT generation will actually use, draft included —
+  // previewing the stored-only prompt is what let the mismatch stay invisible.
+  const previewCard = directionDirty
+    ? { ...card, imageDirection: imageDirectionDraft }
+    : card;
   const preview = buildDealMetaAdImagePrompt({
     promptTemplate,
-    card,
+    card: previewCard,
     selectedStyleId,
     globalNegations: negationText,
+    referenceManifest: hasReferences
+      ? buildReferenceManifest(resolvedForVariation, "new_variation")
+      : undefined,
   });
 
   return (
@@ -157,9 +454,19 @@ function CardPanel({
         onChange={(event) => setImageDirectionDraft(event.target.value)}
         rows={3}
         aria-label={`Image direction for Card ${card.cardIndex + 1}`}
-        placeholder="Describe a distinct composition for this card."
+        placeholder="Say what TO show, then what to exclude. e.g. 'Show a fireworks-lit harbor skyline from shore. No ship, deck, or railing in frame.'"
         className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 p-2 text-[11px] leading-4 text-slate-200 focus:border-fuchsia-300/50 focus:outline-none"
       />
+      {/* Image models follow "draw X" far more reliably than "don't draw Y" — a
+          direction that is only exclusions leaves the style preset to fill the
+          frame with whatever the operator was trying to remove. */}
+      {directionIsOnlyNegative && (
+        <p className="mt-1 rounded-md bg-amber-500/10 px-2 py-1 text-[10px] leading-4 text-amber-200">
+          This direction only says what to avoid. Image models follow positive
+          instructions much better — add what the frame <em>should</em> show, then keep the
+          exclusion.
+        </p>
+      )}
       <button
         type="button"
         disabled={busy || imageDirectionDraft === (card.imageDirection ?? "")}
@@ -168,6 +475,54 @@ function CardPanel({
       >
         Save image direction
       </button>
+
+      {/* Reference pack — steers the look; never asserts a fact. */}
+      <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+            References
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onOpenReferencePicker(card.cardIndex)}
+            className="rounded border border-cyan-300/40 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+          >
+            + Add
+          </button>
+        </div>
+
+        <ReferenceStrip
+          references={cardReferences}
+          busy={busy}
+          onRemove={(referenceId) => onRemoveReference(card.cardIndex, referenceId)}
+          onPreviewImage={onPreviewImage}
+        />
+
+        {synthesis.shipIdentityReference && (
+          <label className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400">
+            <input
+              type="checkbox"
+              checked={Boolean(card.disableShipAnchor)}
+              disabled={busy}
+              onChange={(e) => onToggleAnchorOptOut(card.cardIndex, e.target.checked)}
+              className="h-3 w-3 accent-cyan-400"
+            />
+            Exclude campaign ship anchor
+          </label>
+        )}
+
+        {cardReferences.length === 0 && !anchorApplies && (
+          <p className="mt-1 text-[10px] leading-4 text-slate-500">
+            None — generation is text-only.
+          </p>
+        )}
+        {anchorApplies && cardReferences.length === 0 && (
+          <p className="mt-1 text-[10px] leading-4 text-cyan-300/70">
+            Campaign ship anchor applies to this card.
+          </p>
+        )}
+      </div>
 
       <div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-black/30">
         {card.imageUrl ? (
@@ -189,15 +544,108 @@ function CardPanel({
 
       {card.error && !isGenerating && <p className="mt-2 text-[11px] text-rose-200">⚠ {card.error}</p>}
 
+      {/* Text-only path — unchanged, and kept visually distinct from the
+          reference-driven actions so the operator always knows what they spend on. */}
       <button
         type="button"
         disabled={busy || isLocked}
-        onClick={() => onGenerate(card.cardIndex)}
+        onClick={() =>
+          onGenerate(
+            card.cardIndex,
+            "text_only",
+            directionDirty ? imageDirectionDraft : undefined
+          )
+        }
         title={isLocked ? "Locked — unlock to regenerate" : undefined}
         className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg border border-fuchsia-300/40 bg-fuchsia-400/10 text-[11px] font-semibold text-fuchsia-100 transition hover:bg-fuchsia-400/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isGenerating ? "Generating…" : card.imageUrl ? "Regenerate image" : "Generate image"}
+        {isGenerating
+          ? "Generating…"
+          : directionDirty
+            ? "Save direction & regenerate (text only)"
+            : card.imageUrl
+              ? "Regenerate image (text only)"
+              : "Generate image (text only)"}
       </button>
+
+      {/* A card can show an attached reference while the most prominent button
+          silently ignores it — the operator's obvious gesture (write a direction,
+          hit the big button) then produces a generic ship and looks like the
+          model disobeyed. Say plainly that this path drops the references. */}
+      {hasReferences && (
+        <p className="mt-1.5 rounded-md bg-amber-500/10 px-2 py-1 text-[10px] leading-4 text-amber-200">
+          {resolvedForVariation.length} reference
+          {resolvedForVariation.length === 1 ? " is" : "s are"} attached, but the button above
+          is <strong>text-only</strong> and won&apos;t send{" "}
+          {resolvedForVariation.length === 1 ? "it" : "them"}. Use{" "}
+          <strong>New variation</strong> or <strong>Edit active</strong> below.
+        </p>
+      )}
+
+      <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+        <button
+          type="button"
+          disabled={busy || isLocked || !hasReferences}
+          onClick={() =>
+            onGenerate(
+              card.cardIndex,
+              "new_variation",
+              directionDirty ? imageDirectionDraft : undefined
+            )
+          }
+          title={
+            hasReferences
+              ? `Generate a fresh composition informed by ${resolvedForVariation.length} reference(s)`
+              : "Add a reference (or set a campaign ship anchor) first"
+          }
+          className={`inline-flex h-8 items-center justify-center rounded-lg border px-2 text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+            hasReferences
+              ? "border-cyan-300/60 bg-cyan-400/20 text-cyan-50 hover:bg-cyan-400/30"
+              : "border-cyan-300/40 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
+          }`}
+        >
+          New variation{hasReferences ? ` (${resolvedForVariation.length})` : ""}
+        </button>
+        <button
+          type="button"
+          disabled={busy || isLocked || !card.imageUrl}
+          onClick={() =>
+            onGenerate(
+              card.cardIndex,
+              "edit_current",
+              directionDirty ? imageDirectionDraft : undefined
+            )
+          }
+          title={
+            card.imageUrl
+              ? "Make a bounded change to the current image"
+              : "Generate an image first"
+          }
+          className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-300/40 bg-amber-400/10 px-2 text-[10px] font-semibold text-amber-100 transition hover:bg-amber-400/20 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Edit active
+        </button>
+      </div>
+
+      {/* Always state how the ACTIVE image was made. Showing this only for
+          reference-driven output is what let a text-only result sit under a
+          visible reference chip with nothing contradicting it. */}
+      {card.imageUrl && (
+        <p className="mt-1.5 text-[10px] text-slate-500">
+          Current image:{" "}
+          <span
+            className={
+              !card.mode || card.mode === "text_only" ? "text-amber-300/80" : "text-cyan-300/80"
+            }
+          >
+            {card.mode === "edit_current"
+              ? "edited from a previous image"
+              : card.mode === "new_variation"
+                ? "reference-driven variation"
+                : "text-only (no reference used)"}
+          </span>
+        </p>
+      )}
 
       {card.previousImages && card.previousImages.length > 0 && (
         <details className="mt-2 rounded-lg border border-white/10 bg-black/20 p-2">
@@ -544,6 +992,8 @@ export function MetaAdSynthesisView({
   const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
   const [negationRules, setNegationRules] = useState<NegationRule[]>(DEFAULT_NEGATION_RULES);
   const [newNegationRule, setNewNegationRule] = useState("");
+  /** Which picker is open: a card index, or "anchor" for the campaign anchor. */
+  const [referencePickerFor, setReferencePickerFor] = useState<number | "anchor" | null>(null);
 
   // Load the persistent (cross-campaign) negation rules once on mount.
   useEffect(() => {
@@ -757,13 +1207,115 @@ export function MetaAdSynthesisView({
     }
   }
 
+  /** Attach a reference to a card, or set the campaign ship anchor. */
+  async function addReference(
+    target: number | "anchor",
+    reference: Record<string, unknown>
+  ) {
+    if (!active) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post(
+        target === "anchor"
+          ? { action: "set_ship_anchor", synthesisId: active.id, reference }
+          : {
+              action: "add_card_reference",
+              synthesisId: active.id,
+              cardIndex: target,
+              reference,
+            }
+      );
+      if (!data.ok || !data.synthesis) throw new Error(data.error ?? "Adding reference failed.");
+      applySynthesis(data.synthesis);
+      setMessage({
+        tone: "ok",
+        text:
+          target === "anchor"
+            ? "Ship identity anchor set. It applies to cards that haven't opted out."
+            : `Card ${target + 1} reference added.`,
+      });
+      setReferencePickerFor(null);
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeCardReference(cardIndex: number, referenceId: string) {
+    if (!active) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post({
+        action: "remove_card_reference",
+        synthesisId: active.id,
+        cardIndex,
+        referenceId,
+      });
+      if (!data.ok || !data.synthesis) throw new Error(data.error ?? "Removing reference failed.");
+      applySynthesis(data.synthesis);
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearShipAnchor() {
+    if (!active) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post({ action: "clear_ship_anchor", synthesisId: active.id });
+      if (!data.ok || !data.synthesis) throw new Error(data.error ?? "Clearing anchor failed.");
+      applySynthesis(data.synthesis);
+      setMessage({ tone: "ok", text: "Ship identity anchor cleared." });
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleAnchorOptOut(cardIndex: number, disabled: boolean) {
+    if (!active) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post({
+        action: "set_card_anchor_opt_out",
+        synthesisId: active.id,
+        cardIndex,
+        disableShipAnchor: disabled,
+      });
+      if (!data.ok || !data.synthesis) throw new Error(data.error ?? "Updating card failed.");
+      applySynthesis(data.synthesis);
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   /**
    * Generate one card's image. Merges only that card's result into the active
    * synthesis (rather than replacing the whole synthesis) so concurrent
    * generations for other cards aren't clobbered.
    */
-  async function generateOneCard(synthesisId: string, cardIndex: number): Promise<{ ok: boolean; error?: string }> {
-    const data = await post({ action: "generate_image", synthesisId, cardIndex, promptSuffix: negationText });
+  async function generateOneCard(
+    synthesisId: string,
+    cardIndex: number,
+    mode: DealMetaAdGenerationMode = "text_only"
+  ): Promise<{ ok: boolean; error?: string }> {
+    const data = await post({
+      action: "generate_image",
+      synthesisId,
+      cardIndex,
+      promptSuffix: negationText,
+      mode,
+    });
     const updatedCard = data.synthesis?.cards.find((c) => c.cardIndex === cardIndex);
     if (updatedCard) {
       setSyntheses((prev) =>
@@ -777,16 +1329,47 @@ export function MetaAdSynthesisView({
     return { ok: data.ok, error: data.error };
   }
 
-  async function generateImage(cardIndex: number) {
+  async function generateImage(
+    cardIndex: number,
+    mode: DealMetaAdGenerationMode = "text_only",
+    pendingDirection?: string
+  ) {
     if (!active) return;
     const synthesisId = active.id;
     setBusy(true);
     setGeneratingCards((prev) => new Set(prev).add(cardIndex));
     setMessage(null);
     try {
-      const { ok, error } = await generateOneCard(synthesisId, cardIndex);
+      // Commit an unsaved image-direction draft BEFORE generating. The server
+      // builds the prompt from the stored card, so skipping this silently
+      // regenerates with the previous direction.
+      if (pendingDirection !== undefined) {
+        const saved = await post({
+          action: "update_card_direction",
+          synthesisId,
+          cardIndex,
+          imageDirection: pendingDirection,
+        });
+        if (!saved.ok || !saved.synthesis) {
+          throw new Error(saved.error ?? "Saving image direction failed — image not regenerated.");
+        }
+        applySynthesis(saved.synthesis);
+      }
+      const { ok, error } = await generateOneCard(synthesisId, cardIndex, mode);
       if (!ok) throw new Error(error ?? "Image generation failed.");
-      setMessage({ tone: "ok", text: `Card ${cardIndex + 1} image generated.` });
+      const modeLabel =
+        mode === "edit_current"
+          ? "edited from its previous image"
+          : mode === "new_variation"
+            ? "generated as a reference-driven variation"
+            : "generated";
+      setMessage({
+        tone: "ok",
+        text:
+          pendingDirection !== undefined
+            ? `Card ${cardIndex + 1} direction saved and image ${modeLabel}.`
+            : `Card ${cardIndex + 1} image ${modeLabel}.`,
+      });
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -1074,6 +1657,87 @@ export function MetaAdSynthesisView({
             </p>
           </ConfigSection>
 
+          {/* Reference images — campaign-wide ship identity anchor. */}
+          <ConfigSection
+            eyebrow="Reference Images"
+            accent="cyan"
+            summary={
+              active.shipIdentityReference ? "Ship anchor set" : "No ship anchor"
+            }
+          >
+            <p className="max-w-3xl text-[11px] leading-5 text-slate-400">
+              The ship identity anchor is one approved image that helps every card render the
+              real ship credibly. It is supplied to card generation unless a card opts out.
+              It is <span className="text-slate-300">visual guidance only</span> — it never
+              establishes an amenity, itinerary, fare, or inclusion.
+            </p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {active.shipIdentityReference ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewImage({
+                        url: active.shipIdentityReference!.assetUrl,
+                        alt: active.shipIdentityReference!.title ?? "Ship identity anchor",
+                      })
+                    }
+                    className="h-16 w-16 overflow-hidden rounded-lg border border-cyan-300/40 cursor-zoom-in"
+                    title="View full screen"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={
+                        active.shipIdentityReference.thumbnailUrl ||
+                        active.shipIdentityReference.assetUrl
+                      }
+                      alt={active.shipIdentityReference.title ?? "Ship identity anchor"}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                  <div className="text-[11px] text-slate-300">
+                    <p className="font-semibold text-cyan-100">Ship identity anchor</p>
+                    <p className="text-slate-500">
+                      source: {active.shipIdentityReference.source.replace(/_/g, " ")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setReferencePickerFor("anchor")}
+                    className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-slate-200 transition hover:bg-white/[0.08] disabled:opacity-50"
+                  >
+                    Replace
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void clearShipAnchor()}
+                    className="rounded-lg border border-rose-300/40 bg-rose-400/10 px-3 py-1.5 text-[11px] font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:opacity-50"
+                  >
+                    Clear
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setReferencePickerFor("anchor")}
+                    className="rounded-lg border border-cyan-300/40 bg-cyan-400/10 px-4 py-2 text-[11px] font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-50"
+                  >
+                    Set ship anchor
+                  </button>
+                  {/* Non-blocking quality signal, never a publishing gate. */}
+                  <span className="text-[11px] text-amber-200">
+                    No ship identity anchor — cards may render a generic or incorrect ship.
+                  </span>
+                </>
+              )}
+            </div>
+          </ConfigSection>
+
           <ConfigSection
             eyebrow="Negation (applies to all campaigns)"
             accent="rose"
@@ -1156,23 +1820,57 @@ export function MetaAdSynthesisView({
               <CardPanel
                 key={card.cardIndex}
                 card={card}
+                synthesis={active}
                 promptTemplate={promptDraft}
                 selectedStyleId={active.selectedStyleId}
                 negationText={negationText}
                 busy={busy}
                 isGenerating={generatingCards.has(card.cardIndex)}
                 isLocked={lockedCards.has(card.cardIndex)}
-                onGenerate={(idx) => void generateImage(idx)}
+                onGenerate={(idx, mode, pendingDirection) =>
+                  void generateImage(idx, mode, pendingDirection)
+                }
                 onSaveDirection={(idx, imageDirection) => void saveCardDirection(idx, imageDirection)}
                 onToggleLock={toggleLock}
                 onPreviewImage={(url, alt) => setPreviewImage({ url, alt })}
                 onRevert={(idx, historyIdx) => void revertImage(idx, historyIdx)}
+                onOpenReferencePicker={(idx) => setReferencePickerFor(idx)}
+                onRemoveReference={(idx, referenceId) =>
+                  void removeCardReference(idx, referenceId)
+                }
+                onToggleAnchorOptOut={(idx, disabled) => void toggleAnchorOptOut(idx, disabled)}
               />
             ))}
           </div>
 
           <MetaDistributionPanel synthesis={active} />
         </>
+      )}
+
+      {referencePickerFor !== null && active && (
+        <ReferencePickerModal
+          title={
+            referencePickerFor === "anchor"
+              ? "Set campaign ship identity anchor"
+              : `Add reference to Card ${(referencePickerFor as number) + 1}`
+          }
+          lockedRole={referencePickerFor === "anchor" ? "ship_identity" : undefined}
+          candidates={
+            funnelSyntheses.find((s) => s.id === active.sourceFunnelSynthesisId)?.candidates ?? []
+          }
+          cardHistory={active.cards.flatMap((c) => [
+            ...(c.imageUrl
+              ? [{ imageUrl: c.imageUrl, label: `Card ${c.cardIndex + 1} (current)`, cardIndex: c.cardIndex }]
+              : []),
+            ...(c.previousImages ?? []).map((entry, i) => ({
+              imageUrl: entry.imageUrl,
+              label: `Card ${c.cardIndex + 1} (prev ${i + 1})`,
+              cardIndex: c.cardIndex,
+            })),
+          ])}
+          onPick={(reference) => void addReference(referencePickerFor, reference)}
+          onClose={() => setReferencePickerFor(null)}
+        />
       )}
 
       {previewImage && (

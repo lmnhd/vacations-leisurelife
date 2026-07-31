@@ -1,4 +1,4 @@
 interface:
   display_name: "Deal Campaign Generation"
   short_description: "Build fast, promo-aware retail cruise campaigns"
-  default_prompt: "Use $deal-campaign-generation to find, develop, review, and hand off a retail cruise Deal campaign."
+  default_prompt: "Use $deal-campaign-generation to find or load a real cruise, attach a reviewed promotion, develop the campaign, and assemble it for operator review."

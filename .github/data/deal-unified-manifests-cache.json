@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-28T19:36:22.499Z",
+  "generatedAtIso": "2026-07-30T15:54:05.254Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -1793,6 +1793,197 @@
         "promotionBriefs": [],
         "promoStrategy": "Lead with \"This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.\" through the verified itinerary and audience fit.",
         "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.. Targeting angle: Affluent, time-flexible US travelers who want one meaningful multi-region journey: experienced cruisers, luxury travelers, culture-led couples, and travelers drawn to Southern Africa, the Indian Ocean, and India.. Workbench-selected real sailing chosen for the angle \"This Is What They Really Meant By \"Cruise.\": Cape Town to Mumbai in 22 nights.\". Grounding facts: Silver Muse | 2026-11-10 | CPT | Cape Town, Port Elizabeth, East London."
+      }
+    },
+    {
+      "id": "unified-manifest-1557855-midnight-is-the-departure",
+      "generatedAtIso": "2026-07-30T15:54:05.251Z",
+      "expiresOnIso": "2026-10-28",
+      "sourceAngleId": "angle-workbench-eastern-caribbean-port-canaveral-norwegian-getaway-1557855",
+      "sourceManifestId": "manifest-1557855-midnight-is-the-departure",
+      "sailingAngleTitle": "Midnight Is the Departure",
+      "creativeBrief": {
+        "isolatedNiche": "US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale.",
+        "researchRationale": "Workbench-selected real sailing chosen for the angle \"Midnight Is the Departure\". Grounding facts: Norwegian Getaway | 2026-12-31 | Port Canaveral, FL | Orlando-Beaches-Port Canaveral, Fl, Puerto Plata, Dominican Republic, St Thomas, Vi. Promo context considered: Norwegian Cruise Line Norwegian Cruise Line - Semi Annual Sale | Norwegian Cruise Line's Semi-Annual Sale is available for eligible new bookings through August 18, 2026. | Must be booked between 07/07/2026 and 08/18/2026.",
+        "successLogic": "US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale. can convert because this is a real Norwegian Getaway sailing on 2026-12-31, not a generic cruise sale. The attached Norwegian Cruise Line - Semi Annual Sale gives the audience a timely reason to act.",
+        "audienceSignals": [
+          "Real sailing selected in the Campaign Workbench: Norwegian Getaway on Norwegian Cruise Line, 7 nights, sailing 2026-12-31.",
+          "Concrete itinerary signal: Port Canaveral, FL roundtrip, Orlando-Beaches-Port Canaveral, Fl, Puerto Plata, Dominican Republic, St Thomas, Vi, Tortola, British Virgin Islands.",
+          "Operator-selected audience angle: US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale..",
+          "Targeting seeds chosen for this sailing: New Year's Eve cruise 2026, New Year cruise from Florida, Norwegian Getaway, Eastern Caribbean cruise, Port Canaveral cruise, New Year's vacation for couples."
+        ],
+        "angle": {
+          "sailingAngleTitle": "Midnight Is the Departure",
+          "theCorePitch": "Midnight Is the Departure: Norwegian Getaway on Eastern Caribbean - Port Canaveral gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+          "visualAnchor": "A cinematic countdown clock reaches midnight as Norwegian Getaway leaves Florida, then opens into a clean seven-night route through Puerto Plata, St. Thomas, Tortola, and Great Stirrup Cay. Elegant celebration energy, not generic confetti.",
+          "targetAudienceDescriptor": "US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale.",
+          "relevantKeywords": [
+            "New Year's Eve cruise 2026",
+            "New Year cruise from Florida",
+            "Norwegian Getaway",
+            "Eastern Caribbean cruise",
+            "Port Canaveral cruise",
+            "New Year's vacation for couples",
+            "holiday cruise deal",
+            "seven-night Caribbean cruise"
+          ],
+          "destinationAndTimeOfYearHints": "Eastern Caribbean - Port Canaveral departing 2026-12-31.",
+          "onboardAssetRequirements": "Norwegian Getaway ship assets, destination imagery, itinerary map, and booking-link proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "itineraryName": "Eastern Caribbean - Port Canaveral",
+          "cruiseLine": "Norwegian Cruise Line",
+          "nights": 7,
+          "suggestedBriefId": "brief-1557855-midnight-is-the-departure",
+          "portsOfCall": [
+            "Orlando-Beaches-Port Canaveral, Fl",
+            "Puerto Plata, Dominican Republic",
+            "St Thomas, Vi",
+            "Tortola, British Virgin Islands",
+            "Great Stirrup Cay, Bahamas"
+          ],
+          "suggestedDealId": "1557855",
+          "sailWindow": {
+            "rationale": "Exact sail date selected in the campaign workbench.",
+            "latestIso": "2026-12-31",
+            "earliestIso": "2026-12-31"
+          },
+          "departurePortHint": "Port Canaveral, FL",
+          "destination": "Orlando-Beaches-Port Canaveral, Fl"
+        },
+        "lookupQuery": {
+          "date": "2026-12-31",
+          "destination": "Orlando-Beaches-Port Canaveral, Fl",
+          "ship": "Norwegian Getaway",
+          "port": "Port Canaveral, FL",
+          "line": "Norwegian Cruise Line",
+          "nights": 7,
+          "windowDays": 0
+        },
+        "targetingSeeds": {
+          "geoFocus": [
+            "Port Canaveral, FL",
+            "Eastern Caribbean - Port Canaveral",
+            "Orlando-Beaches-Port Canaveral, Fl",
+            "Puerto Plata, Dominican Republic",
+            "St Thomas, Vi",
+            "Tortola, British Virgin Islands",
+            "Caribbean travel"
+          ],
+          "personaSignals": [
+            "US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale.",
+            "Norwegian Cruise Line travelers",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "Norwegian Cruise Line",
+            "Norwegian Getaway"
+          ],
+          "metaInterestSeeds": [
+            "New Year's Eve cruise 2026",
+            "New Year cruise from Florida",
+            "Norwegian Getaway",
+            "Eastern Caribbean cruise",
+            "Port Canaveral cruise",
+            "New Year's vacation for couples",
+            "holiday cruise deal",
+            "seven-night Caribbean cruise",
+            "Norwegian Cruise Line",
+            "Norwegian Cruise Line - Semi Annual Sale",
+            "Norwegian Cruise Line's Semi-Annual Sale is available for eligible new bookings through August 18, 2026.",
+            "Save 50% on eligible NCL cruise fares, subject to current promotion and rate terms.",
+            "Reduced deposit is available on eligible balcony-and-below bookings."
+          ],
+          "inferredMarket": "US",
+          "excludedAudienceSignals": [
+            "free cruise",
+            "cruise job",
+            "Avoid broad cruise-interest targeting as the only audience."
+          ],
+          "metaBehaviorSignals": [
+            "responds to limited-time travel offers",
+            "compares premium vacation value",
+            "engages with Norwegian Getaway ship-specific content"
+          ]
+        },
+        "appliedPromos": [
+          {
+            "assumptions": [
+              "Selected by the operator in the Campaign Workbench."
+            ],
+            "promoRecordId": "cbpromo-2904",
+            "matchedOn": [
+              "Norwegian Cruise Line",
+              "2026-12-31"
+            ],
+            "warnings": [
+              "Confirm promo eligibility before publishing public copy."
+            ],
+            "status": "possibly_applicable_needs_review"
+          }
+        ],
+        "promotionBriefs": [
+          {
+            "promoRecordId": "cbpromo-2904",
+            "title": "Norwegian Cruise Line - Semi Annual Sale",
+            "vendor": "Norwegian Cruise Line",
+            "bookingWindow": "Must be booked between 07/07/2026 and 08/18/2026",
+            "sailingWindow": "For sailings on or between 10/15/2026 and 09/02/2027",
+            "offerTypes": [
+              "second_guest_discount",
+              "onboard_credit",
+              "free_extra_guests",
+              "other"
+            ],
+            "publicClaimsAllowed": [
+              "Norwegian Cruise Line's Semi-Annual Sale is available for eligible new bookings through August 18, 2026."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "Save 50% on eligible NCL cruise fares, subject to current promotion and rate terms.",
+              "Reduced deposit is available on eligible balcony-and-below bookings.",
+              "Bonus onboard credit and third/fourth guest offers apply only to select sailings and qualifying bookings."
+            ],
+            "visitorFriendlySummary": "Sail on New Year's Eve and check current NCL Semi-Annual Sale pricing on this exact seven-night Caribbean voyage.",
+            "suggestedAngles": [
+              "Make New Year's Eve the first night of a seven-night Caribbean vacation.",
+              "Pair an exact December 31 departure with the time-limited NCL Semi-Annual Sale."
+            ],
+            "cautionFlags": [
+              "All prices and availability can change until booked.",
+              "Do not promise onboard credit or free extra guests for this package without rate-level confirmation."
+            ],
+            "percentDiscounts": [
+              {
+                "appliesTo": "Eligible Norwegian Cruise Line cruise fares",
+                "rawText": "50% off all cruises, subject to the promotion terms and eligible rate.",
+                "percentOff": 50
+              }
+            ],
+            "dollarSavings": [],
+            "onboardCredits": [],
+            "freeGuestOffers": [
+              {
+                "rawText": "Select sailing dates may offer third and fourth guests free or at a reduced child rate.",
+                "guestNumbers": "Select sailings: third and fourth guests"
+              }
+            ],
+            "exclusions": [
+              "Bonus onboard credit is limited to select sailings and qualifying cabin categories.",
+              "Third and fourth guest offers are limited to select sailing dates."
+            ],
+            "applicableProducts": [
+              "Norwegian Cruise Line sailings of three days or longer",
+              "Reduced deposit applies to balcony cabins and below"
+            ],
+            "applicableMarkets": [
+              "US"
+            ]
+          }
+        ],
+        "promoStrategy": "Use selected promo intelligence to support \"Midnight Is the Departure\" with qualified, public-safe language.",
+        "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: Midnight Is the Departure. Targeting angle: US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale.. Workbench-selected real sailing chosen for the angle \"Midnight Is the Departure\". Grounding facts: Norwegian Getaway | 2026-12-31 | Port Canaveral, FL | Orlando-Beaches-Port Canaveral, Fl, Puerto Plata, Dominican Republic, St Thomas, Vi. Promo context considered: Norwegian Cruise Line Norwegian Cruise Line - Semi Annual Sale | Norwegian Cruise Line's Semi-Annual Sale is available for eligible new bookings through August 18, 2026. | Must be booked between 07/07/2026 and 08/18/2026."
       }
     }
   ]

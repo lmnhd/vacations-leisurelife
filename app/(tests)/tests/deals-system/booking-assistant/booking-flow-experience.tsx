@@ -2009,10 +2009,19 @@ function LandingScreen({ deal, onStart }: { deal: BookingAssistantDealContext; o
         </p>
       </div>
       <div className="mt-auto pt-6">
-        <p className="mb-3 text-[12px] leading-5" style={{ color: MUTED }}>
-          We save your confirmed answers and this conversation to complete your booking and support
-          you. No payment details are ever collected here.
-        </p>
+        <div
+          className="mb-4 rounded-xl bg-white p-4 text-[13px] leading-6"
+          style={{ border: `1px solid ${BORDER}`, color: NAVY }}
+        >
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: GOLD }}>
+            Before you start
+          </p>
+          <ul className="mt-2 list-disc space-y-1.5 pl-5 font-semibold">
+            <li>Your information is collected and saved here as you answer.</li>
+            <li>You finalize your booking by phone with an agent - this form does not complete it.</li>
+            <li>No payment details are ever collected here.</li>
+          </ul>
+        </div>
         <GuestButton primary onClick={onStart}>
           Start booking
         </GuestButton>

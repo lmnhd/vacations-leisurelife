@@ -1,6 +1,6 @@
 ---
 name: customer-sentiment-research
-description: Build source-grounded customer-language intelligence for Leisure Life cruise Deals. Use when the operator wants to discover or preserve exact customer search phrases, shopping language, objections, desired outcomes, proof requirements, market conversations, or competitor framing; turn that evidence into real CB-backed Deal candidates, landing/copy hypotheses, and channel tests; or prepare a sentiment dossier before invoking deal-campaign-generation.
+description: Build source-grounded customer-language intelligence for Leisure Life cruise Deals. Use when the operator wants to discover or preserve exact customer search phrases, shopping language, objections, desired outcomes, proof requirements, market conversations, or competitor framing; turn that evidence into real CB-backed Deal candidates, landing/copy hypotheses, and channel tests; prepare a sentiment dossier before invoking deal-campaign-generation; or rapidly refresh a recent dossier for a time-sensitive, sellable campaign.
 ---
 
 # Customer Sentiment Research
@@ -25,6 +25,7 @@ Turn customer language into Deal intelligence without reducing it to a Meta inte
 - Never fabricate a cruise, package ID, fare, booking URL, promotion, or eligibility claim. Use CB/Odysseus tools before recommending a Deal.
 - Do not create a hold, reservation, payment, booking, live ad, or publish a Deal without the required operator approval.
 - Store all documentation for a new campaign or Deal ad in a dedicated, descriptively named subdirectory inside `.github/DOCS/Implementation/DEALS_STRATEGY/LIVE_DEAL_DATA_WORK_DIRECTORY/`. Use the campaign or Deal slug as the directory name when available. Keep the dossier, source ledger, handoff notes, and later campaign documentation together there so the research and downstream work remain transparent and discoverable.
+- When a recent dossier is reused, treat it as prior evidence rather than current proof. Record what was reused, revalidate drift-prone package/promotion facts, and write a campaign-specific delta dossier in the new Deal directory.
 
 ## Workflow
 
@@ -32,7 +33,28 @@ Turn customer language into Deal intelligence without reducing it to a Meta inte
 
 State what needs to be learned: package demand, audience tension, price proof, promotion concern, ship experience, itinerary constraint, or checkout friction. Choose the target market, travel window, and source budget.
 
-### 2. Collect a balanced evidence set
+### 2. Choose the research depth
+
+Use a full research pass when the operator is exploring demand, audience language, or multiple campaign directions.
+
+Use a rapid sellable-campaign pass when the operator prioritizes time to market and a recent relevant dossier already exists. In that lane:
+
+1. Reuse only sourced, permission-safe customer tensions and clearly label them as prior evidence.
+2. Create a campaign-specific delta dossier instead of duplicating the older dossier.
+3. Revalidate live package identity, numeric cabin pricing, promotion window, promotion applicability, and booking-link health through `deal-campaign-generation`.
+4. Preserve missing owned-language, Keyword Planner, Trends, Search Console, or competitor-audit evidence as explicit gaps.
+5. Rank candidates by conversion velocity as well as audience fit:
+   - exact occasion or deadline;
+   - clear, current fare proof;
+   - promotion deadline and public-safe claim strength;
+   - departure accessibility;
+   - itinerary clarity;
+   - strength of the one-sentence hook;
+   - likely booking friction.
+
+Do not call the rapid lane quantified sentiment research when no quantified source was used.
+
+### 3. Collect a balanced evidence set
 
 Prioritize sources in this order:
 
@@ -43,7 +65,7 @@ Prioritize sources in this order:
 
 Do not collect broadly for its own sake. Stop when the evidence has enough variety to challenge the leading hypothesis and enough provenance to review it.
 
-### 3. Extract structured meaning
+### 4. Extract structured meaning
 
 For every signal, record:
 
@@ -61,7 +83,7 @@ language atoms and associated travel constraints
 
 Use semantic extraction to cluster signals. Keep conflicting interpretations; do not force one audience story from thin evidence.
 
-### 4. Build the sentiment dossier
+### 5. Build the sentiment dossier
 
 Create a durable Markdown dossier in the campaign or Deal's dedicated subdirectory inside `.github/DOCS/Implementation/DEALS_STRATEGY/LIVE_DEAL_DATA_WORK_DIRECTORY/` containing:
 
@@ -72,7 +94,7 @@ Create a durable Markdown dossier in the campaign or Deal's dedicated subdirecto
 5. Activation hypotheses for search landing pages, Meta creative, short-form video, email/SMS, agent callback, and FAQ content.
 6. A measurement plan from landing view to booking handoff to CBAT-confirmed booking, excluding marked internal tests.
 
-### 5. Hand off to the Deal workflow
+### 6. Hand off to the Deal workflow
 
 For an operator-selected cluster, provide the smallest valid intake to `deal-campaign-generation`:
 
@@ -83,6 +105,8 @@ required package proof
 public-safe language direction
 candidate promotion constraints
 channel hypotheses and measurement keys
+research depth: full or rapid delta
+reused evidence and current evidence gaps
 ```
 
 The Deal skill resolves inventory, verifies promotions and links, assembles the manifest, and stops at the appropriate approval surface.
@@ -96,3 +120,4 @@ Before handing off, confirm:
 - Public copy does not borrow unconsented external wording.
 - The cluster has a defined success event beyond page clicks.
 - No source is treated as stronger than it is: Trends is not volume, Meta is not search-query data, and a CBAT confirmation is not sentiment.
+- A rapid delta dossier identifies its prior dossier and separately dates every live package, fare, promotion, and link check.

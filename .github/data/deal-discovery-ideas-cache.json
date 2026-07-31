@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-28T21:57:56.909Z",
+  "generatedAtIso": "2026-07-30T15:53:34.133Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -518,6 +518,53 @@
         "nights": 22,
         "departurePortCode": "CPT",
         "portsOfCall": "Cape Town | Port Elizabeth | East London | Durban | Pointe des Galets | Port Louis | Mahe | Cochin | New Mangalore | Mumbai",
+        "confidence": 1,
+        "reasons": [
+          "Created from operator-selected workbench sailing."
+        ]
+      }
+    },
+    {
+      "id": "angle-workbench-eastern-caribbean-port-canaveral-norwegian-getaway-1557855",
+      "generatedAtIso": "2026-07-30T15:53:34.127Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "workbench",
+      "isolatedNiche": "US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale.",
+      "researchRationale": "Workbench-selected real sailing chosen for the angle \"Midnight Is the Departure\". Grounding facts: Norwegian Getaway | 2026-12-31 | Port Canaveral, FL | Orlando-Beaches-Port Canaveral, Fl, Puerto Plata, Dominican Republic, St Thomas, Vi. Promo context considered: Norwegian Cruise Line Norwegian Cruise Line - Semi Annual Sale | Norwegian Cruise Line's Semi-Annual Sale is available for eligible new bookings through August 18, 2026. | Must be booked between 07/07/2026 and 08/18/2026.",
+      "successLogic": "US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale. can convert because this is a real Norwegian Getaway sailing on 2026-12-31, not a generic cruise sale. The attached Norwegian Cruise Line - Semi Annual Sale gives the audience a timely reason to act.",
+      "audienceSignals": [
+        "Real sailing selected in the Campaign Workbench: Norwegian Getaway on Norwegian Cruise Line, 7 nights, sailing 2026-12-31.",
+        "Concrete itinerary signal: Port Canaveral, FL roundtrip, Orlando-Beaches-Port Canaveral, Fl, Puerto Plata, Dominican Republic, St Thomas, Vi, Tortola, British Virgin Islands.",
+        "Operator-selected audience angle: US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale..",
+        "Targeting seeds chosen for this sailing: New Year's Eve cruise 2026, New Year cruise from Florida, Norwegian Getaway, Eastern Caribbean cruise, Port Canaveral cruise, New Year's vacation for couples."
+      ],
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "Midnight Is the Departure",
+        "theCorePitch": "Midnight Is the Departure: Norwegian Getaway on Eastern Caribbean - Port Canaveral gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+        "visualAnchor": "A cinematic countdown clock reaches midnight as Norwegian Getaway leaves Florida, then opens into a clean seven-night route through Puerto Plata, St. Thomas, Tortola, and Great Stirrup Cay. Elegant celebration energy, not generic confetti.",
+        "targetAudienceDescriptor": "US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale.",
+        "relevantKeywords": [
+          "New Year's Eve cruise 2026",
+          "New Year cruise from Florida",
+          "Norwegian Getaway",
+          "Eastern Caribbean cruise",
+          "Port Canaveral cruise",
+          "New Year's vacation for couples",
+          "holiday cruise deal",
+          "seven-night Caribbean cruise"
+        ],
+        "destinationAndTimeOfYearHints": "Eastern Caribbean - Port Canaveral departing 2026-12-31.",
+        "onboardAssetRequirements": "Norwegian Getaway ship assets, destination imagery, itinerary map, and booking-link proof."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-07-30T15:53:34.127Z",
+        "packageId": "1557855",
+        "cruiseName": "Eastern Caribbean - Port Canaveral",
+        "cruiseLine": "Norwegian Cruise Line",
+        "sailDateIso": "2026-12-31",
+        "nights": 7,
+        "departurePortCode": "Port Canaveral, FL",
+        "portsOfCall": "Orlando-Beaches-Port Canaveral, Fl | Puerto Plata, Dominican Republic | St Thomas, Vi | Tortola, British Virgin Islands | Great Stirrup Cay, Bahamas",
         "confidence": 1,
         "reasons": [
           "Created from operator-selected workbench sailing."

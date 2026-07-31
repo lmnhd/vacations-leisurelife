@@ -7,11 +7,20 @@
  * before each generation.
  */
 
-import { generateGptImage2 } from "@/lib/campaigns/media/generators/gpt-image";
+import {
+  generateGptImage2,
+  generateGptImage2WithReferences,
+  type GptImageReferenceInput,
+} from "@/lib/campaigns/media/generators/gpt-image";
+import { fetchUsableReferenceImage } from "@/lib/campaigns/media/generators/reference-image";
 import { storeAsset } from "@/lib/campaigns/media/storage-client";
 
 import type { DealFunnelSynthesis } from "./deal-page-design-types";
 import { buildDealMetaAdImagePromptForSynthesis } from "./deal-meta-ad-prompt";
+import {
+  buildReferenceManifest,
+  resolveDealMetaAdReferences,
+} from "./deal-meta-ad-references";
 import {
   DEFAULT_DEAL_META_AD_STYLE_ID,
   type DealMetaAdStylePresetId,
@@ -19,8 +28,10 @@ import {
 import {
   DEFAULT_META_AD_PROMPT_TEMPLATE,
   type DealMetaAdCard,
+  type DealMetaAdGenerationMode,
   type DealMetaAdStyleRecommendation,
   type DealMetaAdSynthesis,
+  type DealMetaImageReference,
   type DealMetaStyleSelectionSource,
 } from "./deal-meta-ad-synthesis-types";
 
@@ -76,30 +87,113 @@ export function buildDealMetaAdSynthesis(
 }
 
 /**
+ * Download the resolved references as buffers for the image API.
+ *
+ * A reference that can't be fetched is skipped with a warning rather than
+ * failing the generation: losing one gallery image should degrade the result,
+ * not cost the operator the whole (slow, paid) run. If NONE survive, the caller
+ * falls back to text-only rather than sending an empty edits request.
+ */
+async function loadReferenceBuffers(
+  references: DealMetaImageReference[]
+): Promise<GptImageReferenceInput[]> {
+  const loaded: GptImageReferenceInput[] = [];
+  for (const reference of references) {
+    try {
+      const fetched = await fetchUsableReferenceImage(
+        reference.assetUrl,
+        reference.thumbnailUrl
+      );
+      loaded.push({
+        buffer: fetched.buffer,
+        mimeType: fetched.mimeType,
+        label: reference.title ?? reference.role,
+      });
+    } catch (error) {
+      console.warn("[deal-meta-ad] skipping unfetchable reference", {
+        referenceId: reference.id,
+        role: reference.role,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return loaded;
+}
+
+export interface GenerateDealMetaAdCardImageOptions {
+  /**
+   * Operator's persistent (cross-campaign) negation text, appended after
+   * interpolation so it isn't subject to {{HEADLINE}}/{{PRIMARY_TEXT}}
+   * substitution.
+   */
+  promptSuffix?: string;
+  /**
+   * `new_variation` and `edit_current` send input imagery; `text_only` keeps
+   * the original images/generations path. Defaults to text_only so legacy
+   * callers and reference-free campaigns are unaffected.
+   */
+  mode?: DealMetaAdGenerationMode;
+}
+
+/**
  * Generate (or regenerate) the image for one card, returning the updated card.
  * Throws on generation/storage failure — caller decides how to record the error.
  */
 export async function generateDealMetaAdCardImage(
   synthesis: DealMetaAdSynthesis,
   cardIndex: number,
-  /**
-   * Operator's persistent (cross-campaign) negation text, appended after
-   * interpolation so it isn't subject to {{HEADLINE}}/{{PRIMARY_TEXT}}
-   * substitution.
-   */
-  promptSuffix?: string
+  options: GenerateDealMetaAdCardImageOptions | string = {}
 ): Promise<DealMetaAdCard> {
+  // Back-compat: this used to take `promptSuffix` as a bare third argument.
+  const { promptSuffix, mode: requestedMode = "text_only" } =
+    typeof options === "string" ? { promptSuffix: options, mode: "text_only" as const } : options;
+
   const card = synthesis.cards.find((c) => c.cardIndex === cardIndex);
   if (!card) {
     throw new Error(`No card with index ${cardIndex} in synthesis "${synthesis.id}".`);
   }
+  if (requestedMode === "edit_current" && !card.imageUrl) {
+    throw new Error(
+      `Card ${cardIndex + 1} has no image to edit — generate one first.`
+    );
+  }
+
+  const resolvedReferences =
+    requestedMode === "text_only"
+      ? []
+      : resolveDealMetaAdReferences(synthesis, card, requestedMode);
+  const referenceBuffers =
+    resolvedReferences.length > 0 ? await loadReferenceBuffers(resolvedReferences) : [];
+
+  // Every reference failed to fetch → fall back to text-only rather than
+  // sending an edits request with no images. An edit with nothing to edit is
+  // not a meaningful request, so surface that instead of silently degrading.
+  if (requestedMode === "edit_current" && referenceBuffers.length === 0) {
+    throw new Error(
+      "Could not fetch the card's current image to edit. Check the stored asset URL and retry."
+    );
+  }
+  const effectiveMode: DealMetaAdGenerationMode =
+    referenceBuffers.length > 0 ? requestedMode : "text_only";
+  const usedReferences =
+    effectiveMode === "text_only" ? [] : resolvedReferences.slice(0, referenceBuffers.length);
 
   const promptUsed = buildDealMetaAdImagePromptForSynthesis(
     synthesis,
     card,
-    promptSuffix
+    promptSuffix,
+    buildReferenceManifest(usedReferences, effectiveMode)
   );
-  const buffer = await generateGptImage2(promptUsed, { aspect: "1:1" });
+
+  const buffer =
+    effectiveMode === "text_only"
+      ? await generateGptImage2(promptUsed, { aspect: "1:1" })
+      : await generateGptImage2WithReferences({
+          prompt: promptUsed,
+          references: referenceBuffers,
+          mode: effectiveMode,
+          aspect: "1:1",
+        });
 
   const generatedAtIso = new Date().toISOString();
   const assetId = `meta-ad-${synthesis.id}-card${cardIndex}-${Date.now()}`;
@@ -120,6 +214,8 @@ export async function generateDealMetaAdCardImage(
       generator: card.generator,
       promptUsed: card.promptUsed,
       generatedAtIso: card.generatedAtIso ?? generatedAtIso,
+      mode: card.mode,
+      derivedFromImageUrl: card.derivedFromImageUrl,
     });
   }
 
@@ -132,6 +228,11 @@ export async function generateDealMetaAdCardImage(
     generatedAtIso,
     error: undefined,
     previousImages,
+    mode: effectiveMode,
+    // Lineage: only an edit has a parent. A new variation is a fresh
+    // composition even though it was informed by references.
+    derivedFromImageUrl:
+      effectiveMode === "edit_current" ? card.imageUrl : undefined,
   };
 }
 
@@ -163,6 +264,8 @@ export function revertDealMetaAdCardImage(
           generator: card.generator,
           promptUsed: card.promptUsed,
           generatedAtIso: card.generatedAtIso ?? new Date().toISOString(),
+          mode: card.mode,
+          derivedFromImageUrl: card.derivedFromImageUrl,
         },
         ...remaining,
       ]
@@ -177,5 +280,8 @@ export function revertDealMetaAdCardImage(
     generatedAtIso: target.generatedAtIso,
     error: undefined,
     previousImages,
+    // Restore the reverted image's own provenance, not the one it replaced.
+    mode: target.mode,
+    derivedFromImageUrl: target.derivedFromImageUrl,
   };
 }

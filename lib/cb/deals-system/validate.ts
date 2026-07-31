@@ -595,7 +595,73 @@ function validateDealMetaAdSynthesis(s: unknown, i: number, errors: string[]): v
       if (!["pending", "generating", "ready", "error"].includes(String(card.status))) {
         errors.push(`syntheses[${i}].cards[${j}].status invalid: ${String(card.status)}`);
       }
+      if (card.references !== undefined) {
+        if (!Array.isArray(card.references)) {
+          errors.push(`syntheses[${i}].cards[${j}].references must be an array`);
+        } else {
+          card.references.forEach((reference, k) =>
+            validateDealMetaImageReference(
+              reference,
+              `syntheses[${i}].cards[${j}].references[${k}]`,
+              errors
+            )
+          );
+        }
+      }
     });
+  }
+  if (m.shipIdentityReference !== undefined) {
+    validateDealMetaImageReference(
+      m.shipIdentityReference,
+      `syntheses[${i}].shipIdentityReference`,
+      errors
+    );
+  }
+}
+
+const DEAL_META_REFERENCE_ROLES = [
+  "ship_identity",
+  "destination_truth",
+  "composition",
+  "style",
+  "object",
+];
+
+const DEAL_META_REFERENCE_SOURCES = [
+  "funnel_candidate",
+  "card_history",
+  "operator_upload",
+  "url_import",
+];
+
+/**
+ * Reference records are optional everywhere (legacy syntheses have none), but a
+ * present one must be well-formed: a reference with no usable assetUrl would
+ * fail at generation time, long after the operator attached it.
+ */
+function validateDealMetaImageReference(
+  reference: unknown,
+  path: string,
+  errors: string[]
+): void {
+  if (!isRecord(reference)) {
+    errors.push(`${path} is not an object`);
+    return;
+  }
+  if (typeof reference.id !== "string" || !reference.id.trim()) {
+    errors.push(`${path}.id missing`);
+  }
+  if (typeof reference.assetUrl !== "string" || !reference.assetUrl.trim()) {
+    errors.push(`${path}.assetUrl missing`);
+  }
+  if (!DEAL_META_REFERENCE_ROLES.includes(String(reference.role))) {
+    errors.push(`${path}.role invalid: ${String(reference.role)}`);
+  }
+  if (!DEAL_META_REFERENCE_SOURCES.includes(String(reference.source))) {
+    errors.push(`${path}.source invalid: ${String(reference.source)}`);
+  }
+  if (!isIsoDate(reference.addedAtIso)) {
+    errors.push(`${path}.addedAtIso must be an ISO date`);
   }
 }
 

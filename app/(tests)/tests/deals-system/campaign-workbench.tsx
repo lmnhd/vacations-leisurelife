@@ -561,6 +561,13 @@ export function DealCampaignWorkbench({
     [promoOptions, cruiseLine]
   );
   const selectedDeal = deals.find((deal) => deal.id === selectedDealId) ?? deals[0];
+  // A deep link (e.g. the review queue's "Review Deal") can name a deal that is
+  // not in this list — a stale link, or a record deleted since the page loaded.
+  // Falling back to deals[0] silently reads as "the wrong deal was selected",
+  // so say so instead of leaving the operator to notice on their own.
+  const requestedDealMissing = Boolean(
+    requestedDealId && !deals.some((deal) => deal.id === requestedDealId)
+  );
   const selectedDealVisiblePromoOptions = useMemo(
     () =>
       selectedDeal
@@ -1252,6 +1259,19 @@ export function DealCampaignWorkbench({
         </div>
       ) : selectedDeal ? (
         <div className="space-y-3">
+          {requestedDealMissing && (
+            <div className="rounded-xl border border-amber-400/35 bg-amber-500/10 p-4 text-sm text-amber-100">
+              <p className="font-semibold">
+                Deal {requestedDealId} is not in this list.
+              </p>
+              <p className="mt-1 text-xs leading-5 opacity-90">
+                The link you followed points at a Curated Deal record that no longer exists or was
+                never assembled. Showing{" "}
+                <span className="font-semibold">{selectedDeal.title}</span> instead — pick the deal
+                you meant below before running any stage or approval.
+              </p>
+            </div>
+          )}
           <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <Field

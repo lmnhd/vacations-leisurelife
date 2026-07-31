@@ -51,6 +51,7 @@ export * from "./deal-funnel-synthesis-cache";
 export * from "./deal-meta-ad-style-presets";
 export * from "./deal-meta-ad-style-selector";
 export * from "./deal-meta-ad-prompt";
+export * from "./deal-meta-ad-references";
 export * from "./deal-meta-ad-synthesis-types";
 export * from "./deal-meta-ad-synthesis-cache";
 export * from "./deal-meta-ad-synthesis-generator";

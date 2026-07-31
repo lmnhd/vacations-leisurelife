@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-29T01:10:27.328Z",
+  "generatedAtIso": "2026-07-30T17:19:12.974Z",
   "distributions": [
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
@@ -1525,6 +1525,190 @@
         "facebook_page_dispatched_at=2026-07-29T01:10:27.326Z"
       ],
       "facebookPagePostId": "1071836329342347_122123200250816807"
+    },
+    {
+      "id": "funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026",
+      "dealId": "1557855",
+      "sourceMetaAdSynthesisId": "funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026",
+      "generatedAtIso": "2026-07-30T17:18:59.460Z",
+      "mode": "organic_page_only",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1557855",
+        "destinationUrl": "https://leisurelifeinteractive.net/deals/1557855",
+        "caption": "Norwegian Getaway departs Port Canaveral Dec 31, 2026. The countdown IS your departure. Book during the Semi-Annual Sale.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "NYE Sailaway at Midnight 🎆",
+            "primaryText": "Norwegian Getaway departs Port Canaveral Dec 31, 2026. The countdown IS your departure. Book during the Semi-Annual Sale.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card0-1785430825549.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "7 Nights, Eastern Caribbean",
+            "primaryText": "Puerto Plata → St. Thomas → Tortola → Great Stirrup Cay. A real NYE vacation, not a party that ends at 1 a.m.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card1-1785431574435.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "NCL Semi-Annual Sale Is Live",
+            "primaryText": "50% off eligible fares + reduced deposit on balcony-and-below. Lock in this Dec 31 sailing before the Aug 18 deadline.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card2-1785429660347.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "Stop Saying \"Next Year\"",
+            "primaryText": "This is the NYE plan you've been promising each other. Sale ends Aug 18, 2026 — cabins won't wait until fall. Book now.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card3-1785431711543.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "Travel + Leisure",
+            "Conde Nast Traveler",
+            "Norwegian Cruise Line",
+            "Norwegian Getaway",
+            "Orlando-Beaches-Port Canaveral, Fl",
+            "Puerto Plata, Dominican Republic",
+            "St Thomas, Vi",
+            "Tortola, British Virgin Islands",
+            "Great Stirrup Cay, Bahamas"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003121064322",
+              "name": "Travel + Leisure",
+              "sourceQuery": "Travel + Leisure",
+              "audienceSizeLowerBound": 92425749,
+              "audienceSizeUpperBound": 108692681
+            },
+            {
+              "id": "6003070150915",
+              "name": "Condé Nast Traveler",
+              "sourceQuery": "Conde Nast Traveler",
+              "resolvedQuery": "nast traveler",
+              "audienceSizeLowerBound": 6108911,
+              "audienceSizeUpperBound": 7184080
+            },
+            {
+              "id": "6003259120909",
+              "name": "Flower",
+              "sourceQuery": "Orlando-Beaches-Port Canaveral, Fl",
+              "resolvedQuery": "fl",
+              "audienceSizeLowerBound": 402648435,
+              "audienceSizeUpperBound": 473514560
+            },
+            {
+              "id": "6002964244917",
+              "name": "Dominican Republic",
+              "sourceQuery": "Puerto Plata, Dominican Republic",
+              "resolvedQuery": "dominican republic",
+              "audienceSizeLowerBound": 53261836,
+              "audienceSizeUpperBound": 62635920
+            },
+            {
+              "id": "6003525810694",
+              "name": "Video",
+              "sourceQuery": "St Thomas, Vi",
+              "resolvedQuery": "vi",
+              "audienceSizeLowerBound": 832802772,
+              "audienceSizeUpperBound": 979376060
+            },
+            {
+              "id": "6003202152013",
+              "name": "British Virgin Islands",
+              "sourceQuery": "Tortola, British Virgin Islands",
+              "resolvedQuery": "british virgin islands",
+              "audienceSizeLowerBound": 908835,
+              "audienceSizeUpperBound": 1068790
+            },
+            {
+              "id": "6003353446930",
+              "name": "The Bahamas",
+              "sourceQuery": "Great Stirrup Cay, Bahamas",
+              "resolvedQuery": "bahamas",
+              "audienceSizeLowerBound": 16238741,
+              "audienceSizeUpperBound": 19096760
+            }
+          ],
+          "unresolvedQueries": [
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "Norwegian Cruise Line",
+            "Norwegian Getaway"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "countries": [
+                "US"
+              ]
+            },
+            "targeting_automation": {
+              "advantage_audience": 1,
+              "individual_setting": {
+                "age": 1
+              }
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003121064322",
+                    "name": "Travel + Leisure"
+                  },
+                  {
+                    "id": "6003070150915",
+                    "name": "Condé Nast Traveler"
+                  },
+                  {
+                    "id": "6003259120909",
+                    "name": "Flower"
+                  },
+                  {
+                    "id": "6002964244917",
+                    "name": "Dominican Republic"
+                  },
+                  {
+                    "id": "6003525810694",
+                    "name": "Video"
+                  },
+                  {
+                    "id": "6003202152013",
+                    "name": "British Virgin Islands"
+                  },
+                  {
+                    "id": "6003353446930",
+                    "name": "The Bahamas"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "warnings": [
+            "AI-resolved parent nodes (17): Travel + Leisure, Conde Nast Traveler, Norwegian Cruise Line, Norwegian Getaway, Orlando-Beaches-Port Canaveral, Fl, Puerto Plata, Dominican Republic, St Thomas, Vi, Tortola, British Virgin Islands, Great Stirrup Cay, Bahamas, Cruise Critic, Luxury travel, All-inclusive resort, Travel Agents and Booking, Adventure travel, Caribbean, luxury goods, hotels"
+          ]
+        },
+        "campaignName": "[DRAFT] Deal 1557855 — Midnight Is the Departure",
+        "adSetName": "[DRAFT] Deal 1557855 Audience",
+        "creativeName": "deal-1557855-funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026-carousel",
+        "adName": "deal-1557855-funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026"
+      },
+      "notes": [
+        "facebook_page_id=1071836329342347",
+        "facebook_page_post_id=1071836329342347_122123399024816807",
+        "facebook_page_published=true",
+        "facebook_page_media_type=multi_image",
+        "facebook_page_card_count=4",
+        "facebook_page_destination_url=https://leisurelifeinteractive.net/deals/1557855",
+        "facebook_page_dispatched_at=2026-07-30T17:19:12.972Z"
+      ],
+      "facebookPagePostId": "1071836329342347_122123399024816807"
     }
   ]
 }

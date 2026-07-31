@@ -1,14 +1,179 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-17T00:48:37.324Z",
+  "generatedAtIso": "2026-07-30T15:45:29.503Z",
   "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
   "records": [
+    {
+      "id": "cbpromo-2904",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2904/",
+      "capturedAtIso": "2026-07-30T15:45:29.503Z",
+      "title": "Norwegian Cruise Line - Semi Annual Sale",
+      "vendor": "Norwegian Cruise Line",
+      "bookingWindow": {
+        "startsOn": "2026-07-07",
+        "endsOn": "2026-08-18",
+        "rawText": "Must be booked between 07/07/2026 and 08/18/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-10-15",
+        "endsOn": "2027-09-02",
+        "rawText": "For sailings on or between 10/15/2026 and 09/02/2027"
+      },
+      "promotionDetailsRaw": "NORWEGIAN CRUISE LINE SEMI-ANNUAL SALE IS GOING ON NOW! If you're looking to save big on your next vacation! NCL's first-ever Semi-Annual Sale is here, featuring 50% off all cruises* and bonus onboard credit on select sailings.\n\nSail from the Caribbean to Alaska to Europe and beyond, enjoy Black Friday-level savings now, and secure your ideal future getaway. With Free at Sea, NCL's all-inclusive cruising package, you’ll enjoy exceptional value from start to finish. Don’t miss your chance to book a dream cruise at a major discount before this limited-time offer sails away.\n\nReduced Deposit balconies and below only. Applicable for sailings of three days or longer. Does apply to Sail Away rates!\n\nSelect Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids\n\nBooking dates: July 8 - Aug 18, 2026*\n\n****************************************************************\n\nNCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)\n\nNCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)\n\n************************************************************************************************\n\nUp to $500 Onboard Credit per stateroom for select sailings (balcony and above). Book July 31 - August 3rd!*\n\n*********************************************************************************************\n\nCruiseFirst Offer: $250/$500 | Sailings 90+ Days Out & 6+ Days Duration\n\nJuly 28 - 30, 2026, August 4 - 6, 2026\n\n*onboard credit will apply if applicable sailing",
+      "agentInstructionsRaw": "Prepaid grats is not combinable with FITOBC. See NCL Central toolkit for more details.",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2268",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2268/",
+      "capturedAtIso": "2026-07-30T15:45:29.503Z",
+      "title": "HYATT Inclusive Collection - Exclusive Extras",
+      "vendor": "",
+      "bookingWindow": {
+        "startsOn": "2026-07-15",
+        "endsOn": "2026-08-30",
+        "rawText": "Must be booked between 07/15/2026 and 08/30/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-07-01",
+        "endsOn": "2027-06-30",
+        "rawText": "For sailings on or between 07/01/2026 and 06/30/2027"
+      },
+      "promotionDetailsRaw": "CRUISE BROTHERS and FUNJET Vacations is proud to bring you more Exclusive Perks at Hyatt Inclusive Collection!\n\nYou will be treated like VIP’s through-out your vacation experience. Complimentary private transfers, spa credits, preferred room locations, and more.\n\nSimply book an ALG Vacations brand and an Exclusive Perk hotel partner, and you will automatically enjoy exceptional values, services and amenities - complimentary extras that are only available when they travel with ALG Vacations, the nation’s leader in leisure travel.\n\nCANCUN - RIVIERA MAYA - PUNTA CANA - ARUBA - JAMAICA \n\nINCLUSIVE COLLECTION, PART OF HYATT HOTELS & RESORTS. Adult Only and Family Friendly Resorts.\n\n**********************************************************************************\n\nParticipating Properties*: Impression by Secrets®, Zoëtry® Wellness & Spa Resorts, Secrets® Resorts & Spas, Breathless® Resorts & Spas, Dreams® Resorts & Spas, Sunscape® Resorts & Spas, Hyatt Vivid Grand Island, Hyatt Zilara® Riviera Maya, and Hyatt Ziva® Riviera Maya. • Welcome letter • One bottle of wine/sparkling wine, rum, or tequila per room • 25% discount on spa services • One in-room breakfast with sparkling wine",
+      "agentInstructionsRaw": "ALG BRANDS - FUNJET, APPLE, TRAVEL IMPRESSIONS, UNITED VACATIONS, BLUE SKY TOURS HAWAII TAHITI FUNJET ACCEPTANCE FORM IN",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "cbpromo-2892",
+      "source": "cb_agent_tools_todays_view",
+      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
+      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2892/",
+      "capturedAtIso": "2026-07-30T15:45:29.503Z",
+      "title": "Regent Luxury Cruises - 35% Off, OBC, FREE Land Promo",
+      "vendor": "Regent Seven Seas Cruises",
+      "bookingWindow": {
+        "startsOn": "2026-06-15",
+        "endsOn": "2026-08-31",
+        "rawText": "Must be booked between 06/15/2026 and 08/31/2026"
+      },
+      "sailingWindow": {
+        "startsOn": "2026-11-22",
+        "endsOn": "2027-12-15",
+        "rawText": "For sailings on or between 11/22/2026 and 12/15/2027"
+      },
+      "promotionDetailsRaw": "In 2027, Regent Seven Seas Cruises® celebrates a remarkable milestone: 35 years of crafting the world's most luxurious voyages. To begin the celebration, we invite you aboard 35 anniversary sailings to some of the most storied destinations in the world. Each voyage features special programming, commemorative gifts and unexpected surprises created just for this milestone. Enjoy Up To 35% Savings, plus a $350 Shipboard Credit per suite, and discover why a Regent voyage is unrivaled.\n\nReserve by August 31, 2026.\n\nRegent Seven Seas Luxury Cruises - FREE Land Program on Exotics\n\nFREE Pre- or Post-Cruise Land Program. Embark on a voyage unlike any other with Regent Seven Seas Cruises. Enhance your journey with a FREE Pre- or Post-Cruise Land Program on select 2026–2027 Exotic Voyages. With over 15 immersive experiences to choose from, uncover the world’s most iconic destinations in unparalleled style. Whether it’s mastering the art of tango in Buenos Aires, sipping tea in Tokyo or discovering the fascinating traditions of Singapore, each multi-night tour package is thoughtfully curated to deepen your cultural connection.   Offer available on select sailings from November 2026 through March 2027.\n\nBANGKOK, SYDNEY, RIO, ARGENTINA, FIJI, PAPEETE, PANAMA\n\nReserve by August 31, 2026.",
+      "agentInstructionsRaw": "35th Anniversary Promotion - applies only to new reservations made between July 16, 2026, through August 31, 2026. Guests will receive savings of up to 35% on select voyages in select suite categories, plus a $175 USD Shipboard Credit per guest, up to $350 USD per suite. Offer is capacity controlled, valid only for residents of the US and Canada who either book directly with Regent Seven Seas Cruises® or through travel advisors located only in the US and Canada. Mention “ANNIVERSARY” at time of booking.\n\nApplicable suite categories are as follows per ship: Seven Seas Prestige, Explorer, Grandeur, Mariner, Splendor: D-H (Concierge & Below), Seven Seas Voyager: A-H (Penthouse & Below)\n\nShipboard Credits may be used for Regent Choice Shore Excursions, spa treatments, boutique merchandise, Executive Collection private transportation in ports, and Culinary Arts Kitchen and Epicurean Enrichment Studio classes. Shipboard Credits cannot be used for Casino credits. Shipboard Credit is valid only for the cruise booked, and all unused credit will expire at the end of the cruise.\n\nAvailability is limited, and restrictions apply — applicable voyages are subject to removal at any time without notice; savings amounts are subject to change. Offer may be withdrawn at any time without prior notice. Offer is combinable with Seven Seas Society Savings, Regent Ambassador Savings, Onboard Savings and Active Standard Consumer Events; however, offer is not combinable with Iconic Explorations, Groups Pricing, Resident Specials and other discount offers. For the list of applicable voyages, please visit www.RSSC.com/Anniversary. For complete Terms & Conditions, please visit www.RSSC.com/legal/terms-conditions.\n\nOffers may not be combinable.\n\nFree Land see",
+      "keyFeaturesRaw": "",
+      "applicableSailingsRaw": "",
+      "applicableProductsRaw": "",
+      "applicableMarketsRaw": "",
+      "supportingFiles": [],
+      "extracted": {
+        "offerTypes": [],
+        "percentDiscounts": [],
+        "dollarSavings": [],
+        "onboardCredits": [],
+        "freeGuestOffers": [],
+        "combinability": {
+          "rawRules": []
+        },
+        "exclusions": [],
+        "applicableProducts": [],
+        "applicableMarkets": []
+      },
+      "marketingUse": {
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
+        "bestMatchedDealBriefs": [],
+        "visitorFriendlySummary": ""
+      },
+      "diagnostics": {
+        "status": "needs_review",
+        "notes": [
+          "Raw capture only; structured extraction pending Phase 5."
+        ],
+        "warnings": []
+      }
+    },
     {
       "id": "cbpromo-2876",
       "source": "cb_agent_tools_todays_view",
       "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
       "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2876/",
-      "capturedAtIso": "2026-07-17T00:36:14.727Z",
+      "capturedAtIso": "2026-07-30T15:45:29.503Z",
       "title": "Princess Cruises is delighted to unveil our most comprehensive Europe program ever, featuring an extraordinary collection of voyages across Northern Europe, the Mediterranean, and Transatlantic for Summer 2028 — including our extraordinary Pole‑to‑Pole Odyssey, one of the most epic Grand Adventures in our deployment. The full program spans 291 departures on 150 unique itineraries to 118 destinations in 36 countries, and 13 departure ports, making it one of our most diverse and globally appealing European offerings to date.",
       "vendor": "Princess Cruises",
       "bookingWindow": {
@@ -29,463 +194,31 @@
       "applicableMarketsRaw": "",
       "supportingFiles": [],
       "extracted": {
-        "offerTypes": [
-          "instant_savings",
-          "onboard_credit",
-          "other"
-        ],
-        "percentDiscounts": [],
-        "dollarSavings": [
-          {
-            "amountUsd": 500,
-            "appliesTo": "instant savings",
-            "voyageLength": "",
-            "cabinCategory": "",
-            "bookingDayWindow": "",
-            "rawText": "Offer Details: Up to $500 Instant Savings + Up to $500 Onboard Credit"
-          },
-          {
-            "amountUsd": 400,
-            "appliesTo": "Free Location Upgrade",
-            "voyageLength": "",
-            "cabinCategory": "",
-            "bookingDayWindow": "",
-            "rawText": "Free Location Upgrade up to $400 per stateroom"
-          },
-          {
-            "amountUsd": 250,
-            "appliesTo": "single occupancy instant savings per guest",
-            "voyageLength": "",
-            "cabinCategory": "",
-            "bookingDayWindow": "",
-            "rawText": "Guests with single occupancy will receive single, per guest Instant Savings amount ($25 - $250)"
-          },
-          {
-            "amountUsd": 200,
-            "appliesTo": "single occupancy Captain’s Circle instant savings per guest",
-            "voyageLength": "",
-            "cabinCategory": "",
-            "bookingDayWindow": "",
-            "rawText": "Guests with single occupancy will receive single, per guest Captain’s Circle Instant Savings amount ($50 - $200)"
-          }
-        ],
-        "onboardCredits": [
-          {
-            "amountUsd": 500,
-            "appliesTo": "onboard credit",
-            "voyageLength": "",
-            "cabinCategory": "",
-            "bookingDayWindow": "",
-            "rawText": "Offer Details: Up to $500 Instant Savings + Up to $500 Onboard Credit"
-          },
-          {
-            "amountUsd": 250,
-            "appliesTo": "single occupancy onboard credit per guest",
-            "voyageLength": "",
-            "cabinCategory": "",
-            "bookingDayWindow": "",
-            "rawText": "Guests with single occupancy will receive single, per guest OBC amount ($25 - $250)"
-          }
-        ],
-        "freeGuestOffers": [],
-        "combinability": {
-          "rawRules": [
-            "see terms and conditions/sailing lists in One Source"
-          ]
-        },
-        "exclusions": [
-          "Guests 1 & 2 only",
-          "New Bookings Only deposited: June 2 - October 12, 2028"
-        ],
-        "applicableProducts": [
-          "2028 Europe voyages"
-        ],
-        "applicableMarkets": []
-      },
-      "marketingUse": {
-        "publicClaimsAllowed": [
-          "Select 2028 Europe voyages may qualify for instant savings and onboard credit.",
-          "Select bookings may include a free location upgrade, early access to dining reservations, advanced access to embarkation times, and reduced deposits.",
-          "Captain’s Circle members may qualify for additional instant savings."
-        ],
-        "publicClaimsNeedsQualifier": [
-          "Up to $500 Instant Savings + Up to $500 Onboard Credit",
-          "$100 Deposits!",
-          "Free Location Upgrade up to $400 per stateroom",
-          "Guests 1 & 2 only",
-          "Guests with single occupancy will receive single, per guest Instant Savings amount ($25 - $250)",
-          "Guests with single occupancy will receive single, per guest OBC amount ($25 - $250)",
-          "Guests with single occupancy will receive single, per guest Captain’s Circle Instant Savings amount ($50 - $200)"
-        ],
-        "agentOnlyNotes": [
-          "see terms and conditions/sailing lists in One Source"
-        ],
-        "suggestedAngles": [
-          "Early booking offer for 2028 Europe voyages",
-          "Potential onboard credit and instant savings on select Europe sailings",
-          "Extra value for Captain’s Circle members",
-          "Reduced deposit offer for early planners"
-        ],
-        "cautionFlags": [
-          "Offer details use 'up to' language, so savings and credit amounts are not guaranteed.",
-          "Eligibility appears limited to Guests 1 & 2 only.",
-          "Single occupancy receives different per-guest amounts.",
-          "Captain’s Circle savings are additional and membership-dependent.",
-          "Sailing-specific terms and conditions are not provided here and must be verified in One Source.",
-          "The text says 'New Bookings Only deposited: June 2 - October 12, 2028,' which conflicts with the stated booking window of 06/02/2026 to 10/12/2026."
-        ],
-        "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": "Select Princess 2028 Europe voyages may qualify for early booking perks such as instant savings, onboard credit, a location upgrade, and reduced deposits. Availability and final pricing/perks should be confirmed in the booking portal based on sailing, occupancy, and guest eligibility."
-      },
-      "diagnostics": {
-        "status": "succeeded",
-        "model": "gpt-5.4",
-        "notes": [
-          "Offers: instant_savings, onboard_credit, other.",
-          "Public claims: 3, needs-qualifier: 7, caution flags: 6."
-        ],
-        "warnings": []
-      }
-    },
-    {
-      "id": "cbpromo-2904",
-      "source": "cb_agent_tools_todays_view",
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
-      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2904/",
-      "capturedAtIso": "2026-07-17T00:36:14.727Z",
-      "title": "Norwegian Cruise Line - Semi Annual Sale",
-      "vendor": "Norwegian Cruise Line",
-      "bookingWindow": {
-        "startsOn": "2026-07-07",
-        "endsOn": "2026-07-30",
-        "rawText": "Must be booked between 07/07/2026 and 07/30/2026"
-      },
-      "sailingWindow": {
-        "startsOn": "2026-10-15",
-        "endsOn": "2027-09-02",
-        "rawText": "For sailings on or between 10/15/2026 and 09/02/2027"
-      },
-      "promotionDetailsRaw": "NORWEGIAN CRUISE LINE SEMI-ANNUAL SALE IS GOING ON NOW! If you're looking to save big on your next vacation! NCL's first-ever Semi-Annual Sale is here, featuring 50% off all cruises* and Free Pre-Paid Gratuities on select sailings*.\n\nSail from the Caribbean to Alaska to Europe and beyond, enjoy Black Friday-level savings now, and secure your ideal future getaway. With Free at Sea, NCL's all-inclusive cruising package, you’ll enjoy exceptional value from start to finish. Don’t miss your chance to book a dream cruise at a major discount before this limited-time offer sails away.\n\nReduced Deposit balconies and below only. Applicable for sailings of three days or longer. Does apply to Sail Away rates!\n\nSelect Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids\n\nBooking dates: July 8 - 30, 2026*\n\n****************************************************************\n\nNCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)\n\nNCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)\n\n************************************************************************************************\n\n*Free Pre-Paid Service Charges on Guests 1-2 | Balcony and Above on select voyage dates. Prepaid Gratuities are valued at $20 per person, per day. Latitude members bookings July 8th and 9th, open to others July 10th to 20th.  New Bookings only!\n\n******************************************************************************************\n\nCruiseFirst Offer: $250/$500 | Sailings 90+ Days Out & 6+ Days Duration\n\nJuly 28 - 30, 2026",
-      "agentInstructionsRaw": "Prepaid grats is not combinable with FITOBC. See NCL Central toolkit for more details.",
-      "keyFeaturesRaw": "",
-      "applicableSailingsRaw": "",
-      "applicableProductsRaw": "",
-      "applicableMarketsRaw": "",
-      "supportingFiles": [],
-      "extracted": {
-        "offerTypes": [
-          "other",
-          "all_included",
-          "free_extra_guests",
-          "other"
-        ],
-        "percentDiscounts": [
-          {
-            "appliesTo": "all cruises",
-            "percentOff": 50,
-            "rawText": "featuring 50% off all cruises*"
-          },
-          {
-            "appliesTo": "voyage fare total",
-            "percentOff": 10,
-            "rawText": "NCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)"
-          },
-          {
-            "appliesTo": "voyage fare total",
-            "percentOff": 5,
-            "rawText": "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)"
-          }
-        ],
-        "dollarSavings": [
-          {
-            "amountUsd": 99,
-            "appliesTo": "Kids",
-            "rawText": "Select Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids"
-          },
-          {
-            "amountUsd": 250,
-            "appliesTo": "CruiseFirst Offer",
-            "voyageLength": "6+ Days Duration",
-            "bookingDayWindow": "Sailings 90+ Days Out",
-            "rawText": "CruiseFirst Offer: $250/$500 | Sailings 90+ Days Out & 6+ Days Duration"
-          },
-          {
-            "amountUsd": 500,
-            "appliesTo": "CruiseFirst Offer",
-            "voyageLength": "6+ Days Duration",
-            "bookingDayWindow": "Sailings 90+ Days Out",
-            "rawText": "CruiseFirst Offer: $250/$500 | Sailings 90+ Days Out & 6+ Days Duration"
-          }
-        ],
-        "onboardCredits": [
-          {
-            "amountUsd": 50,
-            "appliesTo": "per stateroom",
-            "rawText": "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)"
-          }
-        ],
-        "freeGuestOffers": [
-          {
-            "guestNumbers": "3rd & 4th Kids",
-            "rawText": "Select Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids"
-          },
-          {
-            "guestNumbers": "3rd & 4th Guests",
-            "rawText": "Select Sailing Dates: 3rd & 4th Kids Sail Free, 3rd & 4th Guests Free or $99 USD Kids"
-          }
-        ],
-        "combinability": {
-          "allIncluded": true,
-          "groupRates": false,
-          "rawRules": [
-            "NCL's Military Appreciation Program offers 10% discount off the voyage fare total. Capacity controlled. (not combinable with groups)",
-            "NCL's Teacher's Discount Program offers 5% off the voyage fare total plus $50 USD onboard credit per stateroom. Capacity Controlled. (not combinable with groups)",
-            "Prepaid grats is not combinable with FITOBC. See NCL Central toolkit for more details."
-          ]
-        },
-        "exclusions": [
-          "Reduced Deposit balconies and below only.",
-          "Applicable for sailings of three days or longer.",
-          "*Free Pre-Paid Service Charges on Guests 1-2 | Balcony and Above on select voyage dates.",
-          "New Bookings only!",
-          "Capacity controlled.",
-          "Select Sailing Dates"
-        ],
-        "applicableProducts": [],
-        "applicableMarkets": []
-      },
-      "marketingUse": {
-        "publicClaimsAllowed": [
-          "Select sailings may qualify for up to 50% off cruises.",
-          "Select sailings may qualify for Free at Sea included value.",
-          "Some select sailing dates may qualify for 3rd and 4th guests or kids offers.",
-          "Select bookings may qualify for free pre-paid gratuities on eligible sailings."
-        ],
-        "publicClaimsNeedsQualifier": [
-          "50% off applies to cruises as advertised, but booking and sailing windows apply.",
-          "Free pre-paid gratuities are only for Guests 1-2, Balcony and Above, on select voyage dates, and new bookings only.",
-          "Reduced deposit applies to balconies and below only.",
-          "Offer is applicable for sailings of three days or longer.",
-          "Sail Away rates are included.",
-          "3rd & 4th Kids Sail Free, 3rd & 4th Guests Free, or $99 USD Kids applies only on select sailing dates.",
-          "Military Appreciation offers 10% off voyage fare total, is capacity controlled, and is not combinable with groups.",
-          "Teacher's Discount offers 5% off voyage fare total plus $50 USD onboard credit per stateroom, is capacity controlled, and is not combinable with groups.",
-          "CruiseFirst $250/$500 offer applies to sailings 90+ days out and 6+ days duration.",
-          "Latitude members access for prepaid gratuities begins July 8-9, with others July 10-20."
-        ],
-        "agentOnlyNotes": [
-          "Prepaid grats is not combinable with FITOBC. See NCL Central toolkit for more details.",
-          "Military and Teacher discounts are not combinable with groups.",
-          "Capacity controlled offers require availability confirmation.",
-          "New bookings only for prepaid gratuities."
-        ],
-        "suggestedAngles": [
-          "Semi-annual cruise savings event",
-          "Select sailings with discounted fares and added value",
-          "Family-friendly select dates with extra guest offers",
-          "All-inclusive value messaging with Free at Sea"
-        ],
-        "cautionFlags": [
-          "Do not broadly advertise free pre-paid gratuities without noting Guests 1-2, Balcony and Above, select voyage dates, and new bookings only.",
-          "Do not imply all sailings include kids free, extra guests free, or $99 kids; text says select sailing dates.",
-          "Do not imply reduced deposit applies to all cabin categories; text limits it to balconies and below.",
-          "Do not present Military or Teacher discounts as universally available; both are capacity controlled and have combinability limits.",
-          "CruiseFirst $250/$500 wording does not specify exact distribution by booking, so avoid overexplaining it publicly."
-        ],
-        "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": "Norwegian Cruise Line's Semi-Annual Sale may qualify select sailings for major fare discounts, family offers, and added perks like Free at Sea or pre-paid gratuities on eligible bookings. Final pricing, eligibility, and included perks are confirmed in the booking portal based on sailing, cabin, and promotion rules."
-      },
-      "diagnostics": {
-        "status": "succeeded",
-        "model": "gpt-5.4",
-        "notes": [
-          "Offers: other, all_included, free_extra_guests, other.",
-          "Public claims: 4, needs-qualifier: 10, caution flags: 5."
-        ],
-        "warnings": []
-      }
-    },
-    {
-      "id": "cbpromo-2907",
-      "source": "cb_agent_tools_todays_view",
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
-      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2907/",
-      "capturedAtIso": "2026-07-17T00:36:14.727Z",
-      "title": "MSC Cruises - up to 30% off, Kids Sail Free + Onboard Credit",
-      "vendor": "MSC Cruises",
-      "bookingWindow": {
-        "startsOn": "2026-07-08",
-        "endsOn": "2026-08-03",
-        "rawText": "Must be booked between 07/08/2026 and 08/03/2026"
-      },
-      "sailingWindow": {
-        "startsOn": "2026-07-15",
-        "endsOn": "2028-10-01",
-        "rawText": "For sailings on or between 07/15/2026 and 10/01/2028"
-      },
-      "promotionDetailsRaw": "MSC Cruises Bonus Savings, Kids Free and up to $500 Shipboard Credit!\n\nSave $$$ by booking a One Device WIFI and Beverage package at a discounted price when making your new cruise reservation!\n\nTurn on summer mode and save big on your next holiday! From sun-soaked thrills and live shows to flavors that take you on a world tour, our state-of-the-art ships bring you unforgettable moments at sea. Book your holidays to must-see destinations like the Caribbean and The Bahamas, Europe, Alaska, and beyond. Let’s Holiday!\n\nShips: MSC World America, MSC World Asia, MSC Armonia, MSC Bellissima, MSC Divina, MSC Euribia, MSC World Europa, MSC Fantasia, MSC Grandiosa, MSC Lirica, MSC Magnifica, MSC Meraviglia, MSC Musica, MSC Opera, MSC Orchestra, MSC Poesia, MSC Preziosa, MSC Seascape, MSC Seaside, MSC Seashore, MSC Splendida, MSC Seaview, MSC Sinfonia, MSC Virtuosa\n\n\nDestinations: Alaska, Caribbean and North America, Canary Islands, Far East, Mediterranean, Northern Europe, Panama Canal and Grand Voyages\n\n\nSailing Months:  July 2026 to October 2028\n\nBook July 8 - August 3, 2026. New Bookings Only.\n\n*onboard credit varies by type of cabin and length of cruise",
-      "agentInstructionsRaw": "For complete terms and conditions, visit https://www.msccruisesusa.com/cruise-deals/promo-terms-and-conditions.",
-      "keyFeaturesRaw": "",
-      "applicableSailingsRaw": "",
-      "applicableProductsRaw": "",
-      "applicableMarketsRaw": "",
-      "supportingFiles": [],
-      "extracted": {
-        "offerTypes": [
-          "onboard_credit",
-          "other"
-        ],
-        "percentDiscounts": [],
-        "dollarSavings": [],
-        "onboardCredits": [
-          {
-            "amountUsd": 500,
-            "appliesTo": "select new bookings",
-            "voyageLength": "varies by length of cruise",
-            "cabinCategory": "varies by type of cabin",
-            "rawText": "MSC Cruises Bonus Savings, Kids Free and up to $500 Shipboard Credit!\n\n*onboard credit varies by type of cabin and length of cruise"
-          }
-        ],
-        "freeGuestOffers": [],
-        "combinability": {
-          "rawRules": []
-        },
-        "exclusions": [
-          "New Bookings Only."
-        ],
-        "applicableProducts": [],
-        "applicableMarkets": []
-      },
-      "marketingUse": {
-        "publicClaimsAllowed": [
-          "Select MSC Cruises sailings may qualify for onboard credit.",
-          "Select MSC Cruises bookings may include bonus savings offers."
-        ],
-        "publicClaimsNeedsQualifier": [
-          "Up to $500 shipboard credit, with onboard credit varying by type of cabin and length of cruise.",
-          "Discounted pricing may be available on a One Device WIFI and Beverage package when making a new cruise reservation.",
-          "Offer applies to new bookings only.",
-          "Offer is available only for bookings made July 8 - August 3, 2026, for sailings on or between 07/15/2026 and 10/01/2028."
-        ],
-        "agentOnlyNotes": [
-          "For complete terms and conditions, visit https://www.msccruisesusa.com/cruise-deals/promo-terms-and-conditions."
-        ],
-        "suggestedAngles": [
-          "Highlight select sailings that may qualify for onboard credit.",
-          "Promote potential extra value on new MSC bookings.",
-          "Feature destination variety including the Caribbean, Bahamas, Europe, and Alaska.",
-          "Mention possible discounted WIFI and beverage package pricing at booking."
-        ],
-        "cautionFlags": [
-          "Title references 'up to 30% off' but no supporting terms appear in the provided text.",
-          "Title references 'Kids Sail Free' but the detailed text only says 'Kids Free' without clear terms or guest-number specifics.",
-          "Do not advertise a guaranteed $500 onboard credit; text says 'up to $500' and it varies by cabin type and cruise length.",
-          "Do not imply all sailings, cabins, or voyages qualify."
-        ],
-        "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": "Select MSC Cruises sailings booked during the promotional window may qualify for bonus savings and onboard credit, with final value depending on cabin type and cruise length. Pricing, eligibility, and any included perks are confirmed in the booking portal."
-      },
-      "diagnostics": {
-        "status": "succeeded",
-        "model": "gpt-5.4",
-        "notes": [
-          "Offers: onboard_credit, other.",
-          "Public claims: 2, needs-qualifier: 4, caution flags: 4."
-        ],
-        "warnings": []
-      }
-    },
-    {
-      "id": "cbpromo-2889",
-      "source": "cb_agent_tools_todays_view",
-      "sourceUrl": "https://www.cbagenttools.com/marketing/todaysview/",
-      "detailUrl": "https://www.cbagenttools.com/marketing/promotion/2889/",
-      "capturedAtIso": "2026-07-17T00:36:14.727Z",
-      "title": "Royal Caribbean - 3-5 Night Cruises - FREE Dining",
-      "vendor": "Royal Caribbean International",
-      "bookingWindow": {
-        "startsOn": "2026-07-01",
-        "endsOn": "2026-07-31",
-        "rawText": "Must be booked between 07/01/2026 and 07/31/2026"
-      },
-      "sailingWindow": {
-        "startsOn": "2026-08-17",
-        "endsOn": "2027-02-28",
-        "rawText": "For sailings on or between 08/17/2026 and 02/28/2027"
-      },
-      "promotionDetailsRaw": "Cruise Brothers Exclusive FREE Dining on Royal Caribbean Short 2026 sailings.\n\nBalcony or Suite on 3-5 night Short Caribbean and West Coast/Mexico sailings\ndeparting August 17, 2026 – February 28, 2027\n\nRoyal Caribbean will apply specialty dining to all eligible reservations by August 17, 2026\n\nVoucher will be included within guest documents (eDocs) as early as 49 days prior to sailing \n\nNew bookings only reserved and deposited July 1 - 31, 2026\n\n*Offer includes one complimentary specialty dining experience per stateroom for two guests.\nOffer is valid for lunch for two, one per sailing, at Chops Grille, Giovanni’s Table, Jamie’s Italian or Sabor Modern\nMexican; or dinner for two, one per sailing, at Chops Grille, Giovanni's Table, Samba Grill, Jamie’s Italian, 150 Central\nPark, Wonderland or Hooked Seafood. Offer is not valid at Izumi Hibachi or Izumi Asian Cuisine. Venues vary by ship.\nReservations for specialty dining offers must be made onboard.",
-      "agentInstructionsRaw": "Bookings can be made via the phone by calling Royal Caribbean Reservations at 1-800-\n327-6700, online at www.cruisingpower.com via Espresso.\n\n\n• All redemptions must be submitted via the below form by August 3, 2026:\nhttps://forms.office.com/r/e8c4JhbM1Y\n\n\n• Royal Caribbean will apply specialty dining to all eligible reservations by August 17, 2026\n\n\n• Voucher will be included within guest documents (eDocs) as early as 49 days prior to\nsailing \n\nSpecialty dining experience for two applies to new bookings created 7/1/26 – 7/31/26 on 3-5-night Short Caribbean\nand West Coast/Mexico sailings departing 8/17/26-02/28/2027, in balcony or above stateroom categories. Offer\nincludes one complimentary specialty dining experience per stateroom for two guests. Offer is valid for lunch for\ntwo, one per sailing, at Chops Grille, Giovanni’s Table, Jamie’s Italian or Sabor Modern Mexican; or dinner for two, one\nper sailing, at Chops Grille, Giovanni's Table, Samba Grill, Jamie’s Italian, 150 Central Park, Wonderland or Hooked\nSeafood. Offer is not valid at Izumi Hibachi or Izumi Asian Cuisine. Venues vary by ship. Reservations for specialty\ndining offers must be made onboard. Offer may be used on any day based on venue availability. Revenue items\nshown on specialty dining menus are not included in this offer and are available at an additional cost. Special\ndining events that take place in Specialty restaurants are excluded from the specialty dining offer. Offer cannot be\nused toward the purchase of specialty dining packages. Alcoholic beverages and sodas are not included and are\navailable at an additional cost. Specialty dining gratuities are included. This offer does not give guest(s) any priority\nfor reservations, or if there is a wait to be seated in the restaurant. Offer is not combinable with other specialty\ndining offers or with the following rates, including, but not limited to, Incentive Groups, Standard Groups, Affinity Groups, Interline,\nTravel Agent, Travel Agent Friends & Family, Net rates, or Casino rates, and does not change with Royal Up\nUpgrades.",
-      "keyFeaturesRaw": "",
-      "applicableSailingsRaw": "",
-      "applicableProductsRaw": "",
-      "applicableMarketsRaw": "",
-      "supportingFiles": [],
-      "extracted": {
-        "offerTypes": [
-          "agency_special",
-          "other"
-        ],
+        "offerTypes": [],
         "percentDiscounts": [],
         "dollarSavings": [],
         "onboardCredits": [],
         "freeGuestOffers": [],
         "combinability": {
-          "rawRules": [
-            "Offer is not combinable with other specialty dining offers or with the following rates, including, but not limited to, Incentive Groups, Standard Groups, Affinity Groups, Interline, Travel Agent, Travel Agent Friends & Family, Net rates, or Casino rates, and does not change with Royal Up Upgrades."
-          ]
+          "rawRules": []
         },
-        "exclusions": [
-          "Offer is not valid at Izumi Hibachi or Izumi Asian Cuisine.",
-          "Revenue items shown on specialty dining menus are not included in this offer and are available at an additional cost.",
-          "Special dining events that take place in Specialty restaurants are excluded from the specialty dining offer.",
-          "Offer cannot be used toward the purchase of specialty dining packages.",
-          "Alcoholic beverages and sodas are not included and are available at an additional cost.",
-          "Offer is not combinable with other specialty dining offers or with the following rates, including, but not limited to, Incentive Groups, Standard Groups, Affinity Groups, Interline, Travel Agent, Travel Agent Friends & Family, Net rates, or Casino rates, and does not change with Royal Up Upgrades."
-        ],
+        "exclusions": [],
         "applicableProducts": [],
         "applicableMarkets": []
       },
       "marketingUse": {
-        "publicClaimsAllowed": [
-          "Select Royal Caribbean 3-5 night short sailings may qualify for a complimentary specialty dining experience for two per stateroom.",
-          "Eligible balcony or suite bookings on select Short Caribbean and West Coast/Mexico sailings may qualify for a Cruise Brothers exclusive dining perk."
-        ],
-        "publicClaimsNeedsQualifier": [
-          "Offer applies to new bookings created 7/1/26 – 7/31/26 on 3-5-night Short Caribbean and West Coast/Mexico sailings departing 8/17/26-02/28/2027, in balcony or above stateroom categories.",
-          "Offer includes one complimentary specialty dining experience per stateroom for two guests.",
-          "Offer is valid for lunch for two, one per sailing, at Chops Grille, Giovanni’s Table, Jamie’s Italian or Sabor Modern Mexican; or dinner for two, one per sailing, at Chops Grille, Giovanni's Table, Samba Grill, Jamie’s Italian, 150 Central Park, Wonderland or Hooked Seafood.",
-          "Venues vary by ship.",
-          "Reservations for specialty dining offers must be made onboard.",
-          "Offer may be used on any day based on venue availability."
-        ],
-        "agentOnlyNotes": [
-          "All redemptions must be submitted via the below form by August 3, 2026: https://forms.office.com/r/e8c4JhbM1Y",
-          "Royal Caribbean will apply specialty dining to all eligible reservations by August 17, 2026",
-          "Voucher will be included within guest documents (eDocs) as early as 49 days prior to sailing",
-          "Offer is not combinable with other specialty dining offers or with the following rates, including, but not limited to, Incentive Groups, Standard Groups, Affinity Groups, Interline, Travel Agent, Travel Agent Friends & Family, Net rates, or Casino rates, and does not change with Royal Up Upgrades."
-        ],
-        "suggestedAngles": [
-          "Cruise Brothers exclusive dining perk on select Royal Caribbean short sailings",
-          "Balcony and suite bonus for eligible 3-5 night Caribbean and West Coast/Mexico cruises",
-          "Added onboard dining value on select new Royal Caribbean bookings"
-        ],
-        "cautionFlags": [
-          "Do not advertise this as valid on all Royal Caribbean sailings; it is limited to 3-5-night Short Caribbean and West Coast/Mexico sailings departing 8/17/26-02/28/2027.",
-          "Do not imply every cabin qualifies; it is limited to balcony or above stateroom categories.",
-          "Do not promise specific restaurant availability; venues vary by ship and dining is subject to availability.",
-          "Do not say the offer covers drinks or all menu items; alcoholic beverages, sodas, and revenue items are excluded.",
-          "Do not present this as combinable with other specialty dining offers or restricted rate types.",
-          "Do not imply dining packages are included or that the offer can be used toward specialty dining packages."
-        ],
+        "publicClaimsAllowed": [],
+        "publicClaimsNeedsQualifier": [],
+        "agentOnlyNotes": [],
+        "suggestedAngles": [],
+        "cautionFlags": [],
         "bestMatchedDealBriefs": [],
-        "visitorFriendlySummary": "Select new Royal Caribbean balcony or suite bookings on eligible 3-5 night short sailings may qualify for a complimentary specialty dining experience for two per stateroom. Availability, ship venues, and final pricing/perks are confirmed in the booking portal and onboard reservation process."
+        "visitorFriendlySummary": ""
       },
       "diagnostics": {
-        "status": "succeeded",
-        "model": "gpt-5.4",
+        "status": "needs_review",
         "notes": [
-          "Offers: agency_special, other.",
-          "Public claims: 2, needs-qualifier: 6, caution flags: 6."
+          "Raw capture only; structured extraction pending Phase 5."
         ],
         "warnings": []
       }
@@ -494,8 +227,8 @@
   "diagnostics": {
     "promotionLinksFound": 4,
     "detailPagesScraped": 4,
-    "extractionSucceeded": 4,
-    "extractionNeedsReview": 0,
+    "extractionSucceeded": 0,
+    "extractionNeedsReview": 4,
     "supportingFilesFound": 0,
     "errors": []
   }

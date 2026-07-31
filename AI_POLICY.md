@@ -71,6 +71,18 @@ Finished, stable implementations are documented in:
 
 Always check here before building something — it may already exist.
 
+### Repo Skill Discovery
+
+Canonical repo skill sources live under `.github/skills/`. Codex discovers repo-local skills through `.agents/skills/`.
+
+On a fresh Windows checkout, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-repo-codex-skills.ps1
+```
+
+The script creates local junctions from `.agents/skills/<skill-name>` to the canonical `.github/skills/<skill-name>` directories. The generated junction tree is ignored by Git; never maintain duplicate skill copies.
+
 ---
 
 ## 4. Cruise Brothers Agent Tools (CBAT)

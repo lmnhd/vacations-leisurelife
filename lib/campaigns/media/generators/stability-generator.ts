@@ -19,10 +19,19 @@ import { assignExtendersToBatch, DEFAULT_PROMPT_EXTENDERS } from '../prompt-exte
 import { selectFiltersForBatch, IMAGE_FILTER_REGISTRY } from '../image-filter-registry';
 import { getActiveImageBackends, type ImageAspect } from './image-backends';
 import { generateGptImage2 } from './gpt-image';
+import {
+    fetchUsableReferenceImage,
+    normalizeReferenceImage,
+    ReferenceFetchError,
+    REFERENCE_MAX_DIMENSION,
+} from './reference-image';
+
+// Re-exported for existing importers: ReferenceFetchError was defined here
+// before the shared reference-image module absorbed it.
+export { ReferenceFetchError };
 
 const NANO_BANANA_PROMPT_CHAR_LIMIT = 6000;
-const NANO_BANANA_REFERENCE_MAX_DIMENSION = 1280;
-const NANO_BANANA_REFERENCE_JPEG_QUALITY = 70;
+const NANO_BANANA_REFERENCE_MAX_DIMENSION = REFERENCE_MAX_DIMENSION;
 const NANO_BANANA_MAX_ATTEMPTS = 3;
 const NANO_BANANA_RETRY_DELAY_MS = 1200;
 const REMOTE_FETCH_TIMEOUT_MS = 90000;
@@ -53,112 +62,20 @@ function trimPromptForNanoBanana(prompt: string): string {
     return `${prompt.slice(0, NANO_BANANA_PROMPT_CHAR_LIMIT - 32).trimEnd()}... [truncated]`;
 }
 
-async function optimizeReferenceImageForNanoBanana(
+/**
+ * Nano-Banana's reference normalization is now the shared implementation in
+ * ./reference-image. Kept as a thin alias so the call sites below read the same
+ * as before.
+ *
+ * The LOUD-fetch contract also moved there: fetchUsableReferenceImage throws
+ * ReferenceFetchError rather than returning null, because a silent null is what
+ * let generateSceneImages fall through to text-only output while the manifest
+ * still looked complete (IMAGE_GEN_REVAMP_5-26, Phase 8).
+ */
+const optimizeReferenceImageForNanoBanana = (
     sourceBuffer: Buffer,
     sourceMimeType?: string,
-): Promise<{ buffer: Buffer; mimeType: string } | null> {
-    if (!sourceMimeType?.startsWith('image/')) {
-        return null;
-    }
-
-    try {
-        const pipeline = sharp(sourceBuffer).rotate();
-        const metadata = await pipeline.metadata();
-        const width = metadata.width ?? NANO_BANANA_REFERENCE_MAX_DIMENSION;
-        const height = metadata.height ?? NANO_BANANA_REFERENCE_MAX_DIMENSION;
-
-        const needsResize = Math.max(width, height) > NANO_BANANA_REFERENCE_MAX_DIMENSION;
-        const normalizedPipeline = needsResize
-            ? pipeline.resize({
-                width: NANO_BANANA_REFERENCE_MAX_DIMENSION,
-                height: NANO_BANANA_REFERENCE_MAX_DIMENSION,
-                fit: 'inside',
-                withoutEnlargement: true,
-            })
-            : pipeline;
-
-        const hasAlpha = metadata.hasAlpha === true;
-        if (hasAlpha && sourceMimeType === 'image/png') {
-            return {
-                buffer: await normalizedPipeline.png({ compressionLevel: 9, palette: true }).toBuffer(),
-                mimeType: 'image/png',
-            };
-        }
-
-        return {
-            buffer: await normalizedPipeline.jpeg({ quality: NANO_BANANA_REFERENCE_JPEG_QUALITY, mozjpeg: true }).toBuffer(),
-            mimeType: 'image/jpeg',
-        };
-    } catch (error) {
-        console.warn('Skipping unusable Nano-Banana reference image', {
-            sourceMimeType,
-            error: error instanceof Error ? error.message : String(error),
-        });
-        return null;
-    }
-}
-
-/**
- * Phase 8 (IMAGE_GEN_REVAMP_5-26): reference fetch is now LOUD, with retry.
- *
- * Before Phase 8 this function returned null on any failure and
- * generateSceneImages silently fell through to text-only generation,
- * producing generic images while the manifest looked complete.
- *
- * Now: try every candidate URL in order, throw with the full list of
- * attempted URLs and the last error if none succeed. The caller decides
- * whether to skip the scene, tag it `reference_unavailable`, or fail loud.
- */
-export class ReferenceFetchError extends Error {
-    readonly attemptedUrls: string[];
-    constructor(attemptedUrls: string[], lastError: unknown) {
-        const last = lastError instanceof Error ? lastError.message : String(lastError);
-        super(`Reference image fetch failed for all ${attemptedUrls.length} URL(s). Last error: ${last}. Attempted: ${attemptedUrls.join(' | ')}`);
-        this.name = 'ReferenceFetchError';
-        this.attemptedUrls = attemptedUrls;
-    }
-}
-
-async function fetchUsableReferenceImage(
-    primaryUrl: string,
-    fallbackUrl?: string,
-): Promise<{ buffer: Buffer; mimeType: string }> {
-    const candidateUrls = [primaryUrl, fallbackUrl]
-        .filter((u): u is string => typeof u === 'string' && u.length > 0)
-        // r2://pending: placeholders are not fetchable URLs.
-        .filter((u) => !u.startsWith('r2://pending:'));
-
-    if (candidateUrls.length === 0) {
-        throw new ReferenceFetchError([], new Error('no usable URL on reference asset'));
-    }
-
-    let lastError: unknown = new Error('unknown');
-    for (const url of candidateUrls) {
-        try {
-            const response = await fetchWithTimeout(url, {}, REMOTE_FETCH_TIMEOUT_MS);
-            if (!response.ok) {
-                lastError = new Error(`HTTP ${response.status} from ${url}`);
-                continue;
-            }
-            const mimeType = response.headers.get('content-type')?.split(';')[0] ?? '';
-            if (!mimeType.startsWith('image/')) {
-                lastError = new Error(`Non-image content-type "${mimeType}" from ${url}`);
-                continue;
-            }
-            return {
-                buffer: Buffer.from(await response.arrayBuffer()),
-                mimeType,
-            };
-        } catch (error) {
-            lastError = error;
-            console.warn('[stability-generator] reference fetch attempt failed', {
-                url,
-                error: error instanceof Error ? error.message : String(error),
-            });
-        }
-    }
-    throw new ReferenceFetchError(candidateUrls, lastError);
-}
+) => normalizeReferenceImage(sourceBuffer, sourceMimeType, NANO_BANANA_REFERENCE_MAX_DIMENSION);
 
 async function delay(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms));

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-29T01:10:43.613Z",
+  "generatedAtIso": "2026-07-31T02:54:56.666Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
@@ -106,60 +106,6 @@
           "generator": "gpt_image_2",
           "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nThe Milestone Sailing, Sorted\nAnniversary? Retirement? Edge-class Sky Suite, concierge-handled Juneau logistics, Seattle roundtrip. One July 24 departure.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
           "generatedAtIso": "2026-06-24T18:24:45.505Z",
-          "previousImages": []
-        }
-      ]
-    },
-    {
-      "id": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
-      "dealId": "1584138",
-      "generatedAtIso": "2026-07-03T19:49:46.168Z",
-      "sourceFunnelSynthesisId": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
-      "sailingAngleTitle": "The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.",
-      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
-      "cards": [
-        {
-          "cardIndex": 0,
-          "headline": "ABC Islands — Actually on the Map",
-          "primaryText": "14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1783103884444.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
-          "generatedAtIso": "2026-07-03T19:49:12.678Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 1,
-          "headline": "1,200 Guests, Not 5,000",
-          "primaryText": "No tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card1-1783103887454.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n1,200 Guests, Not 5,000\nNo tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.",
-          "generatedAtIso": "2026-07-03T19:49:12.678Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 2,
-          "headline": "Your World Included — No Gotchas",
-          "primaryText": "Jacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card2-1783103889695.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nYour World Included — No Gotchas\nJacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.",
-          "generatedAtIso": "2026-07-03T19:49:12.678Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 3,
-          "headline": "Nov 11 Sailing — Sweet Spot Timing",
-          "primaryText": "Past hurricane season, before holiday rate spikes. Dry-season trades, 82°F water, Willemstad glowing gold at sunset. Check live availability now.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card3-1783103887899.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nNov 11 Sailing — Sweet Spot Timing\nPast hurricane season, before holiday rate spikes. Dry-season trades, 82°F water, Willemstad glowing gold at sunset. Check live availability now.",
-          "generatedAtIso": "2026-07-03T19:49:12.678Z",
           "previousImages": []
         }
       ]
@@ -330,65 +276,6 @@
       "styleSelectedAtIso": "2026-07-29T00:02:17.670Z"
     },
     {
-      "id": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
-      "dealId": "1523892",
-      "generatedAtIso": "2026-06-27T23:37:54.455Z",
-      "sourceFunnelSynthesisId": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
-      "sailingAngleTitle": "Buenos Aires as the Overture to the Edge of Antarctica",
-      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
-      "recommendedStyleId": "current_vivid_flyer",
-      "selectedStyleId": "current_vivid_flyer",
-      "styleSelectionSource": "fallback",
-      "styleSelectedAtIso": "2026-07-29T00:02:44.417Z",
-      "styleRecommendationWarning": "No object generated: response did not match schema.",
-      "cards": [
-        {
-          "cardIndex": 0,
-          "headline": "Free Buenos Aires Land Program",
-          "primaryText": "Tango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card0-1782603685467.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFree Buenos Aires Land Program\nTango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-27T23:41:25.467Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 1,
-          "headline": "Drake Passage. Heard It. Feel It.",
-          "primaryText": "Half Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card1-1782603689833.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nDrake Passage. Heard It. Feel It.\nHalf Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-27T23:41:29.833Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 2,
-          "headline": "Falklands + Penguins + Patagonia",
-          "primaryText": "Stanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card2-1782603690337.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFalklands + Penguins + Patagonia\nStanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-27T23:41:30.337Z",
-          "previousImages": []
-        },
-        {
-          "cardIndex": 3,
-          "headline": "All-Inclusive Means All of It",
-          "primaryText": "Suite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.",
-          "status": "ready",
-          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card3-1782603692572.png",
-          "generator": "gpt_image_2",
-          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nAll-Inclusive Means All of It\nSuite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
-          "generatedAtIso": "2026-06-27T23:41:32.572Z",
-          "previousImages": []
-        }
-      ]
-    },
-    {
       "generatedAtIso": "2026-07-29T00:03:11.531Z",
       "promptTemplate": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: {{HEADLINE}}\nPrimary text: {{PRIMARY_TEXT}}",
       "sourceFunnelSynthesisId": "funnel-1640382-this-is-what-they-really-meant-by-cruise-cape-town-to-mumbai-22-nights-on-silver",
@@ -509,6 +396,336 @@
         "modelTask": "decision",
         "confidence": "high"
       }
+    },
+    {
+      "generatedAtIso": "2026-07-30T16:38:30.965Z",
+      "promptTemplate": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: {{HEADLINE}}\nPrimary text: {{PRIMARY_TEXT}}",
+      "sourceFunnelSynthesisId": "funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026",
+      "styleRecommendation": {
+        "rationale": "Photography-led, editorial layout best carries the campaign’s cinematic ‘countdown to midnight’ moment while leaving generous space for the four-card headlines and the longer primary copy. It reads as an elegant, destination-forward celebration (truthful to the NYE sailing offer) without leaning into gimmicky party graphics, and it’s well suited to a square social carousel. Also distinct from the heavily repeated “current_vivid_flyer” and recently used “cut_paper_collage.”",
+        "generatedAtIso": "2026-07-30T16:38:17.624Z",
+        "confidence": "high",
+        "modelTask": "decision",
+        "recommendedStyleId": "clean_travel_magazine"
+      },
+      "sailingAngleTitle": "Midnight Is the Departure",
+      "styleSelectionSource": "operator",
+      "dealId": "1557855",
+      "recommendedStyleId": "clean_travel_magazine",
+      "selectedStyleId": "current_vivid_flyer",
+      "cards": [
+        {
+          "generatedAtIso": "2026-07-30T17:00:25.549Z",
+          "primaryText": "Norwegian Getaway departs Port Canaveral Dec 31, 2026. The countdown IS your departure. Book during the Semi-Annual Sale.",
+          "cardIndex": 0,
+          "status": "ready",
+          "headline": "NYE Sailaway at Midnight 🎆",
+          "previousImages": [
+            {
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card0-1785430709125.png",
+              "generator": "gpt_image_2",
+              "generatedAtIso": "2026-07-30T16:58:29.125Z",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: NYE Sailaway at Midnight 🎆\nPrimary text: Norwegian Getaway departs Port Canaveral Dec 31, 2026. The countdown IS your departure. Book during the Semi-Annual Sale.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction:\nUse the AFT of the ship!\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy."
+            },
+            {
+              "generator": "gpt_image_2",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card0-1785429942863.png",
+              "generatedAtIso": "2026-07-30T16:45:42.863Z",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: NYE Sailaway at Midnight 🎆\nPrimary text: Norwegian Getaway departs Port Canaveral Dec 31, 2026. The countdown IS your departure. Book during the Semi-Annual Sale.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy."
+            },
+            {
+              "generatedAtIso": "2026-07-30T16:44:19.618Z",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: NYE Sailaway at Midnight 🎆\nPrimary text: Norwegian Getaway departs Port Canaveral Dec 31, 2026. The countdown IS your departure. Book during the Semi-Annual Sale.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card0-1785429859618.png",
+              "generator": "gpt_image_2"
+            },
+            {
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: NYE Sailaway at Midnight 🎆\nPrimary text: Norwegian Getaway departs Port Canaveral Dec 31, 2026. The countdown IS your departure. Book during the Semi-Annual Sale.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card0-1785429662819.png",
+              "generatedAtIso": "2026-07-30T16:41:02.819Z",
+              "generator": "gpt_image_2"
+            }
+          ],
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card0-1785430825549.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: NYE Sailaway at Midnight 🎆\nPrimary text: Norwegian Getaway departs Port Canaveral Dec 31, 2026. The countdown IS your departure. Book during the Semi-Annual Sale.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction:\nUse the AFT of the ship!\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+          "imageDirection": "Use the AFT of the ship!"
+        },
+        {
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: 7 Nights, Eastern Caribbean\nPrimary text: Puerto Plata → St. Thomas → Tortola → Great Stirrup Cay. A real NYE vacation, not a party that ends at 1 a.m.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\n12 torn out pictures from travel magazines spread out over the background\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+          "imageDirection": "12 torn out pictures from travel magazines spread out over the background",
+          "generatedAtIso": "2026-07-30T17:12:54.435Z",
+          "headline": "7 Nights, Eastern Caribbean",
+          "cardIndex": 1,
+          "previousImages": [
+            {
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: 7 Nights, Eastern Caribbean\nPrimary text: Puerto Plata → St. Thomas → Tortola → Great Stirrup Cay. A real NYE vacation, not a party that ends at 1 a.m.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+              "generatedAtIso": "2026-07-30T16:41:02.607Z",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card1-1785429662607.png",
+              "generator": "gpt_image_2"
+            }
+          ],
+          "primaryText": "Puerto Plata → St. Thomas → Tortola → Great Stirrup Cay. A real NYE vacation, not a party that ends at 1 a.m.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card1-1785431574435.png",
+          "status": "ready"
+        },
+        {
+          "status": "ready",
+          "headline": "NCL Semi-Annual Sale Is Live",
+          "generatedAtIso": "2026-07-30T16:41:00.347Z",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: NCL Semi-Annual Sale Is Live\nPrimary text: 50% off eligible fares + reduced deposit on balcony-and-below. Lock in this Dec 31 sailing before the Aug 18 deadline.\n\nCreative direction (Clean Travel Magazine):\nCreative direction: premium travel-magazine cover. Use one dominant full-bleed photograph, an asymmetrical editorial grid, an elegant serif headline with restrained sans-serif details, a cream, navy, and coral palette, and generous negative space. Do not use a montage, sticker bubbles, circular callouts, or crowded information blocks.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+          "primaryText": "50% off eligible fares + reduced deposit on balcony-and-below. Lock in this Dec 31 sailing before the Aug 18 deadline.",
+          "generator": "gpt_image_2",
+          "previousImages": [],
+          "cardIndex": 2,
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card2-1785429660347.png"
+        },
+        {
+          "headline": "Stop Saying \"Next Year\"",
+          "status": "ready",
+          "cardIndex": 3,
+          "primaryText": "This is the NYE plan you've been promising each other. Sale ends Aug 18, 2026 — cabins won't wait until fall. Book now.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1557855/meta-ad-synthesis/funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026/card3-1785431711543.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Stop Saying \"Next Year\"\nPrimary text: This is the NYE plan you've been promising each other. Sale ends Aug 18, 2026 — cabins won't wait until fall. Book now.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy.",
+          "generatedAtIso": "2026-07-30T17:15:11.543Z",
+          "previousImages": []
+        }
+      ],
+      "id": "funnel-1557855-midnight-is-the-departure-norwegian-getaway-nye-2026",
+      "styleSelectedAtIso": "2026-07-30T17:10:38.102Z"
+    },
+    {
+      "id": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
+      "dealId": "1523892",
+      "generatedAtIso": "2026-06-27T23:37:54.455Z",
+      "sourceFunnelSynthesisId": "funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-",
+      "sailingAngleTitle": "Buenos Aires as the Overture to the Edge of Antarctica",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "recommendedStyleId": "current_vivid_flyer",
+      "selectedStyleId": "current_vivid_flyer",
+      "styleSelectionSource": "fallback",
+      "styleSelectedAtIso": "2026-07-29T00:02:44.417Z",
+      "styleRecommendationWarning": "No object generated: response did not match schema.",
+      "cards": [
+        {
+          "cardIndex": 0,
+          "headline": "Free Buenos Aires Land Program",
+          "primaryText": "Tango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card0-1782603685467.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFree Buenos Aires Land Program\nTango halls, Malbec cellars, maybe Iguazu — woven into your 18-night South America & Antarctica sailing. Book by 8/31/26.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:25.467Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 1,
+          "headline": "Drake Passage. Heard It. Feel It.",
+          "primaryText": "Half Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card1-1782603689833.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nDrake Passage. Heard It. Feel It.\nHalf Moon Island, Admiralty Bay, Elephant Island — ice close enough to hear. This is the Antarctic edge, not a documentary.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:29.833Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 2,
+          "headline": "Falklands + Penguins + Patagonia",
+          "primaryText": "Stanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card2-1782603690337.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nFalklands + Penguins + Patagonia\nStanley, Punta Arenas, Ushuaia, Puerto Madryn — 18 nights of Southern Hemisphere summer on Seven Seas Mariner.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:30.337Z",
+          "previousImages": []
+        },
+        {
+          "cardIndex": 3,
+          "headline": "All-Inclusive Means All of It",
+          "primaryText": "Suite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.",
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1523892/meta-ad-synthesis/funnel-adcopy-buenos-aires-as-the-overture-to-the-edge-of-antarctica-regent-seven-seas-/card3-1782603692572.png",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nAll-Inclusive Means All of It\nSuite, balcony, dining, drinks, Wi-Fi, excursions, gratuities, plus the free land program. Regent-level. One booking. Done.\n\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links",
+          "generatedAtIso": "2026-06-27T23:41:32.572Z",
+          "previousImages": []
+        }
+      ]
+    },
+    {
+      "generatedAtIso": "2026-07-03T19:49:46.168Z",
+      "promptTemplate": "Generate a vivid square ad flyer promoting the following Cruise Package:\n{{HEADLINE}}\n{{PRIMARY_TEXT}}",
+      "sourceFunnelSynthesisId": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
+      "cards": [
+        {
+          "references": [
+            {
+              "addedAtIso": "2026-07-31T02:23:02.821Z",
+              "originalSourceUrl": "https://www.miamiherald.com/living/travel/article312954661.html",
+              "role": "ship_identity",
+              "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTxNjQHygbjRz_tEM09v4vxujy8SW7glSjEsJKIiccCeA&s=10",
+              "assetUrl": "https://www.miamiherald.com/public/latest-news/918s2y/picture312954402/alternates/LANDSCAPE_1200/OC-A-Exterior-Kotor-Montenegro-004.JPG",
+              "id": "ref-1785464582821-vp1h6j",
+              "title": "Best cruise Black Friday offers: credits, upgrades, fares | Miami Herald",
+              "source": "funnel_candidate",
+              "sourceCandidateId": "img-hero-oceania-cruises-miami-cruise-ship-exterior-at-se-ohugrs"
+            }
+          ],
+          "cardIndex": 0,
+          "generatedAtIso": "2026-07-31T02:50:02.497Z",
+          "generator": "gpt_image_2",
+          "mode": "new_variation",
+          "imageDirection": "Use this ship in the image.",
+          "previousImages": [
+            {
+              "generator": "gpt_image_2",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1785465145109.png",
+              "mode": "text_only",
+              "generatedAtIso": "2026-07-31T02:32:25.109Z",
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.\n\nCreative direction (Bold Type-First):\nCreative direction: contemporary type-led poster. Make the oversized headline the main visual element, supported by one tightly cropped destination or onboard photograph, a strong diagonal grid, a two-color palette with one bright accent, and minimal supporting copy. Do not use a multi-photo montage, circular badges, or price-burst stickers.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\nUse this ship in the image.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion."
+            },
+            {
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.\n\nCreative direction (Documentary Travel):\nCreative direction: candid photojournalistic travel advertisement. Use one authentic human moment, natural available light, subtle film grain, a restrained caption band, and clean documentary typography. Do not use staged promotional smiles, multiple inset photographs, badges, or glossy composite effects.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "generator": "gpt_image_2",
+              "mode": "text_only",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1785464957309.png",
+              "generatedAtIso": "2026-07-31T02:29:17.309Z"
+            },
+            {
+              "generatedAtIso": "2026-07-31T02:27:11.053Z",
+              "mode": "text_only",
+              "generator": "gpt_image_2",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1785464831053.png",
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.\n\nCreative direction (Cut-Paper Collage):\nCreative direction: tactile cut-paper travel collage. Use layered colored paper, torn edges, abstract postcard and map shapes, subtle risograph grain, a playful but controlled composition, and three or four muted colors. Do not use glossy 3D treatment, a stock-photo montage, neon gradients, or invented readable travel information.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion."
+            },
+            {
+              "generator": "gpt_image_2",
+              "generatedAtIso": "2026-07-31T02:24:38.567Z",
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1785464678567.png",
+              "mode": "text_only"
+            },
+            {
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1785443518888.png",
+              "mode": "new_variation",
+              "generator": "gpt_image_2",
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nReference imagery:\nReference assets are visual guidance, not additional factual claims.\n\n- composition reference: borrow framing, material, and visual rhythm — not an exact duplicate\n\nCreate a fresh composition informed by these references. Do not reproduce any reference exactly.\n\nGlobal exclusions:\nDo not add QR codes\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "generatedAtIso": "2026-07-30T20:31:58.888Z"
+            },
+            {
+              "generator": "gpt_image_2",
+              "generatedAtIso": "2026-07-03T19:49:12.678Z",
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1783103884444.png"
+            }
+          ],
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nABC Islands — Actually on the Map\n14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.\n\nCreative direction (Bold Type-First):\nCreative direction: contemporary type-led poster. Make the oversized headline the main visual element, supported by one tightly cropped destination or onboard photograph, a strong diagonal grid, a two-color palette with one bright accent, and minimal supporting copy. Do not use a multi-photo montage, circular badges, or price-burst stickers.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\nUse this ship in the image.\n\nReference imagery:\nReference assets are visual guidance, not additional factual claims.\n\n- ship identity anchor: keep ship-specific architecture and materials credible when visible; this is not a mandate to show a full ship exterior\n\nCreate a fresh composition informed by these references. Do not reproduce any reference exactly.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+          "status": "ready",
+          "primaryText": "14 nights through Aruba, Curaçao, Grenada, Barbados & St. Lucia. The Southern Caribbean route mega-ships won't give you.",
+          "headline": "ABC Islands — Actually on the Map",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card0-1785466202498.png"
+        },
+        {
+          "references": [
+            {
+              "id": "ref-1785464418015-ats1bv",
+              "title": "Oceania Marina Cruise Review - Eat Sleep Cruise",
+              "role": "composition",
+              "originalSourceUrl": "https://eatsleepcruise.com/oceania-marina-cruise-review/",
+              "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlqGhkp8xmScbo1i9WfrnCJCG4r5aP9aC-yhsKcsP8_A&s=10",
+              "addedAtIso": "2026-07-31T02:20:18.015Z",
+              "assetUrl": "https://eatsleepcruise.com/wp-content/uploads/2022/08/Oceania-Marina-Cruise-Review-feature.jpg.optimal.jpg",
+              "source": "funnel_candidate",
+              "sourceCandidateId": "img-excursions-oceania-cruises-miami-port-shore-excursion-old-t-o9wbbu"
+            }
+          ],
+          "status": "ready",
+          "imageDirection": "Use this ship in the image.",
+          "cardIndex": 1,
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card1-1785466495062.png",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n1,200 Guests, Not 5,000\nNo tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.\n\nCreative direction (Bold Type-First):\nCreative direction: contemporary type-led poster. Make the oversized headline the main visual element, supported by one tightly cropped destination or onboard photograph, a strong diagonal grid, a two-color palette with one bright accent, and minimal supporting copy. Do not use a multi-photo montage, circular badges, or price-burst stickers.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\nUse this ship in the image.\n\nReference imagery:\nReference assets are visual guidance, not additional factual claims.\n\n- composition reference: borrow framing, material, and visual rhythm — not an exact duplicate\n\nCreate a fresh composition informed by these references. Do not reproduce any reference exactly.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+          "mode": "new_variation",
+          "previousImages": [
+            {
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card1-1785466369624.png",
+              "generator": "gpt_image_2",
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n1,200 Guests, Not 5,000\nNo tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.\n\nCreative direction (Bold Type-First):\nCreative direction: contemporary type-led poster. Make the oversized headline the main visual element, supported by one tightly cropped destination or onboard photograph, a strong diagonal grid, a two-color palette with one bright accent, and minimal supporting copy. Do not use a multi-photo montage, circular badges, or price-burst stickers.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nReference imagery:\nReference assets are visual guidance, not additional factual claims.\n\n- composition reference: borrow framing, material, and visual rhythm — not an exact duplicate\n\nCreate a fresh composition informed by these references. Do not reproduce any reference exactly.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "generatedAtIso": "2026-07-31T02:52:49.624Z",
+              "mode": "new_variation"
+            },
+            {
+              "generatedAtIso": "2026-07-31T02:21:36.498Z",
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n1,200 Guests, Not 5,000\nNo tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card1-1785464496498.png",
+              "generator": "gpt_image_2",
+              "mode": "text_only"
+            },
+            {
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\n1,200 Guests, Not 5,000\nNo tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card1-1783103887454.png",
+              "generator": "gpt_image_2",
+              "generatedAtIso": "2026-07-03T19:49:12.678Z"
+            }
+          ],
+          "headline": "1,200 Guests, Not 5,000",
+          "generatedAtIso": "2026-07-31T02:54:55.061Z",
+          "primaryText": "No tender lines at sunrise, no buffet stampede by noon. Oceania Vista is built for the cruiser who's done the Eastern loop one too many times.",
+          "generator": "gpt_image_2"
+        },
+        {
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card2-1785464057520.png",
+          "status": "ready",
+          "generator": "gpt_image_2",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nYour World Included — No Gotchas\nJacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\nHave all the tables in this image set with a gorgeous meal.\n\nGlobal exclusions:\nDo not display the entire ship\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+          "generatedAtIso": "2026-07-31T02:14:17.520Z",
+          "headline": "Your World Included — No Gotchas",
+          "cardIndex": 2,
+          "references": [
+            {
+              "title": "Oceania Allura Onboard Dining Experiences",
+              "assetUrl": "https://www.oceaniacruises.com/sites/default/files/Vista-allura-culinary-experiences-culinary-masterpieces-ship-privee-1238X696-main-room-1.jpg",
+              "role": "composition",
+              "source": "funnel_candidate",
+              "id": "ref-1785463938858-ve4qqd",
+              "addedAtIso": "2026-07-31T02:12:18.858Z",
+              "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1JpozM7VmUCtlOFb-k6b-JluwwLO1oGT9yGw8VeKspw&s=10",
+              "originalSourceUrl": "https://www.oceaniacruises.com/ships/allura/culinary-experiences",
+              "sourceCandidateId": "img-dining-oceania-cruises-main-dining-room-restaurant-fine-1jjxe37"
+            }
+          ],
+          "primaryText": "Jacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.",
+          "mode": "text_only",
+          "previousImages": [
+            {
+              "generatedAtIso": "2026-07-03T19:49:12.678Z",
+              "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nYour World Included — No Gotchas\nJacques, Polo Grill, Toscana — no surcharge on qualifying fares. 14 nights of specialty dining without the nickel-and-dime math.",
+              "generator": "gpt_image_2",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card2-1783103889695.png"
+            }
+          ],
+          "imageDirection": "Have all the tables in this image set with a gorgeous meal."
+        },
+        {
+          "status": "ready",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1584138/meta-ad-synthesis/funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife/card3-1783103887899.png",
+          "promptUsed": "Generate a vivid square ad flyer promoting the following Cruise Package:\nNov 11 Sailing — Sweet Spot Timing\nPast hurricane season, before holiday rate spikes. Dry-season trades, 82°F water, Willemstad glowing gold at sunset. Check live availability now.",
+          "generatedAtIso": "2026-07-03T19:49:12.678Z",
+          "primaryText": "Past hurricane season, before holiday rate spikes. Dry-season trades, 82°F water, Willemstad glowing gold at sunset. Check live availability now.",
+          "previousImages": [],
+          "headline": "Nov 11 Sailing — Sweet Spot Timing",
+          "generator": "gpt_image_2",
+          "cardIndex": 3
+        }
+      ],
+      "sailingAngleTitle": "The quiet luxury November Caribbean most travelers never think to search — 14 nights on Oceania Vista through Aruba, Curaçao, Grenada, Barbados & St. Lucia with amenities that may already be included in your fare.",
+      "id": "funnel-adcopy-oceania-vista-dutchman-s-caribbean-november-2026-quiet-luxury-play-manife",
+      "dealId": "1584138",
+      "selectedStyleId": "bold_type_first",
+      "styleSelectionSource": "operator",
+      "styleSelectedAtIso": "2026-07-31T02:29:56.603Z"
     }
   ]
 }

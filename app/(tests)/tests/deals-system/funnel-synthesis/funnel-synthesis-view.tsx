@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { DealAdCopy } from "@/lib/cb/deals-system/deal-ad-copy-types";
 import type { DealPageFacts } from "@/lib/cb/deals-system/deal-page-facts";
@@ -49,12 +49,29 @@ function candidateById(s: DealFunnelSynthesis, id?: string): DealImageCandidate 
 function ImageLightbox({
   url,
   alt,
+  fallbackUrl,
   onClose,
 }: {
   url: string;
   alt: string;
+  /** The Google-cached thumbnail — always loads, just smaller. */
+  fallbackUrl?: string;
   onClose: () => void;
 }) {
+  // The grid shows `thumbnailUrl` (Google's cache) but magnifying loads
+  // `imageUrl` (the publisher's origin), which often blocks hotlinking or has
+  // 404'd — the browser then paints the alt text across the overlay as if it
+  // were body copy. Go through the same-origin proxy, and if even that fails,
+  // show the thumbnail rather than a wall of alt text.
+  const [stage, setStage] = useState<"proxied" | "fallback" | "failed">("proxied");
+
+  useEffect(() => {
+    setStage("proxied");
+  }, [url]);
+
+  const proxiedUrl = `/api/tests/deals-system/image-proxy?url=${encodeURIComponent(url)}`;
+  const activeSrc = stage === "proxied" ? proxiedUrl : fallbackUrl;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
@@ -68,13 +85,44 @@ function ImageLightbox({
       >
         ✕
       </button>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={url}
-        alt={alt}
-        className="max-h-full max-w-full rounded-lg object-contain shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      />
+
+      {stage !== "failed" && activeSrc ? (
+        <div className="flex max-h-full max-w-full flex-col items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={activeSrc}
+            alt=""
+            className="max-h-[85vh] max-w-full rounded-lg object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            onError={() => setStage(stage === "proxied" && fallbackUrl ? "fallback" : "failed")}
+          />
+          {stage === "fallback" && (
+            <p className="rounded-md bg-amber-500/15 px-3 py-1.5 text-xs text-amber-100">
+              Full-size image unavailable from the publisher — showing the smaller preview copy.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div
+          className="max-w-md rounded-lg border border-white/15 bg-slate-900/90 p-5 text-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="text-sm font-semibold text-white">Image could not be loaded</p>
+          <p className="mt-2 text-xs leading-5 text-slate-400">
+            The publisher&rsquo;s host refused or removed this file. It may still fail the same way
+            when the page is built, so prefer another candidate.
+          </p>
+          {alt && <p className="mt-3 text-[11px] leading-5 text-slate-500">{alt}</p>}
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-block text-xs font-semibold text-cyan-300 hover:text-cyan-200"
+          >
+            Open original URL ↗
+          </a>
+        </div>
+      )}
     </div>
   );
 }
@@ -266,7 +314,7 @@ function ImageThumb({
     id: string,
     target: "hero" | DealLandingSegmentKey
   ) => void;
-  onPreviewImage: (url: string, alt: string) => void;
+  onPreviewImage: (url: string, alt: string, fallbackUrl?: string) => void;
   busy: boolean;
 }) {
   const inGallery = synthesis.galleryIds.includes(c.id);
@@ -277,7 +325,7 @@ function ImageThumb({
           so "see it big" and "use it" are separate gestures. */}
       <button
         type="button"
-        onClick={() => onPreviewImage(c.imageUrl, c.title ?? "")}
+        onClick={() => onPreviewImage(c.imageUrl, c.title ?? "", c.thumbnailUrl)}
         title="Click to view full screen"
         className={`group block h-24 w-full cursor-zoom-in overflow-hidden rounded border transition ${
           inGallery ? "border-cyan-300 ring-1 ring-cyan-300" : "border-white/10 hover:border-white/40"
@@ -354,7 +402,7 @@ function ImageCategoryGroup({
   onToggleGallery: (id: string) => void;
   onPickHero: (id: string) => void;
   onAssignLandingImage: (id: string, target: "hero" | DealLandingSegmentKey) => void;
-  onPreviewImage: (url: string, alt: string) => void;
+  onPreviewImage: (url: string, alt: string, fallbackUrl?: string) => void;
   onSearchMore: (category?: DealImageCategory) => void;
   busy: boolean;
 }) {
@@ -440,7 +488,7 @@ function ImageSetPanel({
     id: string,
     target: "hero" | DealLandingSegmentKey
   ) => void;
-  onPreviewImage: (url: string, alt: string) => void;
+  onPreviewImage: (url: string, alt: string, fallbackUrl?: string) => void;
   /** category omitted = re-search the whole diversified pool. */
   onSearchMore: (category?: DealImageCategory) => void;
   busy: boolean;
@@ -628,7 +676,11 @@ export function FunnelSynthesisView({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
+  const [previewImage, setPreviewImage] = useState<{
+    url: string;
+    alt: string;
+    fallbackUrl?: string;
+  } | null>(null);
 
   async function copyClaudeDesignPayload() {
     if (!active) return;
@@ -920,7 +972,7 @@ export function FunnelSynthesisView({
               onToggleGallery={toggleGallery}
               onPickHero={(id) => void selectImages({ heroImageId: id })}
               onAssignLandingImage={assignLandingImage}
-              onPreviewImage={(url, alt) => setPreviewImage({ url, alt })}
+              onPreviewImage={(url, alt, fallbackUrl) => setPreviewImage({ url, alt, fallbackUrl })}
               onSearchMore={(category) => void searchMore(category)}
             />
           </div>
@@ -959,6 +1011,7 @@ export function FunnelSynthesisView({
         <ImageLightbox
           url={previewImage.url}
           alt={previewImage.alt}
+          fallbackUrl={previewImage.fallbackUrl}
           onClose={() => setPreviewImage(null)}
         />
       )}
