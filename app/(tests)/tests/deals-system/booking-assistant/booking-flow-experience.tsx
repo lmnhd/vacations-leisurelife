@@ -74,7 +74,7 @@ import {
   type GuestTravelerPayload,
   type GuestCabinPayload,
 } from "./guest-api-client";
-import { postBookingContactCaptured } from "@/components/cb/deal-analytics";
+import { postBookingContactCaptured, postBookingSelfServeOpened } from "@/components/cb/deal-analytics";
 import { askBookingQuestion } from "./guest-api-client";
 
 const STORAGE_KEY = "lll-booking-assistant-lab-v1";
@@ -1931,7 +1931,7 @@ interface FlowContentProps {
 
 function FlowContent(props: FlowContentProps) {
   const { screen } = props;
-  if (screen === "landing") return <LandingScreen deal={props.deal} onStart={props.onStart} />;
+  if (screen === "landing") return <LandingScreen deal={props.deal} onStart={props.onStart} onEmit={props.onEmit} />;
   if (screen === "paused") return <PausedScreen draft={props.draft} tasks={props.tasks} completionPct={props.completionPct} reminderDate={props.reminderDate} onResume={props.onResume} />;
   if (screen === "help") return <HelpScreen onBack={props.onBackFromHelp} isPrototype={props.isPrototype} />;
   if (screen === "call_finalize")
@@ -1990,7 +1990,20 @@ function GuestButton({
   );
 }
 
-function LandingScreen({ deal, onStart }: { deal: BookingAssistantDealContext; onStart: () => void }) {
+function LandingScreen({
+  deal,
+  onStart,
+  onEmit,
+}: {
+  deal: BookingAssistantDealContext;
+  onStart: () => void;
+  onEmit: (actor: MockJournalEvent["actor"], eventType: string, detail: string, taskId?: string) => void;
+}) {
+  // Self-serve escape hatch for guests who would rather not call. Disclosed
+  // quietly under the primary CTA so "Start booking" stays the obvious default.
+  const [selfServeOpen, setSelfServeOpen] = useState(false);
+  const selfServeUrl = deal.sourceBookingUrl.trim();
+
   return (
     <div className="flex h-full flex-col overflow-y-auto p-5" style={{ color: NAVY }}>
       <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: GOLD }}>
@@ -2028,6 +2041,63 @@ function LandingScreen({ deal, onStart }: { deal: BookingAssistantDealContext; o
         <p className="mt-3 text-center text-[11px]" style={{ color: MUTED }}>
           Takes about 5 minutes. Pause anytime - we keep your place.
         </p>
+        {selfServeUrl ? (
+          <div className="mt-4 text-center">
+            <p className="text-[12px]" style={{ color: MUTED }}>
+              Prefer to book it yourself?{" "}
+              <a
+                href={selfServeUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  onEmit(
+                    "guest",
+                    "self_serve_booking_link_opened",
+                    `Guest opened the direct booking link instead of starting the form (${deal.title})`
+                  );
+                  // This guest never creates a draft, so the local journal alone
+                  // would leave them invisible to the dashboard. Best-effort
+                  // beacon; the track route's public-deal gate filters lab ids.
+                  postBookingSelfServeOpened(deal.dealId);
+                }}
+                className="font-semibold underline"
+                style={{ color: NAVY }}
+              >
+                Book and pay online
+              </a>{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selfServeOpen) {
+                    onEmit(
+                      "guest",
+                      "self_serve_booking_details_viewed",
+                      "Guest expanded the direct-booking details"
+                    );
+                  }
+                  setSelfServeOpen(!selfServeOpen);
+                }}
+                aria-expanded={selfServeOpen}
+                aria-label="What to expect on the direct booking page"
+                className="ml-0.5 h-4 w-4 rounded-full text-[10px] font-bold leading-none"
+                style={{ border: `1px solid ${MUTED}`, color: MUTED }}
+              >
+                i
+              </button>
+            </p>
+            {selfServeOpen ? (
+              <p
+                className="mx-auto mt-2 max-w-[18rem] rounded-lg p-3 text-left text-[11px] leading-5"
+                style={{ background: "#FFFFFF", border: `1px solid ${BORDER}`, color: MUTED }}
+              >
+                Opens the Cruise Brothers booking page in a new tab, where you pay by card
+                yourself - no phone call. The session stays valid for about 15 minutes after you
+                open it. You will choose stateroom, deck level, and dining preference, then enter
+                all passenger details before the payment screen.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

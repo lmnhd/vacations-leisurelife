@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-31T02:54:56.666Z",
+  "generatedAtIso": "2026-08-01T01:52:31.288Z",
   "syntheses": [
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
@@ -726,6 +726,131 @@
       "selectedStyleId": "bold_type_first",
       "styleSelectionSource": "operator",
       "styleSelectedAtIso": "2026-07-31T02:29:56.603Z"
+    },
+    {
+      "generatedAtIso": "2026-08-01T00:35:34.386Z",
+      "promptTemplate": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: {{HEADLINE}}\nPrimary text: {{PRIMARY_TEXT}}",
+      "sourceFunnelSynthesisId": "funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026",
+      "styleRecommendationWarning": "No object generated: response did not match schema.",
+      "sailingAngleTitle": "Holiday Magic Without the Holiday Marathon",
+      "styleSelectionSource": "fallback",
+      "dealId": "1621785",
+      "recommendedStyleId": "current_vivid_flyer",
+      "selectedStyleId": "current_vivid_flyer",
+      "cards": [
+        {
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Skip the Rope-Drop Alarm\nPrimary text: No Lightning Lane math. No 60-day dining scramble. 5 nights of Very Merrytime on Disney Fantasy—holiday magic, not logistics.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\nMake the family interacial; Black, White, mulatto, and Asian.\nNo Christmas theme!\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+          "references": [
+            {
+              "originalSourceUrl": "https://www.resortsgal.com/blog/disney-wish-stateroom-tour/",
+              "title": "Disney Wish Stateroom Tour--Deluxe Oceanview with Verandah (Room 7518)",
+              "assetUrl": "https://www.resortsgal.com/wp-content/uploads/2022/11/DisneyWishStateroom-28.jpg",
+              "role": "destination_truth",
+              "addedAtIso": "2026-08-01T01:42:37.912Z",
+              "source": "funnel_candidate",
+              "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTe0nP7QKPd1QuwHBgFGun_2bYCr7NOm5iI5sZVoUh6tw&s=10",
+              "id": "ref-1785548557912-cqcjqu",
+              "sourceCandidateId": "img-cabins-disney-cruise-line-stateroom-balcony-cabin-inter-1aiv1bf"
+            }
+          ],
+          "imageDirection": "Make the family interacial; Black, White, mulatto, and Asian.\nNo Christmas theme!",
+          "generatedAtIso": "2026-08-01T01:52:29.863Z",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card0-1785549149863.png",
+          "previousImages": [
+            {
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card0-1785549006406.png",
+              "generator": "gpt_image_2",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Skip the Rope-Drop Alarm\nPrimary text: No Lightning Lane math. No 60-day dining scramble. 5 nights of Very Merrytime on Disney Fantasy—holiday magic, not logistics.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\nMake the family interacial; Black, White, mulatto, and Asian.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "generatedAtIso": "2026-08-01T01:50:06.406Z",
+              "mode": "text_only"
+            },
+            {
+              "generatedAtIso": "2026-08-01T01:44:39.765Z",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card0-1785548679765.png",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Skip the Rope-Drop Alarm\nPrimary text: No Lightning Lane math. No 60-day dining scramble. 5 nights of Very Merrytime on Disney Fantasy—holiday magic, not logistics.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\nFamily having fun. No Christmas elements.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "generator": "gpt_image_2",
+              "mode": "text_only"
+            },
+            {
+              "generatedAtIso": "2026-08-01T01:38:07.448Z",
+              "generator": "gpt_image_2",
+              "mode": "new_variation",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Skip the Rope-Drop Alarm\nPrimary text: No Lightning Lane math. No 60-day dining scramble. 5 nights of Very Merrytime on Disney Fantasy—holiday magic, not logistics.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nCard-specific image direction (HIGHEST PRIORITY — overrides the creative direction above wherever they conflict):\nMake the holiday theme 70% thanksgiving, 30% XMas\n\nReference imagery:\nReference assets are visual guidance, not additional factual claims.\n\n- ship identity anchor: keep ship-specific architecture and materials credible when visible; this is not a mandate to show a full ship exterior\n\nCreate a fresh composition informed by these references. Do not reproduce any reference exactly.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card0-1785548287448.png"
+            },
+            {
+              "generatedAtIso": "2026-08-01T01:36:13.583Z",
+              "mode": "edit_current",
+              "generator": "gpt_image_2",
+              "derivedFromImageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card0-1785547777498.png",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Skip the Rope-Drop Alarm\nPrimary text: No Lightning Lane math. No 60-day dining scramble. 5 nights of Very Merrytime on Disney Fantasy—holiday magic, not logistics.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nReference imagery:\nReference assets (the first image is the current card image being edited). They are visual guidance, not additional factual claims.\n\n- composition reference: borrow framing, material, and visual rhythm — not an exact duplicate\n- ship identity anchor: keep ship-specific architecture and materials credible when visible; this is not a mandate to show a full ship exterior\n\nMake a bounded change to the supplied image. Preserve its overall layout and subject unless the direction says otherwise.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card0-1785548173583.png"
+            },
+            {
+              "generatedAtIso": "2026-08-01T01:29:37.498Z",
+              "generator": "gpt_image_2",
+              "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card0-1785547777498.png",
+              "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Skip the Rope-Drop Alarm\nPrimary text: No Lightning Lane math. No 60-day dining scramble. 5 nights of Very Merrytime on Disney Fantasy—holiday magic, not logistics.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+              "mode": "text_only"
+            }
+          ],
+          "primaryText": "No Lightning Lane math. No 60-day dining scramble. 5 nights of Very Merrytime on Disney Fantasy—holiday magic, not logistics.",
+          "generator": "gpt_image_2",
+          "mode": "text_only",
+          "cardIndex": 0,
+          "status": "ready",
+          "headline": "Skip the Rope-Drop Alarm"
+        },
+        {
+          "headline": "One Fare. Not a Dozen.",
+          "cardIndex": 1,
+          "generatedAtIso": "2026-08-01T01:25:57.744Z",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: One Fare. Not a Dozen.\nPrimary text: Stop adding up per-head tickets, parking & meal plans. One fare covers your family's entire 5-night holiday cruise from Port Canaveral.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+          "previousImages": [],
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card1-1785547557744.png",
+          "primaryText": "Stop adding up per-head tickets, parking & meal plans. One fare covers your family's entire 5-night holiday cruise from Port Canaveral.",
+          "mode": "text_only",
+          "generator": "gpt_image_2",
+          "status": "ready"
+        },
+        {
+          "primaryText": "Eligible Florida residents may save up to 30% on the Nov 20 Disney Fantasy sailing. Limited to 50 staterooms. Show valid FL ID at check-in.",
+          "cardIndex": 2,
+          "headline": "FL Resident Rate — 50 Rooms Only",
+          "status": "ready",
+          "mode": "text_only",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card2-1785547553857.png",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: FL Resident Rate — 50 Rooms Only\nPrimary text: Eligible Florida residents may save up to 30% on the Nov 20 Disney Fantasy sailing. Limited to 50 staterooms. Show valid FL ID at check-in.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+          "generatedAtIso": "2026-08-01T01:25:53.857Z",
+          "previousImages": [],
+          "generator": "gpt_image_2"
+        },
+        {
+          "primaryText": "5-night Western Caribbean itinerary: a Disney private island & a sun-drenched port town. Holiday mornings on your clock, not a touring plan.",
+          "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026/card3-1785547555904.png",
+          "promptUsed": "Generate one square Meta carousel ad image for this cruise campaign.\nHeadline: Castaway Cay + Cozumel\nPrimary text: 5-night Western Caribbean itinerary: a Disney private island & a sun-drenched port town. Holiday mornings on your clock, not a touring plan.\n\nCreative direction (Current Vivid Flyer):\nCreate a vivid square cruise promotion flyer with energetic travel imagery, bold high-contrast headline typography, clear promotional hierarchy, and strong visual impact at social-feed size.\n\nCarousel system:\nKeep this card visually consistent with the same campaign style family while allowing its focal composition to respond to this card's message.\n\nGlobal exclusions:\nDo not add QR codes\nDo not make up information not presented\nDo not add web links\n\nFactual integrity:\nDo not invent prices, dates, ports, amenities, promotions, logos, web addresses, QR codes, or claims. Use only information supplied in the card copy. A reference image is visual guidance only and never establishes an amenity, itinerary, fare, or inclusion.",
+          "status": "ready",
+          "generatedAtIso": "2026-08-01T01:25:55.904Z",
+          "headline": "Castaway Cay + Cozumel",
+          "mode": "text_only",
+          "generator": "gpt_image_2",
+          "cardIndex": 3,
+          "previousImages": []
+        }
+      ],
+      "id": "funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026",
+      "styleSelectedAtIso": "2026-08-01T00:35:34.386Z",
+      "shipIdentityReference": {
+        "title": "Mickey Mouse adds a giant liner to his fleet as Disney Cruise Line buys  unfinished ocean liner from Genting Hong Kong's bankrupt unit | South China  Morning Post",
+        "addedAtIso": "2026-08-01T01:21:53.496Z",
+        "originalSourceUrl": "https://www.scmp.com/business/companies/article/3200076/disney-cruise-line-buy-unfinished-ocean-liner-genting-hong-kongs-bankrupt-unit",
+        "id": "ref-1785547313495-3aci61",
+        "assetUrl": "https://cdn.i-scmp.com/sites/default/files/d8/images/canvas/2022/11/18/13ab941d-7089-4b69-846e-4dbd60465baa_6e64227f.jpg",
+        "thumbnailUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTH2OcLUI15GLLcIdXWuTaD6_z1KepjLmwWXcp5JwHpyg&s=10",
+        "source": "funnel_candidate",
+        "sourceCandidateId": "img-hero-disney-cruise-line-port-canaveral-cruise-ship-ex-1dd0qb2",
+        "role": "ship_identity"
+      }
     }
   ]
 }

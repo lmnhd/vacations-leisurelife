@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-30T15:53:34.133Z",
+  "generatedAtIso": "2026-07-31T23:07:14.653Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -565,6 +565,53 @@
         "nights": 7,
         "departurePortCode": "Port Canaveral, FL",
         "portsOfCall": "Orlando-Beaches-Port Canaveral, Fl | Puerto Plata, Dominican Republic | St Thomas, Vi | Tortola, British Virgin Islands | Great Stirrup Cay, Bahamas",
+        "confidence": 1,
+        "reasons": [
+          "Created from operator-selected workbench sailing."
+        ]
+      }
+    },
+    {
+      "id": "angle-workbench-5-night-very-merrytime-western-caribbean-cruise-from-port-canaveral-disney-fantasy-1621785",
+      "generatedAtIso": "2026-07-31T23:07:14.649Z",
+      "generator": "gpt",
+      "sourceResearchCachedAt": "workbench",
+      "isolatedNiche": "Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost.",
+      "researchRationale": "Workbench-selected real sailing chosen for the angle \"Holiday Magic Without the Holiday Marathon\". Grounding facts: Disney Fantasy | 2026-11-20 | Port Canaveral, FL | Port Canaveral, Castaway Cay, Cozumel. Promo context considered: Disney Cruise Line Florida Resident Rates - November 20, 2026 Disney Fantasy | Disney Cruise Line lists a Florida Resident Rate for the November 20, 2026 Disney Fantasy sailing. | No booking deadline is stated on the captured official offer page; availability is limited..",
+      "successLogic": "Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost. can convert because this is a real Disney Fantasy sailing on 2026-11-20, not a generic cruise sale. The attached Florida Resident Rates - November 20, 2026 Disney Fantasy gives the audience a timely reason to act.",
+      "audienceSignals": [
+        "Real sailing selected in the Campaign Workbench: Disney Fantasy on Disney Cruise Line, 5 nights, sailing 2026-11-20.",
+        "Concrete itinerary signal: Port Canaveral, FL roundtrip, Port Canaveral, Castaway Cay, Cozumel.",
+        "Operator-selected audience angle: Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost..",
+        "Targeting seeds chosen for this sailing: Florida resident Disney cruise offer, Disney Very Merrytime cruise 2026, Disney Fantasy November 2026, holiday cruise from Port Canaveral, Disney cruise for families, Castaway Cay cruise."
+      ],
+      "sailingAngleProfile": {
+        "sailingAngleTitle": "Holiday Magic Without the Holiday Marathon",
+        "theCorePitch": "Holiday Magic Without the Holiday Marathon: Disney Fantasy on 5-Night Very Merrytime Western Caribbean Cruise From Port Canaveral gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+        "visualAnchor": "An overfull holiday checklist gives way to the calm geometry of Disney Fantasy at dusk, then Castaway Cay, Cozumel, and an unhurried family sea day. Holiday warmth without a generic character collage.",
+        "targetAudienceDescriptor": "Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost.",
+        "relevantKeywords": [
+          "Florida resident Disney cruise offer",
+          "Disney Very Merrytime cruise 2026",
+          "Disney Fantasy November 2026",
+          "holiday cruise from Port Canaveral",
+          "Disney cruise for families",
+          "Castaway Cay cruise",
+          "Christmas cruise from Florida",
+          "family holiday without theme parks"
+        ],
+        "destinationAndTimeOfYearHints": "5-Night Very Merrytime Western Caribbean Cruise From Port Canaveral departing 2026-11-20.",
+        "onboardAssetRequirements": "Disney Fantasy ship assets, destination imagery, itinerary map, and booking-link proof."
+      },
+      "groundedCandidate": {
+        "resolvedAtIso": "2026-07-31T23:07:14.649Z",
+        "packageId": "1621785",
+        "cruiseName": "5-Night Very Merrytime Western Caribbean Cruise From Port Canaveral",
+        "cruiseLine": "Disney Cruise Line",
+        "sailDateIso": "2026-11-20",
+        "nights": 5,
+        "departurePortCode": "Port Canaveral, FL",
+        "portsOfCall": "Port Canaveral | Castaway Cay | Cozumel",
         "confidence": 1,
         "reasons": [
           "Created from operator-selected workbench sailing."

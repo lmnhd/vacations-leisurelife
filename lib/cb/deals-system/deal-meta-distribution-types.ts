@@ -16,6 +16,11 @@
  * Graph API). The operator flips a live toggle to actually dispatch.
  */
 
+import type {
+  DealAudienceCellDispatch,
+  DealAudienceCellMatrix,
+} from "./deal-audience-cell-types";
+
 export type DealMetaDistributionMode = "simulate" | "live" | "organic_page_only";
 
 export type DealMetaDistributionStatus =
@@ -45,6 +50,13 @@ export interface DealMetaDistributionTargetingPreview {
   unresolvedQueries: string[];
   targeting: Record<string, unknown>;
   adSetMode: "dynamic" | "static_fallback";
+  geographicRestriction?: {
+    countryCode: string;
+    regionCode: string;
+    regionName: string;
+    residencyRequired: boolean;
+    strict: true;
+  };
   warnings: string[];
 }
 
@@ -55,6 +67,13 @@ export interface DealMetaDistributionPlan {
   caption: string;
   cards: DealMetaDistributionCard[];
   targeting: DealMetaDistributionTargetingPreview;
+  /**
+   * Audience precision matrix: 2-4 AND-layered persona cells, each with its
+   * own dispatch-ready targeting spec and reach estimate. When at least one
+   * cell is dispatchable, live dispatch creates one paused ad set per cell
+   * instead of the single legacy combined ad set.
+   */
+  audienceMatrix?: DealAudienceCellMatrix;
   campaignName: string;
   adSetName: string;
   creativeName: string;
@@ -77,6 +96,8 @@ export interface DealMetaDistribution {
   metaAdSetMode?: "dynamic" | "static_fallback";
   facebookCreativeId?: string;
   facebookAdId?: string;
+  /** Per-cell ad set/ad outcomes when the audience matrix drove dispatch. */
+  cellDispatches?: DealAudienceCellDispatch[];
   facebookPagePostId?: string;
   instagramCarouselContainerId?: string;
   instagramMediaId?: string;

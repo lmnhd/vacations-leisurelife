@@ -645,7 +645,7 @@ function InventoryTab({ data }: { data: DealsSystemDashboardData }) {
         )}
       </Panel>
 
-      <Panel title="CB Promo Intelligence" eyebrow="Agent promo rules, not sellable alone">
+      <Panel title="Promotion Intelligence" eyebrow="Source-grounded promo rules, not sellable alone">
         {data.promoRecords.length === 0 ? (
           <EmptyState>No promo records are currently cached.</EmptyState>
         ) : (
@@ -657,6 +657,9 @@ function InventoryTab({ data }: { data: DealsSystemDashboardData }) {
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone={promo.extractionStatus === "succeeded" ? "ok" : "pending"}>
                         {promo.extractionStatus}
+                      </Badge>
+                      <Badge>
+                        {promo.source === "official_cruise_line" ? "official cruise line" : "CB Agent Tools"}
                       </Badge>
                       <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                         {promo.vendor}
@@ -673,7 +676,7 @@ function InventoryTab({ data }: { data: DealsSystemDashboardData }) {
                     rel="noreferrer"
                     className="text-sm font-semibold text-cyan-200 hover:text-cyan-100"
                   >
-                    Open CB promo
+                    Open promotion source
                   </a>
                 </div>
                 <div className="mt-4 grid gap-4 lg:grid-cols-3">

@@ -912,6 +912,82 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
               ))}
             </ul>
           )}
+          {plan.audienceMatrix && plan.audienceMatrix.cells.length > 0 && (
+            <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-500/5 p-2.5">
+              <p className="font-semibold text-cyan-100">
+                Audience precision cells ({plan.audienceMatrix.source === "ai" ? "AI decomposition" : "research fallback"})
+              </p>
+              <p className="mt-0.5 text-[10px] text-slate-400">
+                Live dispatch creates one paused ad set per dispatchable cell so Meta delivery data reveals which persona converts.
+              </p>
+              <div className="mt-2 space-y-2">
+                {plan.audienceMatrix.cells.map((cell) => (
+                  <div
+                    key={cell.blueprint.cellId}
+                    className={`rounded-md border p-2 ${
+                      cell.dispatchable ? "border-white/10 bg-black/20" : "border-rose-300/20 bg-rose-500/5"
+                    }`}
+                  >
+                    <p className="font-semibold text-slate-200">
+                      {cell.blueprint.label}{" "}
+                      <span className="font-normal text-slate-400">
+                        · {cell.blueprint.precision === "strict" ? "strict (no Advantage+ expansion)" : "assisted"}
+                        {cell.blueprint.ageMin ? ` · age ${cell.blueprint.ageMin}${cell.blueprint.ageMax ? `-${cell.blueprint.ageMax}` : "+"}` : ""}
+                        {cell.relaxed ? " · relaxed" : ""}
+                        {!cell.dispatchable ? " · not dispatchable" : ""}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-slate-400">{cell.blueprint.rationale}</p>
+                    {cell.layers.map((layer) => (
+                      <p key={layer.role} className="mt-0.5">
+                        <span className="uppercase tracking-wide text-[9px] font-bold text-cyan-200/80">{layer.role}</span>{" "}
+                        {layer.entries.map((entry) => entry.name).join(", ") || "(unresolved)"}
+                      </p>
+                    ))}
+                    {cell.exclusions.length > 0 && (
+                      <p className="mt-0.5">
+                        <span className="uppercase tracking-wide text-[9px] font-bold text-rose-200/80">exclude</span>{" "}
+                        {cell.exclusions.map((entry) => entry.name).join(", ")}
+                      </p>
+                    )}
+                    {cell.reach && (
+                      <p className="mt-0.5 text-slate-400">
+                        Estimated audience:{" "}
+                        {cell.reach.usersLowerBound !== undefined || cell.reach.usersUpperBound !== undefined
+                          ? `${cell.reach.usersLowerBound?.toLocaleString() ?? "?"} - ${cell.reach.usersUpperBound?.toLocaleString() ?? "?"}`
+                          : "pending"}{" "}
+                        <span
+                          className={
+                            cell.reach.verdict === "ok"
+                              ? "text-emerald-300"
+                              : cell.reach.verdict === "unknown"
+                                ? "text-slate-400"
+                                : "text-amber-300"
+                          }
+                        >
+                          ({cell.reach.verdict.split("_").join(" ")})
+                        </span>
+                      </p>
+                    )}
+                    {cell.warnings.length > 0 && (
+                      <ul className="mt-1 list-inside list-disc text-amber-200/90">
+                        {cell.warnings.map((w, i) => (
+                          <li key={i}>{w}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {plan.audienceMatrix.warnings.length > 0 && (
+                <ul className="mt-2 list-inside list-disc text-amber-200">
+                  {plan.audienceMatrix.warnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <p className="mt-1">
             <span className="font-semibold text-slate-200">Cards:</span> {plan.cards.length} ready image(s)
           </p>
@@ -952,6 +1028,21 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
                 Open in Ads Manager →
               </a>
             </p>
+          )}
+          {distribution.cellDispatches && distribution.cellDispatches.length > 0 && (
+            <div className="mt-2">
+              <p className="font-semibold text-slate-200">Audience cell ad sets:</p>
+              <ul className="mt-1 list-inside list-disc">
+                {distribution.cellDispatches.map((cell) => (
+                  <li key={cell.cellId} className={cell.error ? "text-rose-200" : "text-slate-300"}>
+                    {cell.label}
+                    {cell.metaAdSetId ? ` — ad set ${cell.metaAdSetId}` : ""}
+                    {cell.facebookAdId ? `, ad ${cell.facebookAdId}` : ""}
+                    {cell.error ? ` — failed: ${cell.error}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {distribution.error && <p className="mt-1 text-rose-200">⚠ {distribution.error}</p>}
           {distribution.notes.length > 0 && (

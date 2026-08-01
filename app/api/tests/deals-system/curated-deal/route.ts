@@ -100,6 +100,7 @@ interface Body {
   targetAudience?: unknown;
   visualAngle?: unknown;
   targetingKeywords?: unknown;
+  metaGeographicRestriction?: unknown;
 }
 
 const angleOptionSchema = z.object({
@@ -217,6 +218,24 @@ interface PipelineStrategyInput {
   targetAudience?: string;
   visualAngle?: string;
   targetingKeywords?: string[];
+  metaGeographicRestriction?: DealCampaignStrategy["metaGeographicRestriction"];
+}
+
+function parseMetaGeographicRestriction(
+  value: unknown
+): DealCampaignStrategy["metaGeographicRestriction"] | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const record = value as Record<string, unknown>;
+  const countryCode = str(record.countryCode)?.toUpperCase();
+  const regionCode = str(record.regionCode)?.toUpperCase();
+  const regionName = str(record.regionName);
+  if (!countryCode || !regionCode || !regionName) return undefined;
+  return {
+    countryCode,
+    regionCode,
+    regionName,
+    residencyRequired: record.residencyRequired === true,
+  };
 }
 
 function buildCampaignStrategy(input: PipelineStrategyInput): DealCampaignStrategy | undefined {
@@ -234,6 +253,7 @@ function buildCampaignStrategy(input: PipelineStrategyInput): DealCampaignStrate
     targetAudience: targetAudience ?? "",
     visualAngle: visualAngle ?? "",
     targetingKeywords,
+    metaGeographicRestriction: input.metaGeographicRestriction,
     savedAtIso: new Date().toISOString(),
   };
 }
@@ -1303,6 +1323,7 @@ export async function POST(request: Request) {
           targetAudience: str(body.targetAudience),
           visualAngle: str(body.visualAngle),
           targetingKeywords: splitKeywordList(body.targetingKeywords),
+          metaGeographicRestriction: parseMetaGeographicRestriction(body.metaGeographicRestriction),
         }),
         promoRecords: promoRecordIds.length > 0 ? await getPromoRecordsByIds(promoRecordIds) : [],
       };
@@ -1358,6 +1379,9 @@ export async function POST(request: Request) {
           targetAudience: str(body.targetAudience),
           visualAngle: str(body.visualAngle),
           targetingKeywords: splitKeywordList(body.targetingKeywords),
+          metaGeographicRestriction:
+            parseMetaGeographicRestriction(body.metaGeographicRestriction) ??
+            existing.campaignStrategy?.metaGeographicRestriction,
         }) ?? existing.campaignStrategy;
       const updated: CuratedOdysseusDeal = {
         ...existing,
@@ -1374,6 +1398,9 @@ export async function POST(request: Request) {
         targetAudience: str(body.targetAudience),
         visualAngle: str(body.visualAngle),
         targetingKeywords: splitKeywordList(body.targetingKeywords),
+        metaGeographicRestriction:
+          parseMetaGeographicRestriction(body.metaGeographicRestriction) ??
+          existing.campaignStrategy?.metaGeographicRestriction,
       });
       const updated: CuratedOdysseusDeal = strategy
         ? { ...existing, campaignStrategy: strategy }
@@ -1401,6 +1428,9 @@ export async function POST(request: Request) {
         targetAudience: str(body.targetAudience),
         visualAngle: str(body.visualAngle),
         targetingKeywords: splitKeywordList(body.targetingKeywords),
+        metaGeographicRestriction:
+          parseMetaGeographicRestriction(body.metaGeographicRestriction) ??
+          existing.campaignStrategy?.metaGeographicRestriction,
       }) ?? existing.campaignStrategy;
       const handoffAssessment = buildPromoHandoffAssessment({
         deal: existing,

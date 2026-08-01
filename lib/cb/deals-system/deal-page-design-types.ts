@@ -104,7 +104,101 @@ export interface DealImageCandidate {
   category: DealImageCategory;
   /** The search query this candidate was sourced from, when applicable. */
   sourceQuery?: string;
+
+  // ── GPT Image 2 variation lineage ───────────────────────────────────────────
+  // Present only on operator-generated variations. A variation is ALWAYS a new
+  // candidate: it never overwrites its source, the hero, or a gallery/segment
+  // assignment. The operator promotes it with the normal + Add / Use on page
+  // gestures, so an expensive experiment is never destructive.
+
+  /** The candidate this image was generated from. */
+  variationOfCandidateId?: string;
+  /** How it was generated — mirrors the Meta card generation modes. */
+  variationMode?: "new_variation" | "edit_current";
+  /** The operator's transformation direction, kept for reproducibility. */
+  variationDirection?: string;
+  /** Full prompt sent to the image model. */
+  variationPromptUsed?: string;
+  variationGeneratedAtIso?: string;
+  /**
+   * True for any AI-generated image. Distinct from `provenance`, which says
+   * where it entered the system: a variation is `operator_supplied` (the
+   * operator made it deliberately) AND synthetic. The operator UI must be able
+   * to flag synthetic assets unmissably — a photoreal edit of a real venue is a
+   * different class of asset from supplier photography.
+   */
+  isGenerated?: boolean;
 }
+
+/** Aspect ratios gpt-image-2 supports, mapped to landing-slot intent. */
+export type DealImageVariationAspect = "square" | "landscape" | "portrait";
+
+export const DEAL_IMAGE_VARIATION_ASPECTS: Record<
+  DealImageVariationAspect,
+  { label: string; apiAspect: "1:1" | "16:9" | "9:16"; hint: string }
+> = {
+  landscape: {
+    label: "Landscape 16:9",
+    apiAspect: "16:9",
+    hint: "Gallery rows and segment images",
+  },
+  square: { label: "Square 1:1", apiAspect: "1:1", hint: "Grid tiles" },
+  portrait: { label: "Portrait 9:16", apiAspect: "9:16", hint: "Tall/mobile slots" },
+};
+
+/**
+ * Ready-made transformation directions.
+ *
+ * Every preset leads with what to PRESERVE, because that is what made a real
+ * dining-room edit keep its architecture, lighting, and layout instead of
+ * becoming a generic restaurant. "Add guests" is first: populating an empty
+ * room is by far the most common request.
+ */
+export interface DealImageVariationPreset {
+  id: string;
+  label: string;
+  mode: "edit_current" | "new_variation";
+  direction: string;
+}
+
+const PRESERVE_ROOM =
+  "Preserve the existing space exactly: keep its architecture, window line, ceiling, lighting fixtures, furniture layout, materials, and color palette unchanged.";
+
+const NO_INVENTION =
+  "Do not add or change menu items, signage, logos, branding, prices, or text of any kind.";
+
+export const DEAL_IMAGE_VARIATION_PRESETS: readonly DealImageVariationPreset[] = [
+  {
+    id: "add_guests",
+    label: "Add guests to this space",
+    mode: "edit_current",
+    direction: `Add a small number of relaxed adult guests using this space naturally. ${PRESERVE_ROOM} People must be seated or standing on real visible surfaces, plausibly lit by the same light sources, with natural posture and scale. ${NO_INVENTION} Photographic and realistic, consistent with the original photograph.`,
+  },
+  {
+    id: "declutter",
+    label: "Remove clutter",
+    mode: "edit_current",
+    direction: `Remove incidental clutter, service carts, stray equipment, and visual noise. ${PRESERVE_ROOM} ${NO_INVENTION}`,
+  },
+  {
+    id: "headline_space",
+    label: "Open space for a headline",
+    mode: "edit_current",
+    direction: `Recompose with calm negative space in the upper third for a headline overlay, keeping the same subject and setting. ${PRESERVE_ROOM} ${NO_INVENTION}`,
+  },
+  {
+    id: "warm_evening",
+    label: "Warmer evening light",
+    mode: "edit_current",
+    direction: `Shift to a warm evening mood with cleaner background separation, keeping the same room and layout. ${PRESERVE_ROOM} ${NO_INVENTION}`,
+  },
+  {
+    id: "composition_only",
+    label: "Fresh take (composition reference)",
+    mode: "new_variation",
+    direction: `Use this image only as a composition and palette reference. Create a fresh alternative with the same visual language and subject type. Do not reproduce it exactly, and do not invent amenities, landmarks, or branded venues. ${NO_INVENTION}`,
+  },
+];
 
 // ── (A) Landing page — broad market ───────────────────────────────────────────
 

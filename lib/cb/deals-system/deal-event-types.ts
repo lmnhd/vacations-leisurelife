@@ -32,6 +32,7 @@ export type DealEventType =
   // draft linkage via metadata.draftId, guest identity via email/metadata
   // where the guest supplied it in the flow)
   | "booking_portal_entered" // guest landed on /deals/[id]/book (beacon)
+  | "booking_self_serve_opened" // guest took the direct-booking exit instead of the assisted flow (beacon)
   | "booking_contact_captured" // guest confirmed name+email in the flow (pre-save partial lead)
   | "booking_packet_saved" // draft persisted — full contact captured (server)
   | "booking_review_ready" // packet reached review_ready (server)

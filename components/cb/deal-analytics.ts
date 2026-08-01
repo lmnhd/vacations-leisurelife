@@ -13,6 +13,7 @@ export type DealAnalyticsEvent =
   | "deal_engaged"
   | "book_now_click"
   | "booking_portal_entered"
+  | "booking_self_serve_opened"
   | "booking_contact_captured";
 
 const SESSION_KEY = "lll-deal-analytics-session";
@@ -116,6 +117,26 @@ export function postBookingPortalEntered(dealId: string) {
     // Storage unavailable — still record the entry.
   }
   postDealEvent(dealId, "booking_portal_entered");
+}
+
+/**
+ * The guest chose to book and pay themselves on the Cruise Brothers page rather
+ * than run the assisted flow. They never create a draft, so this beacon is the
+ * only trace they leave — without it a self-serve booker is indistinguishable
+ * from someone who entered the portal and bounced. Anonymous (no contact has
+ * been collected at this point) and fired once per session per deal, matching
+ * the portal-entry guard. Delivery relies on the sendBeacon/keepalive path
+ * above because the link opens a new tab in the same tick.
+ */
+export function postBookingSelfServeOpened(dealId: string) {
+  const guardKey = `lll-booking-self-serve-opened-${dealId}`;
+  try {
+    if (sessionStorage.getItem(guardKey)) return;
+    sessionStorage.setItem(guardKey, new Date().toISOString());
+  } catch {
+    // Storage unavailable — still record the exit.
+  }
+  postDealEvent(dealId, "booking_self_serve_opened");
 }
 
 /**

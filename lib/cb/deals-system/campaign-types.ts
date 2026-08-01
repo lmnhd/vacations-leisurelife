@@ -84,6 +84,17 @@ export interface DealCampaignStrategy {
   targetAudience: string;
   visualAngle: string;
   targetingKeywords: string[];
+  /**
+   * A hard Meta delivery boundary for offers whose eligibility depends on
+   * geography. This is an ad-delivery control, not proof that a guest meets
+   * the promotion's legal residency requirement.
+   */
+  metaGeographicRestriction?: {
+    countryCode: string;
+    regionCode: string;
+    regionName: string;
+    residencyRequired: boolean;
+  };
   savedAtIso: string;
 }
 

@@ -162,8 +162,9 @@ The Deal ID is the exact Odysseus package ID. Build all derived IDs through `lib
 2. Show the recommendation, rationale, and active operator selection before image spend.
 3. Allow override or restore without automatically generating images.
 4. Keep all image generation operator-triggered and one asset type per call.
-5. Keep Google copy ASCII-clean, conservative, and policy-plain.
-6. Do not dispatch ads without the required operator approval.
+5. For a residence-restricted promotion, persist a strict geographic restriction and fail distribution if the plan broadens to nationwide targeting. Meta location does not replace guest eligibility proof.
+6. Keep Google copy ASCII-clean, conservative, and policy-plain.
+7. Do not dispatch ads without the required operator approval.
 
 ### C6. Approval and Publication Gate
 

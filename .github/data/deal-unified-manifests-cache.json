@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-30T15:54:05.254Z",
+  "generatedAtIso": "2026-07-31T23:08:01.055Z",
   "manifests": [
     {
       "id": "unified-manifest-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing-cunard",
@@ -1984,6 +1984,188 @@
         ],
         "promoStrategy": "Use selected promo intelligence to support \"Midnight Is the Departure\" with qualified, public-safe language.",
         "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: Midnight Is the Departure. Targeting angle: US couples, friend groups, and celebration travelers who want New Year's Eve to become the first night of a real Caribbean vacation, with a compelling current fare and a time-limited NCL sale.. Workbench-selected real sailing chosen for the angle \"Midnight Is the Departure\". Grounding facts: Norwegian Getaway | 2026-12-31 | Port Canaveral, FL | Orlando-Beaches-Port Canaveral, Fl, Puerto Plata, Dominican Republic, St Thomas, Vi. Promo context considered: Norwegian Cruise Line Norwegian Cruise Line - Semi Annual Sale | Norwegian Cruise Line's Semi-Annual Sale is available for eligible new bookings through August 18, 2026. | Must be booked between 07/07/2026 and 08/18/2026."
+      }
+    },
+    {
+      "id": "unified-manifest-1621785-holiday-magic-without-the-holiday-marathon",
+      "generatedAtIso": "2026-07-31T23:08:01.051Z",
+      "expiresOnIso": "2026-10-29",
+      "sourceAngleId": "angle-workbench-5-night-very-merrytime-western-caribbean-cruise-from-port-canaveral-disney-fantasy-1621785",
+      "sourceManifestId": "manifest-1621785-holiday-magic-without-the-holiday-marathon",
+      "sailingAngleTitle": "Holiday Magic Without the Holiday Marathon",
+      "creativeBrief": {
+        "isolatedNiche": "Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost.",
+        "researchRationale": "Workbench-selected real sailing chosen for the angle \"Holiday Magic Without the Holiday Marathon\". Grounding facts: Disney Fantasy | 2026-11-20 | Port Canaveral, FL | Port Canaveral, Castaway Cay, Cozumel. Promo context considered: Disney Cruise Line Florida Resident Rates - November 20, 2026 Disney Fantasy | Disney Cruise Line lists a Florida Resident Rate for the November 20, 2026 Disney Fantasy sailing. | No booking deadline is stated on the captured official offer page; availability is limited..",
+        "successLogic": "Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost. can convert because this is a real Disney Fantasy sailing on 2026-11-20, not a generic cruise sale. The attached Florida Resident Rates - November 20, 2026 Disney Fantasy gives the audience a timely reason to act.",
+        "audienceSignals": [
+          "Real sailing selected in the Campaign Workbench: Disney Fantasy on Disney Cruise Line, 5 nights, sailing 2026-11-20.",
+          "Concrete itinerary signal: Port Canaveral, FL roundtrip, Port Canaveral, Castaway Cay, Cozumel.",
+          "Operator-selected audience angle: Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost..",
+          "Targeting seeds chosen for this sailing: Florida resident Disney cruise offer, Disney Very Merrytime cruise 2026, Disney Fantasy November 2026, holiday cruise from Port Canaveral, Disney cruise for families, Castaway Cay cruise."
+        ],
+        "angle": {
+          "sailingAngleTitle": "Holiday Magic Without the Holiday Marathon",
+          "theCorePitch": "Holiday Magic Without the Holiday Marathon: Disney Fantasy on 5-Night Very Merrytime Western Caribbean Cruise From Port Canaveral gives this audience a specific real sailing to evaluate, not a generic cruise sale.",
+          "visualAnchor": "An overfull holiday checklist gives way to the calm geometry of Disney Fantasy at dusk, then Castaway Cay, Cozumel, and an unhurried family sea day. Holiday warmth without a generic character collage.",
+          "targetAudienceDescriptor": "Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost.",
+          "relevantKeywords": [
+            "Florida resident Disney cruise offer",
+            "Disney Very Merrytime cruise 2026",
+            "Disney Fantasy November 2026",
+            "holiday cruise from Port Canaveral",
+            "Disney cruise for families",
+            "Castaway Cay cruise",
+            "Christmas cruise from Florida",
+            "family holiday without theme parks"
+          ],
+          "destinationAndTimeOfYearHints": "5-Night Very Merrytime Western Caribbean Cruise From Port Canaveral departing 2026-11-20.",
+          "onboardAssetRequirements": "Disney Fantasy ship assets, destination imagery, itinerary map, and booking-link proof."
+        }
+      },
+      "inventoryManifest": {
+        "assembleDraft": {
+          "cruiseLine": "Disney Cruise Line",
+          "departurePortHint": "Port Canaveral, FL",
+          "sailWindow": {
+            "rationale": "Exact sail date selected in the campaign workbench.",
+            "earliestIso": "2026-11-20",
+            "latestIso": "2026-11-20"
+          },
+          "portsOfCall": [
+            "Port Canaveral",
+            "Castaway Cay",
+            "Cozumel"
+          ],
+          "nights": 5,
+          "destination": "Port Canaveral",
+          "suggestedBriefId": "brief-1621785-holiday-magic-without-the-holiday-marathon",
+          "itineraryName": "5-Night Very Merrytime Western Caribbean Cruise From Port Canaveral",
+          "suggestedDealId": "1621785"
+        },
+        "lookupQuery": {
+          "line": "Disney Cruise Line",
+          "port": "Port Canaveral, FL",
+          "nights": 5,
+          "ship": "Disney Fantasy",
+          "date": "2026-11-20",
+          "windowDays": 0,
+          "destination": "Port Canaveral"
+        },
+        "targetingSeeds": {
+          "inferredMarket": "US",
+          "excludedAudienceSignals": [
+            "free cruise",
+            "cruise job",
+            "Avoid broad cruise-interest targeting as the only audience."
+          ],
+          "metaInterestSeeds": [
+            "Florida resident Disney cruise offer",
+            "Disney Very Merrytime cruise 2026",
+            "Disney Fantasy November 2026",
+            "holiday cruise from Port Canaveral",
+            "Disney cruise for families",
+            "Castaway Cay cruise",
+            "Christmas cruise from Florida",
+            "family holiday without theme parks",
+            "Disney Cruise Line",
+            "Disney Fantasy",
+            "Florida Resident Rates - November 20, 2026 Disney Fantasy",
+            "Disney Cruise Line lists a Florida Resident Rate for the November 20, 2026 Disney Fantasy sailing.",
+            "Eligible Florida residents may save up to 30% on voyage fare for this sailing, subject to promotional inventory and rate confirmation."
+          ],
+          "metaBehaviorSignals": [
+            "responds to limited-time travel offers",
+            "compares premium vacation value",
+            "engages with Disney Fantasy ship-specific content"
+          ],
+          "personaSignals": [
+            "Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost.",
+            "Disney Cruise Line travelers",
+            "ease",
+            "anticipation",
+            "premium comfort",
+            "Disney Cruise Line",
+            "Disney Fantasy"
+          ],
+          "geoFocus": [
+            "Port Canaveral, FL",
+            "5-Night Very Merrytime Western Caribbean Cruise From Port Canaveral",
+            "Port Canaveral",
+            "Castaway Cay",
+            "Cozumel",
+            "Caribbean travel"
+          ]
+        },
+        "appliedPromos": [
+          {
+            "status": "possibly_applicable_needs_review",
+            "assumptions": [
+              "Selected by the operator in the Campaign Workbench."
+            ],
+            "warnings": [
+              "Confirm promo eligibility before publishing public copy."
+            ],
+            "matchedOn": [
+              "Disney Cruise Line",
+              "2026-11-20"
+            ],
+            "promoRecordId": "official-dcl-florida-resident-1621785"
+          }
+        ],
+        "promotionBriefs": [
+          {
+            "promoRecordId": "official-dcl-florida-resident-1621785",
+            "title": "Florida Resident Rates - November 20, 2026 Disney Fantasy",
+            "vendor": "Disney Cruise Line",
+            "bookingWindow": "No booking deadline is stated on the captured official offer page; availability is limited.",
+            "sailingWindow": "5-Night Very Merrytime Western Caribbean Cruise aboard Disney Fantasy departing November 20, 2026.",
+            "offerTypes": [
+              "instant_savings"
+            ],
+            "publicClaimsAllowed": [
+              "Disney Cruise Line lists a Florida Resident Rate for the November 20, 2026 Disney Fantasy sailing."
+            ],
+            "publicClaimsNeedsQualifier": [
+              "Eligible Florida residents may save up to 30% on voyage fare for this sailing, subject to promotional inventory and rate confirmation."
+            ],
+            "visitorFriendlySummary": "Eligible Florida residents can check current Disney Cruise Line pricing for up to 30% off voyage fare on this exact Very Merrytime sailing, subject to availability and rate confirmation.",
+            "suggestedAngles": [
+              "Florida families can trade holiday logistics for five nights of Very Merrytime sailing.",
+              "A Florida-resident opportunity for Disney holiday magic without another tightly scheduled park trip."
+            ],
+            "cautionFlags": [
+              "Always retain 'up to' with the 30% claim.",
+              "Do not imply every cabin category or rate is discounted.",
+              "Do not target or qualify non-Florida residents for this offer.",
+              "Prices and promotional inventory can change until booked."
+            ],
+            "percentDiscounts": [
+              {
+                "appliesTo": "Eligible voyage fare on the November 20, 2026 Disney Fantasy sailing",
+                "percentOff": 30,
+                "rawText": "Up to 30% off voyage fare for eligible Florida residents."
+              }
+            ],
+            "dollarSavings": [],
+            "onboardCredits": [],
+            "freeGuestOffers": [],
+            "exclusions": [
+              "Taxes, Fees and Port Expenses are excluded from the discount.",
+              "Limited to 50 staterooms per sailing.",
+              "At least one adult in each stateroom must present valid proof of Florida residency at check-in."
+            ],
+            "applicableProducts": [
+              "Disney Fantasy",
+              "5-Night Very Merrytime Western Caribbean Cruise",
+              "November 20, 2026 departure"
+            ],
+            "applicableMarkets": [
+              "US"
+            ]
+          }
+        ],
+        "promoStrategy": "Use selected promo intelligence to support \"Holiday Magic Without the Holiday Marathon\" with qualified, public-safe language.",
+        "manifestReasoning": "Created from an operator-selected real sailing in the Campaign Workbench. Advertising angle: Holiday Magic Without the Holiday Marathon. Targeting angle: Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost.. Workbench-selected real sailing chosen for the angle \"Holiday Magic Without the Holiday Marathon\". Grounding facts: Disney Fantasy | 2026-11-20 | Port Canaveral, FL | Port Canaveral, Castaway Cay, Cozumel. Promo context considered: Disney Cruise Line Florida Resident Rates - November 20, 2026 Disney Fantasy | Disney Cruise Line lists a Florida Resident Rate for the November 20, 2026 Disney Fantasy sailing. | No booking deadline is stated on the captured official offer page; availability is limited.."
       }
     }
   ]

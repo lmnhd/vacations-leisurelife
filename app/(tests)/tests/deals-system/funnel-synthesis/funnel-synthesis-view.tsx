@@ -7,9 +7,12 @@ import type { DealPageFacts } from "@/lib/cb/deals-system/deal-page-facts";
 import {
   DEAL_IMAGE_CATEGORIES,
   DEAL_IMAGE_CATEGORY_SPECS,
+  DEAL_IMAGE_VARIATION_ASPECTS,
+  DEAL_IMAGE_VARIATION_PRESETS,
   type DealFunnelSynthesis,
   type DealImageCandidate,
   type DealImageCategory,
+  type DealImageVariationAspect,
   type DealLandingSegmentKey,
   type DealLandingSegment,
 } from "@/lib/cb/deals-system/deal-page-design-types";
@@ -297,6 +300,213 @@ function CarouselPanel({ synthesis }: { synthesis: DealFunnelSynthesis }) {
 
 // ── Image set picker ───────────────────────────────────────────────────────────
 
+/**
+ * Inline editor for creating a GPT Image 2 variation of one candidate.
+ *
+ * The result is always a NEW candidate — this panel never replaces the source
+ * or any page assignment, which is what makes experimental image spend safe.
+ */
+function VariationEditor({
+  source,
+  busy,
+  onGenerate,
+  onClose,
+}: {
+  source: DealImageCandidate;
+  busy: boolean;
+  onGenerate: (input: {
+    direction: string;
+    mode: "edit_current" | "new_variation";
+    aspect: DealImageVariationAspect;
+  }) => void;
+  onClose: () => void;
+}) {
+  const [presetId, setPresetId] = useState(DEAL_IMAGE_VARIATION_PRESETS[0].id);
+  const preset =
+    DEAL_IMAGE_VARIATION_PRESETS.find((p) => p.id === presetId) ??
+    DEAL_IMAGE_VARIATION_PRESETS[0];
+  const [direction, setDirection] = useState(preset.direction);
+  const [mode, setMode] = useState<"edit_current" | "new_variation">(preset.mode);
+  const [aspect, setAspect] = useState<DealImageVariationAspect>("landscape");
+
+  function applyPreset(id: string) {
+    const next = DEAL_IMAGE_VARIATION_PRESETS.find((p) => p.id === id);
+    if (!next) return;
+    setPresetId(id);
+    setDirection(next.direction);
+    setMode(next.mode);
+  }
+
+  // gpt-image-2 offers only 1:1 / 16:9 / 9:16, so a 3:2 SERP photo is always
+  // recropped. Saying so up front prevents "why did it cut off the left side?"
+  const sourceRatio =
+    source.width && source.height ? source.width / source.height : undefined;
+  const targetRatio = aspect === "landscape" ? 16 / 9 : aspect === "portrait" ? 9 / 16 : 1;
+  const willRecrop =
+    sourceRatio !== undefined && Math.abs(sourceRatio - targetRatio) > 0.08;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[88vh] w-full max-w-2xl overflow-auto rounded-2xl border border-white/15 bg-[#0b1020] p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-white">Create variation</h3>
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              Adds a new candidate. Your original image and every page assignment stay
+              exactly as they are.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close variation editor"
+            className="rounded-full border border-white/20 px-2 py-0.5 text-xs text-slate-300 hover:bg-white/10"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mt-4 flex gap-3">
+          <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg border border-white/15">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={source.thumbnailUrl}
+              alt={source.title ?? ""}
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="min-w-0 text-[11px] text-slate-400">
+            <p className="truncate text-slate-200">{source.title ?? "Untitled"}</p>
+            <p className="mt-0.5">
+              {CATEGORY_LABEL[source.category]} · {source.provenance.replace(/_/g, " ")}
+            </p>
+            {source.width && source.height && (
+              <p className="mt-0.5">
+                {source.width}×{source.height}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <label className="mt-4 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+          Start from
+        </label>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {DEAL_IMAGE_VARIATION_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => applyPreset(p.id)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                presetId === p.id
+                  ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
+                  : "border-white/15 bg-black/20 text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        <label className="mt-4 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+          Direction
+        </label>
+        <textarea
+          value={direction}
+          onChange={(e) => setDirection(e.target.value)}
+          rows={5}
+          aria-label="Transformation direction"
+          className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 p-2 text-[11px] leading-4 text-slate-200 focus:border-cyan-300/50 focus:outline-none"
+        />
+        <p className="mt-1 text-[10px] leading-4 text-slate-500">
+          Say what to keep first, then what to change. The model cannot add readable
+          text, brand names, or claims — those are blocked in the prompt.
+        </p>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Mode
+            </label>
+            <div className="mt-1 flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setMode("edit_current")}
+                className={`flex-1 rounded-lg border px-2 py-1.5 text-[10px] font-semibold transition ${
+                  mode === "edit_current"
+                    ? "border-amber-300/60 bg-amber-400/15 text-amber-100"
+                    : "border-white/15 bg-black/20 text-slate-400 hover:text-slate-200"
+                }`}
+                title="Keep this exact room/subject and change it"
+              >
+                Edit this image
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("new_variation")}
+                className={`flex-1 rounded-lg border px-2 py-1.5 text-[10px] font-semibold transition ${
+                  mode === "new_variation"
+                    ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
+                    : "border-white/15 bg-black/20 text-slate-400 hover:text-slate-200"
+                }`}
+                title="Use it only as a look/composition reference"
+              >
+                Fresh take
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Aspect
+            </label>
+            <select
+              value={aspect}
+              onChange={(e) => setAspect(e.target.value as DealImageVariationAspect)}
+              aria-label="Target aspect ratio"
+              className="mt-1 h-[34px] w-full rounded-lg border border-white/10 bg-slate-950 px-2 text-[11px] text-slate-200 outline-none focus:border-cyan-300/50"
+            >
+              {Object.entries(DEAL_IMAGE_VARIATION_ASPECTS).map(([key, spec]) => (
+                <option key={key} value={key}>
+                  {spec.label} — {spec.hint}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {willRecrop && (
+          <p className="mt-2 rounded-md bg-amber-500/10 px-2 py-1 text-[10px] leading-4 text-amber-200">
+            Your source is {source.width}×{source.height}. GPT Image 2 only outputs 1:1,
+            16:9, or 9:16, so the result will be recropped to{" "}
+            {DEAL_IMAGE_VARIATION_ASPECTS[aspect].label} and some edges will be lost.
+          </p>
+        )}
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <p className="text-[10px] text-slate-500">
+            Generation takes ~30–60s and costs image spend.
+          </p>
+          <button
+            type="button"
+            disabled={busy || !direction.trim()}
+            onClick={() => onGenerate({ direction, mode, aspect })}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-cyan-300/50 bg-cyan-400/15 px-4 text-[11px] font-semibold text-cyan-50 transition hover:bg-cyan-400/25 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? "Generating…" : "Generate variation"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImageThumb({
   c,
   synthesis,
@@ -304,6 +514,8 @@ function ImageThumb({
   onPickHero,
   onAssignLandingImage,
   onPreviewImage,
+  onOpenVariation,
+  onDiscardVariation,
   busy,
 }: {
   c: DealImageCandidate;
@@ -315,6 +527,8 @@ function ImageThumb({
     target: "hero" | DealLandingSegmentKey
   ) => void;
   onPreviewImage: (url: string, alt: string, fallbackUrl?: string) => void;
+  onOpenVariation: (id: string) => void;
+  onDiscardVariation: (id: string) => void;
   busy: boolean;
 }) {
   const inGallery = synthesis.galleryIds.includes(c.id);
@@ -350,6 +564,21 @@ function ImageThumb({
           {isHero ? "★ hero" : "hero?"}
         </button>
       )}
+      {/* Unmissable on purpose: a photoreal edit of a real venue is a different
+          class of asset from supplier photography, and the operator is the last
+          person who can tell before it reaches a public page. */}
+      {c.isGenerated && (
+        <span
+          className="absolute right-1 top-1 rounded bg-violet-500/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm"
+          title={
+            c.variationDirection
+              ? `AI variation — ${c.variationDirection}`
+              : "AI-generated variation"
+          }
+        >
+          ✨ AI
+        </span>
+      )}
       <button
         type="button"
         disabled={busy}
@@ -381,6 +610,29 @@ function ImageThumb({
           </option>
         ))}
       </select>
+      <div className="mt-1 flex gap-1">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onOpenVariation(c.id)}
+          title="Create an AI variation of this image (adds a new candidate)"
+          className="h-6 flex-1 rounded border border-violet-300/30 bg-violet-400/10 text-[9px] font-semibold text-violet-100 transition hover:bg-violet-400/20 disabled:opacity-50"
+        >
+          ✨ Variation
+        </button>
+        {c.isGenerated && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onDiscardVariation(c.id)}
+            title="Discard this generated variation"
+            aria-label="Discard this generated variation"
+            className="h-6 w-7 rounded border border-rose-300/30 bg-rose-400/10 text-[10px] font-semibold text-rose-200 transition hover:bg-rose-400/20 disabled:opacity-50"
+          >
+            ×
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -394,6 +646,8 @@ function ImageCategoryGroup({
   onAssignLandingImage,
   onPreviewImage,
   onSearchMore,
+  onOpenVariation,
+  onDiscardVariation,
   busy,
 }: {
   cat: DealImageCategory;
@@ -404,6 +658,8 @@ function ImageCategoryGroup({
   onAssignLandingImage: (id: string, target: "hero" | DealLandingSegmentKey) => void;
   onPreviewImage: (url: string, alt: string, fallbackUrl?: string) => void;
   onSearchMore: (category?: DealImageCategory) => void;
+  onOpenVariation: (id: string) => void;
+  onDiscardVariation: (id: string) => void;
   busy: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -461,6 +717,8 @@ function ImageCategoryGroup({
                   onPickHero={onPickHero}
                   onAssignLandingImage={onAssignLandingImage}
                   onPreviewImage={onPreviewImage}
+                  onOpenVariation={onOpenVariation}
+                  onDiscardVariation={onDiscardVariation}
                   busy={busy}
                 />
               ))}
@@ -479,6 +737,8 @@ function ImageSetPanel({
   onAssignLandingImage,
   onPreviewImage,
   onSearchMore,
+  onOpenVariation,
+  onDiscardVariation,
   busy,
 }: {
   synthesis: DealFunnelSynthesis;
@@ -491,6 +751,8 @@ function ImageSetPanel({
   onPreviewImage: (url: string, alt: string, fallbackUrl?: string) => void;
   /** category omitted = re-search the whole diversified pool. */
   onSearchMore: (category?: DealImageCategory) => void;
+  onOpenVariation: (id: string) => void;
+  onDiscardVariation: (id: string) => void;
   busy: boolean;
 }) {
   // The whole image set collapses to a single header when you're not curating —
@@ -564,6 +826,8 @@ function ImageSetPanel({
                 onAssignLandingImage={onAssignLandingImage}
                 onPreviewImage={onPreviewImage}
                 onSearchMore={onSearchMore}
+                onOpenVariation={onOpenVariation}
+                onDiscardVariation={onDiscardVariation}
                 busy={busy}
               />
             ))}
@@ -681,6 +945,8 @@ export function FunnelSynthesisView({
     alt: string;
     fallbackUrl?: string;
   } | null>(null);
+  /** Candidate id whose variation editor is open, or null. */
+  const [variationSourceId, setVariationSourceId] = useState<string | null>(null);
 
   async function copyClaudeDesignPayload() {
     if (!active) return;
@@ -820,6 +1086,60 @@ export function FunnelSynthesisView({
       const data = await post({ action: "select_images", synthesisId: active.id, ...patch });
       if (!data.ok || !data.synthesis) throw new Error(data.error ?? "Saving selection failed.");
       applySynthesis(data.synthesis);
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /**
+   * Generate a variation. The result is appended to the candidate pool as a new
+   * entry — no gallery/hero/segment assignment changes, so a bad result costs
+   * only the spend, never the curation.
+   */
+  async function generateVariation(input: {
+    direction: string;
+    mode: "edit_current" | "new_variation";
+    aspect: DealImageVariationAspect;
+  }) {
+    if (!active || !variationSourceId) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post({
+        action: "generate_variation",
+        synthesisId: active.id,
+        candidateId: variationSourceId,
+        ...input,
+      });
+      if (!data.ok || !data.synthesis) throw new Error(data.error ?? "Variation failed.");
+      applySynthesis(data.synthesis);
+      setVariationSourceId(null);
+      setMessage({
+        tone: "ok",
+        text: "Variation created and added beside its source. Review it, then use “+ Add” or “Use on page…” if you want it.",
+      });
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function discardVariation(candidateId: string) {
+    if (!active) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const data = await post({
+        action: "discard_variation",
+        synthesisId: active.id,
+        candidateId,
+      });
+      if (!data.ok || !data.synthesis) throw new Error(data.error ?? "Discard failed.");
+      applySynthesis(data.synthesis);
+      setMessage({ tone: "ok", text: "Variation discarded." });
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -974,6 +1294,8 @@ export function FunnelSynthesisView({
               onAssignLandingImage={assignLandingImage}
               onPreviewImage={(url, alt, fallbackUrl) => setPreviewImage({ url, alt, fallbackUrl })}
               onSearchMore={(category) => void searchMore(category)}
+              onOpenVariation={(id) => setVariationSourceId(id)}
+              onDiscardVariation={(id) => void discardVariation(id)}
             />
           </div>
 
@@ -1005,6 +1327,15 @@ export function FunnelSynthesisView({
             </details>
           )}
         </>
+      )}
+
+      {variationSourceId && active && candidateById(active, variationSourceId) && (
+        <VariationEditor
+          source={candidateById(active, variationSourceId)!}
+          busy={busy}
+          onGenerate={(input) => void generateVariation(input)}
+          onClose={() => setVariationSourceId(null)}
+        />
       )}
 
       {previewImage && (

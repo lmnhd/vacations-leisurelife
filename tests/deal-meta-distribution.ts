@@ -9,6 +9,7 @@
  */
 
 import {
+  dispatchDealMetaDistribution,
   planDealMetaDistribution,
   type CuratedOdysseusDeal,
   type DealMetaAdSynthesis,
@@ -140,6 +141,54 @@ async function main(): Promise<void> {
   check("keeps current deal ports", queryText.includes("labadee") && queryText.includes("perfect day"));
   check("drops incompatible Oceania cruise-line seed", !queryText.includes("oceania cruises"), queryText);
   check("does not append prior ABC-island ports globally", !queryText.includes("aruba") && !queryText.includes("barbados"));
+
+  const floridaDeal: CuratedOdysseusDeal = {
+    ...deal,
+    id: "1621785",
+    packageId: "1621785",
+    campaignStrategy: {
+      ...deal.campaignStrategy!,
+      targetAudience: "Florida-resident families",
+      metaGeographicRestriction: {
+        countryCode: "US",
+        regionCode: "FL",
+        regionName: "Florida",
+        residencyRequired: true,
+      },
+    },
+  };
+  const floridaSynthesis: DealMetaAdSynthesis = {
+    ...synthesis,
+    id: "funnel-adcopy-disney-florida",
+    dealId: "1621785",
+  };
+  const floridaPlan = await planDealMetaDistribution(floridaSynthesis, floridaDeal);
+  const geoLocations = floridaPlan.targeting.targeting.geo_locations as {
+    countries?: string[];
+    regions?: Array<{ key?: string }>;
+  };
+  check("Florida offer removes nationwide country targeting", !geoLocations.countries);
+  check("Florida offer uses the verified Meta Florida region", geoLocations.regions?.[0]?.key === "3843");
+  check("Florida offer persists a strict geographic restriction", floridaPlan.targeting.geographicRestriction?.strict === true);
+  check("Florida offer records residency as an eligibility check", floridaPlan.targeting.geographicRestriction?.residencyRequired === true);
+
+  const broadenedPlan = {
+    ...floridaPlan,
+    targeting: {
+      ...floridaPlan.targeting,
+      targeting: {
+        ...floridaPlan.targeting.targeting,
+        geo_locations: { countries: ["US"] },
+      },
+    },
+  };
+  let broadenedPlanBlocked = false;
+  try {
+    await dispatchDealMetaDistribution(floridaSynthesis, broadenedPlan, "simulate");
+  } catch {
+    broadenedPlanBlocked = true;
+  }
+  check("distribution blocks a broadened Florida-resident plan", broadenedPlanBlocked);
 
   process.env.META_ACCESS_TOKEN = originalMetaEnv.META_ACCESS_TOKEN;
   process.env.META_AD_ACCOUNT_ID = originalMetaEnv.META_AD_ACCOUNT_ID;

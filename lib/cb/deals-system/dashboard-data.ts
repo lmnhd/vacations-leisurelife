@@ -45,6 +45,7 @@ interface CacheRead<T> {
 
 export interface DealsSystemPromoSummary {
   id: string;
+  source: CbPromoIntelligenceRecord["source"];
   title: string;
   vendor: string;
   detailUrl: string;
@@ -312,6 +313,7 @@ function cacheValue<T>(cache: CacheRead<T>, fallback: T): T {
 function summarizePromo(record: CbPromoIntelligenceRecord): DealsSystemPromoSummary {
   return {
     id: record.id,
+    source: record.source,
     title: record.title,
     vendor: record.vendor,
     detailUrl: record.detailUrl,

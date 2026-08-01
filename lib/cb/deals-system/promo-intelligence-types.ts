@@ -107,9 +107,13 @@ export interface CbPromoSupportingFile {
   fileName: string;
 }
 
+export type CbPromoIntelligenceSource =
+  | "cb_agent_tools_todays_view"
+  | "official_cruise_line";
+
 export interface CbPromoIntelligenceRecord {
   id: string;
-  source: "cb_agent_tools_todays_view";
+  source: CbPromoIntelligenceSource;
   sourceUrl: string;
   detailUrl: string;
   capturedAtIso: string;

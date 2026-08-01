@@ -346,11 +346,42 @@ owned, fetchable URLs.
 - Funnel gallery candidates gain explicit role assignment at attach time.
 - Tests for MIME, byte limits, private-URL rejection, and provenance.
 
-### Release 3 — Funnel Landing-Image Transformations (deferred, committed)
+### Release 3 — Funnel Landing-Image Transformations ✅ SHIPPED 2026-07-31
 
-**Deferred only for sequencing — this remains a wanted feature.** It reuses the
-same reference helper but has its own page, its own record type, and its own
-review surface, so it ships after Release 1 is proven.
+Shipped ahead of Release 2 (imports), because the operator's real blocker was
+populating an empty dining room, not importing new source imagery.
+
+**What landed**, in `deal-image-variation-generator.ts` + the `generate_variation`
+/ `discard_variation` funnel actions + a `✨ Variation` control on every
+candidate tile:
+
+- `edit_current` and `new_variation` modes over the Release 1 reference helper.
+- Five directions, led by **"Add guests to this space"** — every preset states
+  what to PRESERVE first, which is what keeps a real room's architecture,
+  lighting, and layout instead of drifting to a generic venue.
+- Aspect selector (`16:9` default for gallery/segment slots) with an explicit
+  recrop warning, since gpt-image-2 offers only 1:1 / 16:9 / 9:16 and SERP
+  sources are typically 3:2.
+- `isGenerated` + a violet `✨ AI` tile badge. This is deliberately separate from
+  `provenance`: a variation is `operator_supplied` (the operator made it) AND
+  synthetic. A photoreal edit of a real venue is a different class of asset from
+  supplier photography, and the operator is the last person who can tell.
+- Read-latest-then-merge before persisting, so a curation change made during a
+  ~55s generation isn't rolled back.
+
+**Verified end to end on live data:** source URL, galleryIds, heroImageId, and
+all five segment assignments unchanged; exactly one candidate added, inserted
+directly after its source; discard correctly refused while the variation was in
+the gallery. 25 unit tests cover the additive invariant and the prompt
+guardrails.
+
+Deviation from the plan below: the `DealLandingImageVariation` side-record was
+dropped. Lineage lives on the candidate itself (`variationOfCandidateId`,
+`variationMode`, `variationDirection`, `variationPromptUsed`,
+`variationGeneratedAtIso`), which keeps one source of truth and avoids a second
+record that could drift out of sync with the pool it describes.
+
+The original design follows, retained for context.
 
 The goal is not to replace a real image casually. It is to produce reviewable
 variants of an operator-approved source when the asset is nearly right but needs

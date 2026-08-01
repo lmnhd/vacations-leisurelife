@@ -174,6 +174,8 @@ export interface DealActivitySummary {
   /** totalActions ÷ uniqueSessions, 0 when no sessions. */
   viewToActionRate: number;
   bookingPortalEntries: number;
+  /** Guests who left for the direct Cruise Brothers booking page. */
+  bookingSelfServeExits: number;
   bookingsConfirmed: number;
   lastActivityAtIso?: string;
   sourceBreakdown: DealSourceBreakdownEntry[];
@@ -198,6 +200,8 @@ export interface DealDailyActivityBucket {
   totalActions: number;
   /** Booking portal sessions started that day. */
   bookingPortalEntries: number;
+  /** Guests who took the direct-booking exit instead of the assisted flow. */
+  bookingSelfServeExits: number;
   /** Bookings the operator confirmed that day. */
   bookingsConfirmed: number;
 }
@@ -214,6 +218,7 @@ function emptyDailyBucket(dateIso: string): DealDailyActivityBucket {
     callbackRequests: 0,
     totalActions: 0,
     bookingPortalEntries: 0,
+    bookingSelfServeExits: 0,
     bookingsConfirmed: 0,
   };
 }
@@ -267,6 +272,9 @@ export function computeDealDailyActivity(events: DealEvent[]): DealDailyActivity
         break;
       case "booking_portal_entered":
         bucket.bookingPortalEntries += 1;
+        break;
+      case "booking_self_serve_opened":
+        bucket.bookingSelfServeExits += 1;
         break;
       case "booking_confirmed":
         bucket.bookingsConfirmed += 1;
@@ -379,6 +387,7 @@ export function computeDealActivitySummary(dealId: string, events: DealEvent[]):
     totalActions,
     viewToActionRate: uniqueSessions > 0 ? totalActions / uniqueSessions : 0,
     bookingPortalEntries: count("booking_portal_entered"),
+    bookingSelfServeExits: count("booking_self_serve_opened"),
     bookingsConfirmed: count("booking_confirmed"),
     lastActivityAtIso,
     sourceBreakdown,

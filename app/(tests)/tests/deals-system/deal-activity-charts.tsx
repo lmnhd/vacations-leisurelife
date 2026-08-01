@@ -477,6 +477,12 @@ export function DailyActionsChart({ buckets }: { buckets: DealDailyActivityBucke
 
 const CONFIRMED_DOT_Y = 8; // px below the plot top, mirroring the sparkline's dot band
 
+// Self-serve exits stack inside the portal-entries bar. Magenta is reused from
+// the palette above: within this chart it only ever sits against amber and
+// green, and that trio validates (`--pairs all`, dark surface) — the one FAIL
+// there is the pre-existing green↔amber pair, which this reuse doesn't affect.
+const SERIES_SELF_SERVE = SERIES_MAGENTA;
+
 export function DailyBookingChart({ buckets }: { buckets: DealDailyActivityBucket[] }) {
   const maxEntries = Math.max(...buckets.map((d) => d.bookingPortalEntries), 0);
   const peak = useMemo(() => {
@@ -492,6 +498,10 @@ export function DailyBookingChart({ buckets }: { buckets: DealDailyActivityBucke
       <span className="flex items-center gap-1.5 text-[10px] text-slate-400">
         <span className="h-2 w-2 rounded-sm" style={{ background: SERIES_AMBER }} />
         Portal entries
+      </span>
+      <span className="flex items-center gap-1.5 text-[10px] text-slate-400">
+        <span className="h-2 w-2 rounded-sm" style={{ background: SERIES_SELF_SERVE }} />
+        Self-serve exits
       </span>
       <span className="flex items-center gap-1.5 text-[10px] text-slate-400">
         <span className="h-2 w-2 rounded-full" style={{ background: SERIES_GREEN }} />
@@ -518,6 +528,40 @@ export function DailyBookingChart({ buckets }: { buckets: DealDailyActivityBucke
               fill={SERIES_AMBER}
             />
           );
+          // Self-serve exits sit at the base of the same bar. Clamped to the
+          // bar's own height because the two beacons are guarded independently
+          // (a returning session can log an exit without a fresh entry), so the
+          // subset can briefly exceed its parent on a given day.
+          const selfServe = Math.min(day.bookingSelfServeExits, day.bookingPortalEntries);
+          if (selfServe > 0) {
+            // 1px carved off the shared edge, matching the daily-actions chart's
+            // 2px surface gap between touching segments.
+            const ySelfTop = scaleY(selfServe) + (selfServe < day.bookingPortalEntries ? 1 : 0);
+            const height = baseline - ySelfTop;
+            if (height >= 0.75) {
+              // When every entry self-served, this segment IS the bar top, so it
+              // wears the rounded data-end instead of a flat edge.
+              const isWholeBar = selfServe === day.bookingPortalEntries;
+              nodes.push(
+                isWholeBar ? (
+                  <path
+                    key="self-serve"
+                    d={roundedBarPath(x, ySelfTop, barWidth, height)}
+                    fill={SERIES_SELF_SERVE}
+                  />
+                ) : (
+                  <rect
+                    key="self-serve"
+                    x={x}
+                    y={ySelfTop}
+                    width={barWidth}
+                    height={height}
+                    fill={SERIES_SELF_SERVE}
+                  />
+                )
+              );
+            }
+          }
         }
         if (day.bookingsConfirmed > 0) {
           // Confirmed bookings ride a fixed band above the bars (the card
@@ -543,6 +587,11 @@ export function DailyBookingChart({ buckets }: { buckets: DealDailyActivityBucke
             color={SERIES_AMBER}
             label="portal entries"
             value={day.bookingPortalEntries}
+          />
+          <TooltipRow
+            color={SERIES_SELF_SERVE}
+            label="self-serve exits"
+            value={day.bookingSelfServeExits}
           />
           <TooltipRow color={SERIES_GREEN} label="confirmed" value={day.bookingsConfirmed} />
         </div>
@@ -630,6 +679,7 @@ export function DailyActivityTable({ buckets }: { buckets: DealDailyActivityBuck
             <th className="px-3 py-2 text-right">Emails</th>
             <th className="px-3 py-2 text-right">Callbacks</th>
             <th className="px-3 py-2 text-right">Portal</th>
+            <th className="px-3 py-2 text-right">Self-serve</th>
             <th className="px-3 py-2 text-right">Booked</th>
           </tr>
         </thead>
@@ -645,6 +695,7 @@ export function DailyActivityTable({ buckets }: { buckets: DealDailyActivityBuck
               <td className="px-3 py-1.5 text-right">{day.linkEmailsSent.toLocaleString()}</td>
               <td className="px-3 py-1.5 text-right">{day.callbackRequests.toLocaleString()}</td>
               <td className="px-3 py-1.5 text-right">{day.bookingPortalEntries.toLocaleString()}</td>
+              <td className="px-3 py-1.5 text-right">{day.bookingSelfServeExits.toLocaleString()}</td>
               <td className="px-3 py-1.5 text-right">{day.bookingsConfirmed.toLocaleString()}</td>
             </tr>
           ))}

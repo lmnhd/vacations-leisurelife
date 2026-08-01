@@ -168,3 +168,9 @@ Record operator-driven workflow corrections, recurring friction, temporary rules
 - Operating rule: Funnel synthesis and a large image-candidate count do not establish factual or media readiness. Recheck generated landing claims, verify ASCII persistence, and select only exact-ship or exact-destination imagery.
 - Operating rule: For urgent "sell now" work, accept a recent sentiment dossier as prior evidence and create a campaign-specific delta dossier. Revalidate live package, fare, promotion, and link facts, then rank conversion velocity using occasion specificity, price proof, promotion deadline, departure access, hook clarity, and booking friction.
 - Refactor implication: Keep these consolidated rules in `SKILL.md`, `AGENT_ENV.md`, and `WORKFLOW.md` so agents do not need to infer the current contract from historical entries.
+
+## 2026-07-31 - Residency-restricted promotions require hard Meta geography
+
+- Trigger: A Disney Florida-resident offer was suitable for the selected sailing, but Deal Meta distribution defaulted every campaign to nationwide United States targeting.
+- Operating rule: A promotion whose eligibility depends on residence must carry an explicit geographic restriction on the Deal campaign strategy. Meta planning must translate that restriction into a strict region target, and distribution must fail closed if the plan falls back to or adds nationwide targeting. Meta location is an acquisition control, not proof of legal residency; the landing and booking flow must still qualify the guest and preserve the supplier proof requirement.
+- Refactor implication: Do not infer a legal geographic boundary from ad copy or interest keywords. Persist it as structured campaign state and enforce it again at distribution.

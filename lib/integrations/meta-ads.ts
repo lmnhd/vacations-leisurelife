@@ -407,6 +407,119 @@ export async function searchMetaAdInterests(
     return (parsed.data ?? []).filter((interest) => interest.id && interest.name);
 }
 
+export interface MetaBehaviorSearchResult {
+    id: string;
+    name: string;
+    audience_size_lower_bound?: number;
+    audience_size_upper_bound?: number;
+    path?: string[];
+}
+
+interface MetaBehaviorSearchResponse {
+    data?: MetaBehaviorSearchResult[];
+}
+
+/**
+ * Search Meta's behavior taxonomy (e.g. "Frequent travelers",
+ * "Frequent international travelers"). Behaviors are stronger purchase-intent
+ * signals than page-like interests and can be stacked into flexible_spec the
+ * same way.
+ */
+export async function searchMetaAdBehaviors(
+    accessToken: string,
+    query: string,
+    limit = 6,
+): Promise<MetaBehaviorSearchResult[]> {
+    const params = new URLSearchParams({
+        access_token: accessToken,
+        type: 'adTargetingCategory',
+        class: 'behaviors',
+        limit: String(limit),
+    });
+
+    const response = await fetch(
+        `https://graph.facebook.com/${META_GRAPH_VERSION}/search?${params.toString()}`,
+        {
+            method: 'GET',
+            headers: { 'Cache-Control': 'no-store' },
+        },
+    );
+
+    const payload = await response.json() as unknown;
+    if (!response.ok) {
+        throw new Error(graphErrorMessage(payload));
+    }
+
+    const parsed = payload as MetaBehaviorSearchResponse;
+    const normalizedQuery = query.trim().toLowerCase();
+    return (parsed.data ?? [])
+        .filter((behavior) => behavior.id && behavior.name)
+        .filter((behavior) =>
+            normalizedQuery.length === 0 ||
+            behavior.name.toLowerCase().includes(normalizedQuery));
+}
+
+export interface MetaAudienceEstimate {
+    estimateReady: boolean;
+    usersLowerBound?: number;
+    usersUpperBound?: number;
+}
+
+interface MetaDeliveryEstimateResponse {
+    data?: Array<{
+        estimate_ready?: boolean;
+        estimate_mau_lower_bound?: number;
+        estimate_mau_upper_bound?: number;
+        estimate_dau?: number;
+    }>;
+}
+
+/**
+ * Read-only audience-size estimate for a full targeting spec via the ad
+ * account delivery_estimate edge. Used to validate that a precision audience
+ * cell is neither undeliverably narrow nor meaninglessly broad before any
+ * ad set is created.
+ */
+export async function estimateMetaAudienceSize(
+    config: MetaAdsConfig,
+    targeting: Record<string, unknown>,
+    optimizationGoal = 'LANDING_PAGE_VIEWS',
+): Promise<MetaAudienceEstimate | null> {
+    const params = new URLSearchParams({
+        access_token: config.accessToken,
+        optimization_goal: optimizationGoal,
+        targeting_spec: JSON.stringify(targeting),
+    });
+
+    const response = await fetch(
+        `https://graph.facebook.com/${META_GRAPH_VERSION}/act_${config.adAccountId}/delivery_estimate?${params.toString()}`,
+        {
+            method: 'GET',
+            headers: { 'Cache-Control': 'no-store' },
+        },
+    );
+
+    const payload = await response.json() as unknown;
+    if (!response.ok) {
+        throw new Error(graphErrorMessage(payload));
+    }
+
+    const estimate = (payload as MetaDeliveryEstimateResponse).data?.[0];
+    if (!estimate) {
+        return null;
+    }
+
+    return {
+        estimateReady: estimate.estimate_ready === true,
+        ...(estimate.estimate_mau_lower_bound !== undefined
+            ? { usersLowerBound: estimate.estimate_mau_lower_bound }
+            : {}),
+        ...(estimate.estimate_mau_upper_bound !== undefined
+            ? { usersUpperBound: estimate.estimate_mau_upper_bound }
+            : {}),
+    };
+}
+
 export async function createMetaCampaign(
     config: MetaAdsConfig,
     input: MetaCampaignCreateInput,

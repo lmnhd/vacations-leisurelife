@@ -6,8 +6,11 @@
  * `deal_page_view`, `deal_engaged`, or `book_now_click` event against the deal's
  * events partition so the operator dashboard can show per-deal traffic. Also
  * carries the booking portal's client-side milestones: `booking_portal_entered`
- * (anonymous) and `booking_contact_captured` (guest-supplied name+email, so the
- * dashboard can surface partial leads who never completed a server save).
+ * (anonymous), `booking_self_serve_opened` (anonymous — the guest took the
+ * direct-booking exit rather than the assisted flow, so they never create a
+ * draft and would otherwise be invisible), and `booking_contact_captured`
+ * (guest-supplied name+email, so the dashboard can surface partial leads who
+ * never completed a server save).
  *
  * Only publicly eligible Deals are tracked (isPublicDealAvailableById gates on
  * bookable + approved + valid link). Tracking is best-effort and never fails
@@ -55,6 +58,7 @@ const TrackSchema = z.object({
       "deal_engaged",
       "book_now_click",
       "booking_portal_entered",
+      "booking_self_serve_opened",
       "booking_contact_captured",
     ])
     .optional(),
@@ -97,7 +101,9 @@ export async function POST(
   const userAgent = truncate(request.headers.get("user-agent"), 180);
   const eventType = parsed.data.eventType ?? "deal_page_view";
   const isBookingEvent =
-    eventType === "booking_portal_entered" || eventType === "booking_contact_captured";
+    eventType === "booking_portal_entered" ||
+    eventType === "booking_self_serve_opened" ||
+    eventType === "booking_contact_captured";
   const metadata = {
     ...(parsed.data.metadata ?? {}),
     eventFamily: isBookingEvent ? "booking_flow" : "deal_traffic",
@@ -108,6 +114,7 @@ export async function POST(
     deal_engaged: "Anonymous one-time deal engagement.",
     book_now_click: "Visitor clicked the booking handoff.",
     booking_portal_entered: "Guest entered the booking portal.",
+    booking_self_serve_opened: "Guest opened the direct booking link instead of the assisted flow.",
     booking_contact_captured: "Guest confirmed contact details in the booking flow.",
   };
 

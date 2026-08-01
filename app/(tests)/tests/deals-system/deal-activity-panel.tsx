@@ -38,6 +38,7 @@ const EVENT_LABELS: Record<string, string> = {
   callback_contacted: "Callback contacted",
   callback_closed: "Callback closed",
   booking_portal_entered: "Entered booking portal",
+  booking_self_serve_opened: "Left for direct booking page",
   booking_contact_captured: "Booking contact captured",
   booking_packet_saved: "Booking packet saved",
   booking_review_ready: "Packet review ready",
@@ -207,7 +208,12 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
     return groupEventsByDay(scoped);
   }, [events, rangeStartIso]);
 
-  const hasBookingActivity = bookingFunnel.some((stage) => stage.count > 0);
+  // Self-serve exits are not a funnel stage, so a deal whose only booking
+  // signal is people leaving for the direct link would otherwise hide this
+  // whole row — exactly the case worth seeing.
+  const hasBookingActivity =
+    bookingFunnel.some((stage) => stage.count > 0) ||
+    (summary?.bookingSelfServeExits ?? 0) > 0;
 
   if (loading && !summary) {
     return <p className="mt-3 text-xs text-slate-400">Loading activity…</p>;
@@ -245,7 +251,7 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
         </button>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-10">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-11">
         <StatChip label="Views" value={summary.totalViews} />
         <StatChip label="Unique" value={summary.uniqueSessions} />
         <StatChip label="Engaged" value={summary.engagedViews} />
@@ -255,6 +261,7 @@ export function DealActivityPanel({ dealId }: { dealId: string }) {
         <StatChip label="Callbacks" value={summary.callbackRequests} />
         <StatChip label="Actions" value={summary.totalActions} />
         <StatChip label="Portal" value={summary.bookingPortalEntries} />
+        <StatChip label="Self-serve" value={summary.bookingSelfServeExits} />
         <StatChip label="Booked" value={summary.bookingsConfirmed} />
       </div>
 

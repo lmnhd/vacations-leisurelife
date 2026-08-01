@@ -18,22 +18,34 @@
  * POST { action: "select_images", synthesisId, galleryIds?, heroImageId?, segmentImageIds? }
  *   -> persist the operator's curated image set. No AI.
  *
- * Safety: the only AI call is the synthesis; image search hits SerpAPI but downloads
- * no bytes. No booking/publish.
+ * POST { action: "generate_variation", synthesisId, candidateId, direction, mode?, aspect? }
+ *   -> GPT Image 2 variation of an existing candidate, inserted as a NEW candidate
+ *      beside its source. Never replaces the source or any hero/gallery/segment
+ *      assignment — promotion stays an explicit select_images gesture.
+ *
+ * POST { action: "discard_variation", synthesisId, candidateId }
+ *   -> remove a generated variation. Refuses while it is in use on the page.
+ *
+ * Safety: AI calls are the synthesis and (operator-triggered, per-image) variation
+ * generation; image search hits SerpAPI but downloads no bytes. No booking/publish.
  */
 
 import { NextResponse } from "next/server";
 
 import {
+  addDealImageVariation,
   applyDealFunnelImageSelection,
   assembleDealPageFacts,
   DEAL_IMAGE_CATEGORIES,
+  DEAL_IMAGE_VARIATION_ASPECTS,
   generateDealFunnelSynthesis,
+  generateDealImageVariation,
   getDealFunnelSynthesis,
   listDealFunnelSyntheses,
   listDealTripManifests,
   listPromoRecords,
   loadDealAdCopyCache,
+  removeDealImageVariation,
   searchDealImagesAllCategories,
   searchDealImagesByCategory,
   upsertDealFunnelSynthesisRecord,
@@ -41,6 +53,7 @@ import {
   type DealAdCopy,
   type DealFunnelSynthesis,
   type DealImageCategory,
+  type DealImageVariationAspect,
   type DealTripManifest,
 } from "@/lib/cb/deals-system";
 import { blockInProduction } from "@/lib/cb/deals-system/operator-only-guard";
@@ -59,6 +72,10 @@ interface Body {
   galleryIds?: unknown;
   heroImageId?: unknown;
   segmentImageIds?: unknown;
+  candidateId?: unknown;
+  direction?: unknown;
+  mode?: unknown;
+  aspect?: unknown;
 }
 
 function parseCategory(value: unknown): DealImageCategory | undefined {
@@ -274,6 +291,94 @@ export async function POST(request: Request) {
             ? (body.segmentImageIds as Record<string, string>)
             : undefined,
       });
+      await upsertDealFunnelSynthesisRecord(updated);
+      return NextResponse.json({ ok: true, synthesis: updated });
+    } catch (error) {
+      return NextResponse.json(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        { status: 400 }
+      );
+    }
+  }
+
+  // ── generate_variation ──────────────────────────────────────────────────────
+  //
+  // Produces a NEW candidate from an existing one. Never touches galleryIds,
+  // heroImageId, or segment assignments — the operator promotes the result with
+  // the normal select_images gestures after inspecting it.
+  if (action === "generate_variation") {
+    const synthesisId = typeof body.synthesisId === "string" ? body.synthesisId.trim() : "";
+    const candidateId = typeof body.candidateId === "string" ? body.candidateId.trim() : "";
+    const direction = typeof body.direction === "string" ? body.direction.trim() : "";
+    const mode = body.mode === "new_variation" ? "new_variation" : "edit_current";
+    const aspect: DealImageVariationAspect =
+      typeof body.aspect === "string" && body.aspect in DEAL_IMAGE_VARIATION_ASPECTS
+        ? (body.aspect as DealImageVariationAspect)
+        : "landscape";
+
+    if (!synthesisId) {
+      return NextResponse.json({ ok: false, error: "synthesisId is required." }, { status: 400 });
+    }
+    if (!candidateId) {
+      return NextResponse.json({ ok: false, error: "candidateId is required." }, { status: 400 });
+    }
+    if (!direction) {
+      return NextResponse.json(
+        { ok: false, error: "A transformation direction is required." },
+        { status: 400 }
+      );
+    }
+
+    const existing = await getDealFunnelSynthesis(synthesisId);
+    if (!existing) {
+      return NextResponse.json(
+        { ok: false, error: `No synthesis found with id "${synthesisId}".` },
+        { status: 404 }
+      );
+    }
+
+    try {
+      const variation = await generateDealImageVariation({
+        synthesis: existing,
+        sourceCandidateId: candidateId,
+        direction,
+        mode,
+        aspect,
+      });
+      // Generation takes ~30-60s. Re-read before merging so a concurrent
+      // curation change (gallery pick, hero swap) made while this was in flight
+      // isn't rolled back by a stale snapshot.
+      const latest = (await getDealFunnelSynthesis(synthesisId)) ?? existing;
+      const updated = addDealImageVariation(latest, variation);
+      await upsertDealFunnelSynthesisRecord(updated);
+      return NextResponse.json({ ok: true, synthesis: updated, variation });
+    } catch (error) {
+      return NextResponse.json(
+        { ok: false, error: error instanceof Error ? error.message : String(error) },
+        { status: 500 }
+      );
+    }
+  }
+
+  // ── discard_variation ───────────────────────────────────────────────────────
+  if (action === "discard_variation") {
+    const synthesisId = typeof body.synthesisId === "string" ? body.synthesisId.trim() : "";
+    const candidateId = typeof body.candidateId === "string" ? body.candidateId.trim() : "";
+    if (!synthesisId || !candidateId) {
+      return NextResponse.json(
+        { ok: false, error: "synthesisId and candidateId are required." },
+        { status: 400 }
+      );
+    }
+    const existing = await getDealFunnelSynthesis(synthesisId);
+    if (!existing) {
+      return NextResponse.json(
+        { ok: false, error: `No synthesis found with id "${synthesisId}".` },
+        { status: 404 }
+      );
+    }
+    try {
+      const updated = removeDealImageVariation(existing, candidateId);
       await upsertDealFunnelSynthesisRecord(updated);
       return NextResponse.json({ ok: true, synthesis: updated });
     } catch (error) {
