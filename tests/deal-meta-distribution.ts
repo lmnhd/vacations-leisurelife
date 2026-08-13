@@ -9,6 +9,7 @@
  */
 
 import {
+  doesDealMetaDistributionPlanMatchSynthesis,
   dispatchDealMetaDistribution,
   planDealMetaDistribution,
   type CuratedOdysseusDeal,
@@ -129,6 +130,13 @@ const synthesis: DealMetaAdSynthesis = {
       status: "ready",
       imageUrl: "https://example.com/allure-card.png",
     },
+    {
+      cardIndex: 1,
+      headline: "Six Nights, One Family Escape",
+      primaryText: "Sails from Miami with Labadee, Falmouth, and Perfect Day.",
+      status: "ready",
+      imageUrl: "https://example.com/allure-card-2.png",
+    },
   ],
 };
 
@@ -136,11 +144,24 @@ async function main(): Promise<void> {
   const plan = await planDealMetaDistribution(synthesis, deal);
   const queryText = plan.targeting.interestQueries.join(" | ").toLowerCase();
 
+  check("uses the canonical www Deal destination", plan.destinationUrl === "https://www.leisurelifeinteractive.net/deals/1576786");
   check("keeps the selected Royal Caribbean line", queryText.includes("royal caribbean"));
   check("keeps the selected Allure ship", queryText.includes("allure of the seas"));
   check("keeps current deal ports", queryText.includes("labadee") && queryText.includes("perfect day"));
   check("drops incompatible Oceania cruise-line seed", !queryText.includes("oceania cruises"), queryText);
   check("does not append prior ABC-island ports globally", !queryText.includes("aruba") && !queryText.includes("barbados"));
+  check("shared caption keeps Card 1 details", plan.caption.includes(synthesis.cards[0].primaryText));
+  check("shared caption keeps later-card details", plan.caption.includes(synthesis.cards[1].primaryText));
+  check("saved plan matches its reviewed carousel", doesDealMetaDistributionPlanMatchSynthesis(plan, synthesis));
+  check(
+    "saved plan becomes stale when a ready image changes",
+    !doesDealMetaDistributionPlanMatchSynthesis(plan, {
+      ...synthesis,
+      cards: synthesis.cards.map((card, index) =>
+        index === 1 ? { ...card, imageUrl: "https://example.com/revised-card.png" } : card
+      ),
+    })
+  );
 
   const floridaDeal: CuratedOdysseusDeal = {
     ...deal,

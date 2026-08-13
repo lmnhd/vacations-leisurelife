@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-31T23:07:14.653Z",
+  "generatedAtIso": "2026-08-01T15:13:42.972Z",
   "ideas": [
     {
       "id": "angle-seven-sea-days-one-thousand-years-a-mid-atlantic-solo-rpg-crossing",
@@ -573,7 +573,7 @@
     },
     {
       "id": "angle-workbench-5-night-very-merrytime-western-caribbean-cruise-from-port-canaveral-disney-fantasy-1621785",
-      "generatedAtIso": "2026-07-31T23:07:14.649Z",
+      "generatedAtIso": "2026-08-01T15:13:42.967Z",
       "generator": "gpt",
       "sourceResearchCachedAt": "workbench",
       "isolatedNiche": "Florida-resident families who want a meaningful Disney holiday but do not want another tightly scheduled park trip or an unclear total vacation cost.",
@@ -604,7 +604,7 @@
         "onboardAssetRequirements": "Disney Fantasy ship assets, destination imagery, itinerary map, and booking-link proof."
       },
       "groundedCandidate": {
-        "resolvedAtIso": "2026-07-31T23:07:14.649Z",
+        "resolvedAtIso": "2026-08-01T15:13:42.967Z",
         "packageId": "1621785",
         "cruiseName": "5-Night Very Merrytime Western Caribbean Cruise From Port Canaveral",
         "cruiseLine": "Disney Cruise Line",

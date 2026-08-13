@@ -28,6 +28,8 @@ import {
   assembleCuratedDealFromManifest,
   evaluateApprovalGates,
   getCuratedDeal,
+  getDealMetaAdSynthesis,
+  listDealFunnelSyntheses,
   listDealTripManifests,
   loadDealAdCopyCache,
   upsertCuratedDealRecord,
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
   const action = str(body.action);
   if (!action) return bad("action is required.");
 
-  if (action === "publish") {
+  if (action === "publish" || action === "preview_handoff") {
     const manifestId = str(body.manifestId);
     const adCopyId = str(body.adCopyId);
     if (!manifestId) return bad("manifestId is required.");
@@ -129,9 +131,50 @@ export async function POST(request: Request) {
     }
 
     try {
-      const deal = assembleCuratedDealFromManifest({ manifest, adCopy });
-      await upsertCuratedDealRecord(deal);
-      return ok(deal, { gates: deal.operatorApproval?.gates ?? [] });
+      const dealId = manifest.resolvedPackage.packageId;
+      const matchingFunnels = (await listDealFunnelSyntheses()).filter(
+        (synthesis) =>
+          synthesis.dealId === dealId && synthesis.sourceAdCopyId === adCopy.id
+      );
+      if (matchingFunnels.length !== 1) {
+        return bad(
+          matchingFunnels.length === 0
+            ? `No exact funnel is attached to ad copy ${adCopy.id}. Finish the funnel before handoff.`
+            : `Found ${matchingFunnels.length} funnels attached to ad copy ${adCopy.id}. Resolve the duplicate before handoff.`,
+          409
+        );
+      }
+
+      const funnelSynthesis = matchingFunnels[0];
+      const metaAdSynthesis = await getDealMetaAdSynthesis(funnelSynthesis.id);
+      if (!metaAdSynthesis) {
+        return bad(
+          `No Meta synthesis is attached to funnel ${funnelSynthesis.id}. Finish Step 9 before handoff.`,
+          409
+        );
+      }
+      const existingDeal = await getCuratedDeal(dealId);
+      const deal = assembleCuratedDealFromManifest({
+        manifest,
+        adCopy,
+        existingDeal: existingDeal ?? undefined,
+        funnelSynthesis,
+        metaAdSynthesis,
+      });
+      const selectedVariantIndex = adCopy.selectedVariantIndex ?? 0;
+      const handoff = {
+        saved: action === "publish",
+        selectedVariantIndex,
+        selectedVariantLabel:
+          adCopy.variants[selectedVariantIndex]?.variantLabel ?? adCopy.variants[0]?.variantLabel,
+        sourceAdCopyId: adCopy.id,
+        sourceFunnelSynthesisId: funnelSynthesis.id,
+        sourceMetaAdSynthesisId: metaAdSynthesis.id,
+        preservedValidLink: existingDeal?.linkHealth.status === "valid",
+        preservedOperatorVisibility: Boolean(existingDeal?.operatorVisibility),
+      };
+      if (action === "publish") await upsertCuratedDealRecord(deal);
+      return ok(deal, { gates: deal.operatorApproval?.gates ?? [], handoff });
     } catch (error) {
       return bad(error instanceof Error ? error.message : String(error), 500);
     }

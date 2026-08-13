@@ -318,7 +318,15 @@ export interface DraftMetaItem {
   callKeyState?: CallKeyState;
   activeCallAttemptId?: string;
   callIntentExpiresAtIso?: string;
-  // GSI1: status#urgency -> updatedAtIso
+  /**
+   * Denormalized queue-card fields. Duplicated onto META so the operator queue
+   * can render cards from the GSI1 row alone — without a per-card partition
+   * read and KMS decrypt of CONTACT/DEAL. Non-sensitive by construction:
+   * given name only, and public sailing details.
+   */
+  queueFirstName?: string;
+  queueDealSummary?: string;
+  // GSI1: status -> updatedAtIso
   gsi1pk: string;
   gsi1sk: string;
   // GSI2: personId -> updatedAtIso

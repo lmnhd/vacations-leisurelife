@@ -183,8 +183,17 @@ function useColumnCount<T extends HTMLElement>(): [React.RefObject<T>, number] {
 
 // ─── Manager ─────────────────────────────────────────────────────────────────
 
-/** How often the list re-pulls server data while the browser tab is visible. */
-const AUTO_REFRESH_MS = 60_000;
+/**
+ * How often the list re-pulls server data while the browser tab is visible.
+ *
+ * Deliberately longer than DEALS_STORE_CACHE_TTL_MS. At the previous 60s this
+ * refresh landed exactly as the store cache expired, so almost every tick paid
+ * for a fresh full-table Scan of lll-deals-system. Refreshing on a slower
+ * cadence than the cache lets most ticks be served from memory. Operator writes
+ * clear the cache and trigger their own refresh, so your own edits still appear
+ * immediately — this interval only governs changes made elsewhere.
+ */
+const AUTO_REFRESH_MS = 300_000;
 
 export function CuratedDealsInventory({
   deals,

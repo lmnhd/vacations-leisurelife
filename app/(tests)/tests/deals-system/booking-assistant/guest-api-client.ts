@@ -252,6 +252,19 @@ export async function resumeDraft(
   );
 }
 
+/**
+ * Lightweight status probe for polling loops. Returns only status/version from
+ * a projected point read — use this instead of resumeDraft when all you need is
+ * to detect a state change.
+ */
+export async function fetchDraftStatus(
+  draftId: string
+): Promise<ApiResult<{ status: string; version: number }>> {
+  return callApi<{ status: string; version: number }>(
+    `/api/booking-assistant/guest/draft-status?draftId=${encodeURIComponent(draftId)}`
+  );
+}
+
 export async function resumeCurrentDraft(): Promise<ApiResult<{
   draft: {
     metadata: {

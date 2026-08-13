@@ -41,6 +41,12 @@ const MODEL_TO_GENERATOR: Record<ModelName, GeneratorService> = {
     [ModelName.LEGACY_CHAT]: 'gpt5_mini',
     [ModelName.LEGACY_EXTRACTION]: 'gpt5_mini',
     [ModelName.LEGACY_FALLBACK]: 'gpt5_mini',
+    // Realtime speech-to-speech profiles never generate campaign media. They
+    // appear here only because this map is exhaustive over ModelName; if one
+    // ever reached an AssetRecord it would mean a voice model was wired into
+    // the media pipeline by mistake.
+    [ModelName.REALTIME_QUALITY]: 'gpt5',
+    [ModelName.REALTIME_FAST]: 'gpt5_mini',
 };
 
 /**

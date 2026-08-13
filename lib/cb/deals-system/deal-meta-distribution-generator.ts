@@ -42,9 +42,7 @@ import {
   type DealAudienceCellDependencies,
 } from "./deal-audience-cell-generator";
 import type {
-  DealAudienceCellDispatch,
   DealAudienceCellMatrix,
-  DealAudienceCellPlan,
 } from "./deal-audience-cell-types";
 import {
   appendInterestAtoms,
@@ -57,12 +55,24 @@ import {
 } from "@/lib/campaigns/distribution/platforms/meta-ads/interest-resolution-core";
 
 function getSiteBaseUrl(): string {
-  const configured =
+  let configured =
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     process.env.APP_URL?.trim() ||
-    "https://leisurelifeinteractive.net";
-  return configured.replace(/\/$/, "");
+    "https://www.leisurelifeinteractive.net";
+  try {
+    const parsed = new URL(configured);
+    if (parsed.hostname === "leisurelifeinteractive.net") {
+      parsed.hostname = "www.leisurelifeinteractive.net";
+      configured = parsed.toString();
+    }
+  } catch {
+    // Leave a non-URL development value unchanged; callers will surface it.
+  }
+  while (configured.endsWith("/")) {
+    configured = configured.slice(0, -1);
+  }
+  return configured;
 }
 
 function getMetaDailyBudgetCents(): number {
@@ -107,6 +117,31 @@ const DEAL_META_ALLOWED_TRAVEL_INTEREST_NAMES = [
   "Travel Agents and Booking",
   "Cruises",
 ];
+
+/**
+ * Names the anti-generic interest filter must let through for THIS deal:
+ * the static travel-media allowlist plus the deal's own cruise line, ship,
+ * and ports (both "Labadee, Haiti" and "Labadee" forms). Without this, a
+ * line the static list predates (e.g. Disney Cruise Line) can never resolve
+ * as an intent signal.
+ */
+export function buildDealAllowedInterestNames(deal: CuratedOdysseusDeal): string[] {
+  const names: string[] = [...DEAL_META_ALLOWED_TRAVEL_INTEREST_NAMES];
+  const push = (value: string | undefined): void => {
+    const trimmed = value?.trim();
+    if (trimmed && trimmed.length > 0 && !names.some((existing) => normalizeTerm(existing) === normalizeTerm(trimmed))) {
+      names.push(trimmed);
+    }
+  };
+  push(deal.cruiseFacts.cruiseLine);
+  push(deal.cruiseFacts.shipName);
+  for (const port of deal.cruiseFacts.portsOfCall) {
+    push(port);
+    const commaIndex = port.indexOf(",");
+    if (commaIndex > 0) push(port.slice(0, commaIndex));
+  }
+  return names;
+}
 
 const DEAL_META_CRUISE_LINE_INTERESTS = [
   { name: "Oceania Cruises", lineTokens: ["oceania"] },
@@ -505,11 +540,11 @@ async function resolveDealMetaTargeting(
   }
 
   const resolution = await resolveInterestQueries(config, interestQueries, {
-    allowGenericInterestNames: DEAL_META_ALLOWED_TRAVEL_INTEREST_NAMES,
+    allowGenericInterestNames: buildDealAllowedInterestNames(deal),
   });
   warnings.push(...resolution.warnings);
   if (parentNodes.length > 0) {
-    warnings.push(`AI-resolved parent nodes (${parentNodes.length}): ${parentNodes.join(", ")}`);
+    warnings.push(`AI query-expansion candidates (${parentNodes.length}): ${parentNodes.join(", ")}`);
   }
 
   const resolvedInterests = resolution.resolvedInterests.filter((interest) =>
@@ -578,7 +613,7 @@ async function buildDealAudienceMatrixForPlan(
         return { entries: [], unresolvedQueries: [], warnings: [] };
       }
       const resolution = await resolveInterestQueries(config ?? undefined, queries, {
-        allowGenericInterestNames: DEAL_META_ALLOWED_TRAVEL_INTEREST_NAMES,
+        allowGenericInterestNames: buildDealAllowedInterestNames(deal),
       });
       return {
         entries: resolution.resolvedInterests.map((interest) => ({
@@ -606,6 +641,76 @@ async function buildDealAudienceMatrixForPlan(
 }
 
 /**
+ * Turn resolved persona intent layers into one prospecting audience.
+ *
+ * Persona cells remain useful creative hypotheses, but dispatching several
+ * overlapping Florida ad sets fragments learning and multiplies spend. The
+ * consolidated ad set therefore uses the verified cruise-intent interests as
+ * Advantage+ suggestions while preserving the Deal's hard geographic control.
+ */
+export function consolidateDealMetaProspectingTargeting(
+  deal: CuratedOdysseusDeal,
+  preview: DealMetaDistributionTargetingPreview,
+  audienceMatrix: DealAudienceCellMatrix
+): DealMetaDistributionTargetingPreview {
+  const seenIds = new Set<string>();
+  const intentEntries: Array<{
+    id: string;
+    name: string;
+    sourceQuery: string;
+  }> = [];
+
+  for (const cell of audienceMatrix.cells) {
+    if (!cell.dispatchable) continue;
+    const intentQueryKeys = new Set(
+      cell.blueprint.intentInterests.map((query) => normalizeTerm(query))
+    );
+    for (const layer of cell.layers) {
+      for (const entry of layer.entries) {
+        const belongsToIntentLayer =
+          layer.role === "intent" || intentQueryKeys.has(normalizeTerm(entry.sourceQuery));
+        if (!belongsToIntentLayer || entry.type !== "interests" || seenIds.has(entry.id)) continue;
+        seenIds.add(entry.id);
+        intentEntries.push({
+          id: entry.id,
+          name: entry.name,
+          sourceQuery: entry.sourceQuery,
+        });
+      }
+    }
+  }
+
+  if (intentEntries.length === 0) {
+    return {
+      ...preview,
+      warnings: [
+        ...preview.warnings,
+        "Persona hypotheses produced no verified intent interests; keeping the combined targeting fallback.",
+      ],
+    };
+  }
+
+  const targeting = buildDealMetaTargetingBase(deal);
+  targeting.flexible_spec = [
+    {
+      interests: intentEntries.map((entry) => ({ id: entry.id, name: entry.name })),
+    },
+  ];
+
+  return {
+    ...preview,
+    interestQueries: intentEntries.map((entry) => entry.sourceQuery),
+    resolvedInterests: intentEntries,
+    targeting,
+    adSetMode: "dynamic",
+    warnings: [
+      ...preview.warnings,
+      `Consolidated ${audienceMatrix.cells.length} persona hypotheses into one Advantage+ prospecting audience using ${intentEntries.length} verified cruise-intent suggestion${intentEntries.length === 1 ? "" : "s"}. Persona distinctions remain creative tests, not separate ad sets.`,
+    ],
+  };
+}
+
+/**
  * Build the distribution plan for a meta ad synthesis: destination URL,
  * caption, ready carousel cards, resolved Meta targeting, and the audience
  * precision matrix. Pure preview — makes Graph API calls only for read-only
@@ -625,14 +730,28 @@ export async function planDealMetaDistribution(
   }));
 
   const destinationUrl = `${getSiteBaseUrl()}/deals/${encodeURIComponent(synthesis.dealId)}`;
-  const caption = cards[0]?.primaryText ?? synthesis.sailingAngleTitle;
+  const captionSections: string[] = [];
+  const seenCaptionSections = new Set<string>();
+  for (const card of cards) {
+    const section = card.primaryText.trim();
+    if (section.length === 0 || seenCaptionSections.has(section)) continue;
+    seenCaptionSections.add(section);
+    captionSections.push(section);
+  }
+  const caption =
+    captionSections.length > 0
+      ? captionSections.join("\n\n")
+      : synthesis.sailingAngleTitle;
 
   const config = getMetaAdsConfig();
-  const targeting = await resolveDealMetaTargeting(deal, synthesis, config);
+  let targeting = await resolveDealMetaTargeting(deal, synthesis, config);
 
   let audienceMatrix: DealAudienceCellMatrix | undefined;
   try {
     audienceMatrix = await buildDealAudienceMatrixForPlan(deal, synthesis, config);
+    if (audienceMatrix) {
+      targeting = consolidateDealMetaProspectingTargeting(deal, targeting, audienceMatrix);
+    }
   } catch (error) {
     targeting.warnings.push(
       `Audience precision matrix unavailable (${error instanceof Error ? error.message : String(error)}); falling back to combined targeting.`
@@ -651,6 +770,30 @@ export async function planDealMetaDistribution(
     creativeName: `deal-${synthesis.dealId}-${synthesis.id}-carousel`,
     adName: `deal-${synthesis.dealId}-${synthesis.id}`,
   };
+}
+
+/**
+ * A saved Step 9 plan remains reviewable only while it points at the exact
+ * ready card set currently selected in Step 8. Copy or image changes require
+ * the operator to build and review a new plan before distribution.
+ */
+export function doesDealMetaDistributionPlanMatchSynthesis(
+  plan: DealMetaDistributionPlan,
+  synthesis: DealMetaAdSynthesis
+): boolean {
+  if (plan.dealId !== synthesis.dealId) return false;
+
+  const readyCards = synthesis.cards.filter((card) => card.status === "ready" && card.imageUrl);
+  if (plan.cards.length !== readyCards.length) return false;
+
+  return readyCards.every((card) => {
+    const plannedCard = plan.cards.find((candidate) => candidate.cardIndex === card.cardIndex);
+    return (
+      plannedCard?.headline === card.headline &&
+      plannedCard.primaryText === card.primaryText &&
+      plannedCard.imageUrl === card.imageUrl
+    );
+  });
 }
 
 async function postMetaGraphForm<TResponse>(
@@ -874,60 +1017,12 @@ ${plan.destinationUrl}`.trim(),
   }
 
   const notes: string[] = [];
-  const dispatchableCells: DealAudienceCellPlan[] = (plan.audienceMatrix?.cells ?? []).filter(
-    (cell) => cell.dispatchable
-  );
   let metaCampaignId: string | undefined;
   let metaAdSetId: string | undefined;
   let metaAdSetMode: "dynamic" | "static_fallback" = plan.targeting.adSetMode;
-  let cellDispatches: DealAudienceCellDispatch[] | undefined;
 
   try {
-    if (dispatchableCells.length > 0) {
-      // Audience precision path: one PAUSED ad set per persona cell under a
-      // single campaign, so Meta delivery data reveals which cell converts.
-      const adSetWindow = buildMetaAdSetWindow();
-      metaCampaignId = await createMetaCampaign(config, { name: plan.campaignName });
-      cellDispatches = [];
-      for (const cell of dispatchableCells) {
-        try {
-          const cellAdSetId = await createDealMetaAdSetWithAgeRetry(config, {
-            name: `${plan.adSetName} — ${cell.blueprint.label}`,
-            campaignId: metaCampaignId,
-            targeting: cell.targeting,
-            dailyBudgetCents: getMetaDailyBudgetCents(),
-            startTime: adSetWindow.startTime,
-            endTime: adSetWindow.endTime,
-          }, notes);
-          cellDispatches.push({
-            cellId: cell.blueprint.cellId,
-            label: cell.blueprint.label,
-            metaAdSetId: cellAdSetId,
-          });
-        } catch (cellError: unknown) {
-          const reason = cellError instanceof Error ? cellError.message : String(cellError);
-          cellDispatches.push({
-            cellId: cell.blueprint.cellId,
-            label: cell.blueprint.label,
-            error: reason,
-          });
-          notes.push(`audience_cell_adset_failed=${cell.blueprint.cellId}: ${reason}`);
-        }
-      }
-
-      const createdCells = cellDispatches.filter((cell) => cell.metaAdSetId);
-      if (createdCells.length === 0) {
-        throw new Error(
-          "Every audience cell ad set failed to create. Review the per-cell errors in notes before retrying."
-        );
-      }
-      metaAdSetId = createdCells[0].metaAdSetId;
-      metaAdSetMode = "dynamic";
-      notes.push(
-        `audience_cells_created=${createdCells.length}/${dispatchableCells.length}`,
-        "audience_cell_budget_note=Each cell ad set carries the full daily budget; total daily spend while active multiplies by the cell count. All ad sets are created PAUSED."
-      );
-    } else if (plan.targeting.adSetMode === "dynamic") {
+    if (plan.targeting.adSetMode === "dynamic") {
       const adSetWindow = buildMetaAdSetWindow();
       try {
         metaCampaignId = await createMetaCampaign(config, { name: plan.campaignName });
@@ -939,6 +1034,10 @@ ${plan.destinationUrl}`.trim(),
           startTime: adSetWindow.startTime,
           endTime: adSetWindow.endTime,
         }, notes);
+        notes.push(
+          "prospecting_structure=One consolidated paused ad set; persona hypotheses remain creative tests.",
+          "prospecting_optimization=OUTCOME_TRAFFIC with LANDING_PAGE_VIEWS. Do not describe landing-page-view results as proven booking conversions."
+        );
       } catch (campaignError: unknown) {
         const reason = campaignError instanceof Error ? campaignError.message : String(campaignError);
         metaCampaignId = undefined;
@@ -1003,43 +1102,13 @@ ${plan.destinationUrl}`.trim(),
       throw new Error("No ad set id available for ad creation.");
     }
 
-    let primaryAdId: string | undefined;
-    if (cellDispatches) {
-      // One paused ad per successfully created cell ad set, sharing the same
-      // carousel creative.
-      for (const cell of cellDispatches) {
-        if (!cell.metaAdSetId) continue;
-        try {
-          const cellAdResponse = await postMetaGraphForm<{ id: string }>(
-            `act_${config.adAccountId}/ads`,
-            config.accessToken,
-            {
-              name: `${plan.adName}--${cell.cellId}`,
-              adset_id: cell.metaAdSetId,
-              creative: JSON.stringify({ creative_id: creativeResponse.id }),
-              status: "PAUSED",
-            }
-          );
-          cell.facebookAdId = cellAdResponse.id;
-          if (!primaryAdId) primaryAdId = cellAdResponse.id;
-        } catch (adError: unknown) {
-          const reason = adError instanceof Error ? adError.message : String(adError);
-          cell.error = reason;
-          notes.push(`audience_cell_ad_failed=${cell.cellId}: ${reason}`);
-        }
-      }
-      if (!primaryAdId) {
-        throw new Error("Every audience cell ad failed to create. Review the per-cell errors in notes before retrying.");
-      }
-    } else {
-      const adResponse = await postMetaGraphForm<{ id: string }>(`act_${config.adAccountId}/ads`, config.accessToken, {
-        name: plan.adName,
-        adset_id: metaAdSetId,
-        creative: JSON.stringify({ creative_id: creativeResponse.id }),
-        status: "PAUSED",
-      });
-      primaryAdId = adResponse.id;
-    }
+    const adResponse = await postMetaGraphForm<{ id: string }>(`act_${config.adAccountId}/ads`, config.accessToken, {
+      name: plan.adName,
+      adset_id: metaAdSetId,
+      creative: JSON.stringify({ creative_id: creativeResponse.id }),
+      status: "PAUSED",
+    });
+    const primaryAdId = adResponse.id;
 
     const reviewUrl = buildMetaAdsReviewUrl(config.adAccountId, primaryAdId);
 
@@ -1098,7 +1167,6 @@ ${plan.destinationUrl}`.trim(),
       metaAdSetMode,
       facebookCreativeId: creativeResponse.id,
       facebookAdId: primaryAdId,
-      ...(cellDispatches ? { cellDispatches } : {}),
       instagramCarouselContainerId,
       instagramMediaId,
       reviewUrl,
@@ -1111,7 +1179,6 @@ ${plan.destinationUrl}`.trim(),
       metaCampaignId,
       metaAdSetId,
       metaAdSetMode,
-      ...(cellDispatches ? { cellDispatches } : {}),
       notes,
       error: error instanceof Error ? error.message : String(error),
     };

@@ -70,6 +70,7 @@ interface DistributionPlanResponse {
   ok: boolean;
   error?: string;
   plan?: DealMetaDistributionPlan;
+  distribution?: DealMetaDistribution;
 }
 
 interface DistributionDispatchResponse {
@@ -741,7 +742,14 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
       try {
         const res = await fetch(`/api/tests/deals-system/meta-distribution?synthesisId=${encodeURIComponent(synthesis.id)}`);
         const data = (await res.json()) as DistributionGetResponse;
-        if (!cancelled && data.ok) setDistribution(data.distribution ?? null);
+        if (!cancelled && data.ok) {
+          const savedDistribution = data.distribution ?? null;
+          setDistribution(savedDistribution);
+          setPlan(savedDistribution?.plan ?? null);
+          if (savedDistribution?.plan) {
+            setMessage({ tone: "ok", text: "Saved Step 9 plan restored. Review it below before dispatching." });
+          }
+        }
       } catch {
         // best-effort load
       }
@@ -767,6 +775,8 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
       const data = await post<DistributionPlanResponse>({ action: "plan", synthesisId: synthesis.id });
       if (!data.ok || !data.plan) throw new Error(data.error ?? "Failed to build plan.");
       setPlan(data.plan);
+      setDistribution(data.distribution ?? null);
+      setMessage({ tone: "ok", text: "Step 9 plan saved. Reopening this campaign will restore the reviewed plan." });
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof Error ? err.message : String(err) });
     } finally {
@@ -860,7 +870,7 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
 
         <button
           type="button"
-          disabled={busy || readyCount === 0}
+          disabled={busy || readyCount === 0 || plan === null}
           onClick={() => void dispatch()}
           className={`inline-flex h-9 items-center justify-center rounded-lg border px-4 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
             mode === "live"
@@ -900,7 +910,7 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
           <p className="mt-1">
             <span className="font-semibold text-slate-200">Targeting:</span>{" "}
             {plan.targeting.adSetMode === "dynamic"
-              ? `${plan.targeting.resolvedInterests.length} resolved interest(s) — ${plan.targeting.resolvedInterests
+              ? `${plan.targeting.resolvedInterests.length} consolidated audience suggestion(s) - ${plan.targeting.resolvedInterests
                   .map((i) => i.name)
                   .join(", ")}`
               : "static fallback (META_AD_SET_ID)"}
@@ -915,10 +925,10 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
           {plan.audienceMatrix && plan.audienceMatrix.cells.length > 0 && (
             <div className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-500/5 p-2.5">
               <p className="font-semibold text-cyan-100">
-                Audience precision cells ({plan.audienceMatrix.source === "ai" ? "AI decomposition" : "research fallback"})
+                Creative audience hypotheses ({plan.audienceMatrix.source === "ai" ? "AI decomposition" : "research fallback"})
               </p>
               <p className="mt-0.5 text-[10px] text-slate-400">
-                Live dispatch creates one paused ad set per dispatchable cell so Meta delivery data reveals which persona converts.
+                Live dispatch creates one consolidated paused prospecting ad set. These personas guide creative testing; landing-page-view results do not prove booking conversion.
               </p>
               <div className="mt-2 space-y-2">
                 {plan.audienceMatrix.cells.map((cell) => (
@@ -931,10 +941,10 @@ function MetaDistributionPanel({ synthesis }: { synthesis: DealMetaAdSynthesis }
                     <p className="font-semibold text-slate-200">
                       {cell.blueprint.label}{" "}
                       <span className="font-normal text-slate-400">
-                        · {cell.blueprint.precision === "strict" ? "strict (no Advantage+ expansion)" : "assisted"}
-                        {cell.blueprint.ageMin ? ` · age ${cell.blueprint.ageMin}${cell.blueprint.ageMax ? `-${cell.blueprint.ageMax}` : "+"}` : ""}
-                        {cell.relaxed ? " · relaxed" : ""}
-                        {!cell.dispatchable ? " · not dispatchable" : ""}
+                        {" - "}{cell.blueprint.precision === "strict" ? "strict hypothesis" : "Advantage+ suggestion"}
+                        {cell.blueprint.ageMin ? ` - suggested age ${cell.blueprint.ageMin}${cell.blueprint.ageMax ? `-${cell.blueprint.ageMax}` : "+"}` : ""}
+                        {cell.relaxed ? " - relaxed for reach" : ""}
+                        {!cell.dispatchable ? " - unresolved" : ""}
                       </span>
                     </p>
                     <p className="mt-0.5 text-slate-400">{cell.blueprint.rationale}</p>

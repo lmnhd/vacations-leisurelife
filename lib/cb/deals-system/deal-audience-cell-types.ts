@@ -1,20 +1,16 @@
 /**
  * Deal Audience Precision Cells (Step 9 targeting contracts).
  *
- * A "cell" is one precise, independently dispatchable audience hypothesis for
- * a deal. Instead of flattening every targeting signal into a single OR bucket
- * of Meta interests, a cell intersects layered signals:
+ * A "cell" is one creative audience hypothesis for a deal. Resolution checks
+ * whether the persona has usable Meta signals, but live delivery consolidates
+ * verified intent signals into one prospecting ad set to avoid fragmented
+ * learning and multiplied ad-set budgets. A cell can still inspect layers:
  *
  *   identity layer (who they are)  AND  intent layer (travel purchase intent)
  *
- * Each layer is a separate flexible_spec entry, which Meta treats as an AND
- * between OR groups. Cells also carry Meta exclusions (from the deal's
- * exclusion keywords), an optional age band, and a precision mode that
- * controls whether Advantage+ audience expansion is allowed.
- *
- * Live dispatch creates one PAUSED ad set per cell under the same campaign so
- * Meta's own delivery data reveals which audience hypothesis actually
- * converts.
+ * Each layer is a separate diagnostic flexible_spec entry. Detailed-interest
+ * exclusions are not sent to Meta; employee and customer suppression require
+ * Custom Audiences. Age bands and precision remain creative/planning hints.
  */
 
 export type DealAudienceCellPrecision = "strict" | "assisted";
@@ -32,7 +28,7 @@ export interface DealAudienceCellBlueprint {
   identityInterests: string[];
   /** Travel/cruise purchase-intent interest queries. */
   intentInterests: string[];
-  /** Interest queries to exclude (wrong-fit audiences, e.g. budget seekers on a luxury deal). */
+  /** Legacy wrong-fit ideas. Never sent as detailed-interest exclusions. */
   exclusionInterests: string[];
   /** Meta behavior taxonomy hints, e.g. "Frequent travelers". */
   behaviorHints: string[];
@@ -79,13 +75,14 @@ export interface DealAudienceCellReachEstimate {
 export interface DealAudienceCellPlan {
   blueprint: DealAudienceCellBlueprint;
   layers: DealAudienceCellResolvedLayer[];
+  /** Legacy compatibility field. Empty because Meta detailed-interest exclusions are unsupported. */
   exclusions: DealAudienceCellResolvedEntry[];
   /** Full Meta ad set targeting spec for this cell. */
   targeting: Record<string, unknown>;
   reach?: DealAudienceCellReachEstimate;
   /** True when AND layers were merged into one OR layer to regain deliverability. */
   relaxed: boolean;
-  /** False when the cell resolved no usable layers and must not be dispatched. */
+  /** False when the hypothesis resolved no usable layers for planning. */
   dispatchable: boolean;
   warnings: string[];
 }
@@ -101,7 +98,7 @@ export interface DealAudienceCellMatrix {
   warnings: string[];
 }
 
-/** Per-cell live dispatch outcome (one paused ad set + ad per cell). */
+/** Legacy per-cell dispatch outcome retained for older distribution records. */
 export interface DealAudienceCellDispatch {
   cellId: string;
   label: string;

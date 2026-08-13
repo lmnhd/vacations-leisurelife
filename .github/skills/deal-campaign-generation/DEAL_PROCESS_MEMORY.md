@@ -174,3 +174,10 @@ Record operator-driven workflow corrections, recurring friction, temporary rules
 - Trigger: A Disney Florida-resident offer was suitable for the selected sailing, but Deal Meta distribution defaulted every campaign to nationwide United States targeting.
 - Operating rule: A promotion whose eligibility depends on residence must carry an explicit geographic restriction on the Deal campaign strategy. Meta planning must translate that restriction into a strict region target, and distribution must fail closed if the plan falls back to or adds nationwide targeting. Meta location is an acquisition control, not proof of legal residency; the landing and booking flow must still qualify the guest and preserve the supplier proof requirement.
 - Refactor implication: Do not infer a legal geographic boundary from ad copy or interest keywords. Persist it as structured campaign state and enforce it again at distribution.
+
+## 2026-08-01 - Persona targeting belongs in creative, not overlapping ad sets
+
+- Trigger: A Disney Florida-resident plan produced three polished persona cells, but all three overlapped, each would carry the full daily budget, and Meta rejected their detailed-interest exclusions during reach estimation.
+- Operating rule: Keep residency geography as a hard location control, remove detailed-interest exclusions, and use Custom Audiences for employee or customer suppression. Consolidate verified persona intent signals into one Advantage+ prospecting ad set; keep persona distinctions as creative hypotheses unless an operator explicitly authorizes a funded audience experiment.
+- Operating rule: Current Deal Meta dispatch optimizes `OUTCOME_TRAFFIC` for `LANDING_PAGE_VIEWS`. Report visit performance honestly; do not claim that persona delivery proves booking conversion without a tracked booking or qualified-lead event.
+- Refactor implication: The Step 9 preview must distinguish query-expansion candidates from resolved audience suggestions, show one consolidated prospecting structure, and keep the strict Deal geographic guard on every dispatch.

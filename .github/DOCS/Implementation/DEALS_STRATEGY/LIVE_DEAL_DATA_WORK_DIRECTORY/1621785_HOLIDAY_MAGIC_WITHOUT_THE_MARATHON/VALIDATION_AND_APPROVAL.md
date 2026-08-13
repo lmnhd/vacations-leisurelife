@@ -46,6 +46,16 @@ Funnel image generation is not ready yet. The next checkpoint is promotion-aware
 - `git diff --check`: passed.
 - New campaign documentation and orchestration script: ASCII-only.
 
+## Meta Targeting Review - 2026-08-01
+
+- Strict location remains Florida region key `3843`; nationwide fallback remains blocked.
+- Prospecting is consolidated into one paused ad set instead of three overlapping persona ad sets.
+- Verified Advantage+ audience suggestions: Disney Cruise Line, Walt Disney World, and Cruise Critic.
+- Persona cells remain creative hypotheses and no longer multiply the daily ad-set budget.
+- Detailed-interest exclusions are not sent to Meta. Employee and customer suppression require Custom Audiences.
+- Fresh reach checks succeeded after the exclusion repair: 373,200-439,100; 2,800,000-3,300,000 after relaxation; and 163,700-192,600.
+- Current dispatch objective is traffic optimized to landing-page views. These results must not be described as proven booking conversions.
+
 ## Remaining Approval Gates
 
 - Confirm the selected cabin rate displays the Florida Resident Rate.

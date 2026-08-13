@@ -163,8 +163,11 @@ The Deal ID is the exact Odysseus package ID. Build all derived IDs through `lib
 3. Allow override or restore without automatically generating images.
 4. Keep all image generation operator-triggered and one asset type per call.
 5. For a residence-restricted promotion, persist a strict geographic restriction and fail distribution if the plan broadens to nationwide targeting. Meta location does not replace guest eligibility proof.
-6. Keep Google copy ASCII-clean, conservative, and policy-plain.
-7. Do not dispatch ads without the required operator approval.
+6. Consolidate overlapping persona hypotheses into one prospecting ad set. Use verified cruise-intent interests as Advantage+ suggestions while keeping the required location hard; express persona differences through creative.
+7. Do not send detailed-interest exclusions. Use Custom Audiences for known employee, customer, or booked-traveler suppression.
+8. Treat the current traffic / landing-page-view optimization as visit performance, not proven booking conversion.
+9. Keep Google copy ASCII-clean, conservative, and policy-plain.
+10. Do not dispatch ads without the required operator approval.
 
 ### C6. Approval and Publication Gate
 

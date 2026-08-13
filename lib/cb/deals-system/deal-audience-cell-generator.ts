@@ -23,6 +23,10 @@
 import { z } from "zod";
 
 import { generateStructuredObject, modelForTask } from "@/lib/ai/llm-gateway";
+import {
+  explodeInterestSegments,
+  normalizeTerm,
+} from "@/lib/campaigns/distribution/platforms/meta-ads/interest-resolution-core";
 import type { MetaAudienceEstimate } from "@/lib/integrations/meta-ads";
 import type { CuratedOdysseusDeal } from "./curated-deal-types";
 import type { DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
@@ -72,6 +76,91 @@ function uniqueTrimmed(values: string[], max: number): string[] {
   return out;
 }
 
+const MAX_CELL_QUERY_WORDS = 4;
+const MAX_CELL_QUERY_CHARS = 36;
+
+/**
+ * Reduce free-text targeting phrases to compact, Meta-searchable queries.
+ * Workbench-seeded research often stores sentence-length audience prose;
+ * feeding that to interest search invites junk fuzzy matches, so anything
+ * longer than a short phrase is exploded into compact segments and the rest
+ * is dropped.
+ */
+export function compactCellQueries(raw: string[], max: number): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (value: string): void => {
+    const normalized = normalizeTerm(value);
+    if (!normalized || seen.has(normalized)) return;
+    const wordCount = normalized.split(" ").filter(Boolean).length;
+    if (wordCount === 0 || wordCount > MAX_CELL_QUERY_WORDS) return;
+    if (normalized.length > MAX_CELL_QUERY_CHARS) return;
+    seen.add(normalized);
+    out.push(normalized);
+  };
+
+  for (const value of raw) {
+    if (out.length >= max) break;
+    const normalized = normalizeTerm(value);
+    const wordCount = normalized.split(" ").filter(Boolean).length;
+    if (wordCount > 0 && wordCount <= MAX_CELL_QUERY_WORDS && normalized.length <= MAX_CELL_QUERY_CHARS) {
+      push(value);
+      continue;
+    }
+    for (const segment of explodeInterestSegments(value)) {
+      push(segment);
+      if (out.length >= max) break;
+    }
+  }
+  return out.slice(0, max);
+}
+
+const AFFINITY_MIN_TOKEN_LENGTH = 4;
+
+function affinityTokens(value: string): string[] {
+  return normalizeTerm(value)
+    .split(" ")
+    .filter((token) => token.length >= AFFINITY_MIN_TOKEN_LENGTH);
+}
+
+function squashedForm(value: string): string {
+  return normalizeTerm(value).split(" ").join("");
+}
+
+/**
+ * True when a resolved Meta name plausibly relates to the query that produced
+ * it. Meta's fuzzy interest search can map a long phrase to something absurd
+ * ("Who Wants to Be a Millionaire?", "Flower"); requiring a shared meaningful
+ * token in either direction keeps those out of precision cells.
+ */
+export function hasQueryNameAffinity(query: string, name: string): boolean {
+  const squashedName = squashedForm(name);
+  const squashedQuery = squashedForm(query);
+  if (!squashedName || !squashedQuery) return false;
+  for (const token of affinityTokens(query)) {
+    if (squashedName.includes(token)) return true;
+  }
+  for (const token of affinityTokens(name)) {
+    if (squashedQuery.includes(token)) return true;
+  }
+  return false;
+}
+
+function filterEntriesByAffinity(
+  entries: DealAudienceCellResolvedEntry[],
+  warnings: string[]
+): DealAudienceCellResolvedEntry[] {
+  const kept: DealAudienceCellResolvedEntry[] = [];
+  for (const entry of entries) {
+    if (hasQueryNameAffinity(entry.sourceQuery, entry.name)) {
+      kept.push(entry);
+    } else {
+      warnings.push(`Dropped low-affinity Meta match "${entry.name}" for query "${entry.sourceQuery}".`);
+    }
+  }
+  return kept;
+}
+
 // ── AI decomposition ───────────────────────────────────────────────────────
 
 const AudienceCellSchema = z.object({
@@ -91,13 +180,15 @@ const AudienceCellSchema = z.object({
   exclusionInterests: z
     .array(z.string())
     .max(4)
-    .describe("Meta interests to EXCLUDE because they signal wrong fit for this deal (e.g. 'Backpacking (travel)' on a luxury sailing). Empty when nothing clearly disqualifies."),
+    .describe("Legacy wrong-fit ideas for operator review. Return an empty array because Meta no longer accepts detailed-interest exclusions."),
   behaviorHints: z
     .array(z.string())
     .max(2)
     .describe("Meta behavior taxonomy names such as 'Frequent travelers' or 'Frequent international travelers'; empty when none apply"),
-  ageMin: z.number().int().min(18).max(65).optional(),
-  ageMax: z.number().int().min(18).max(65).optional(),
+  // Strict structured-output providers require every property to be listed in
+  // "required", so these are nullable instead of optional.
+  ageMin: z.number().int().min(18).max(65).nullable().describe("Minimum age for this cell, or null when no age floor applies"),
+  ageMax: z.number().int().min(18).max(65).nullable().describe("Maximum age for this cell, or null when no age ceiling applies"),
   precision: z
     .enum(["strict", "assisted"])
     .describe("'strict' = no Advantage+ expansion, honor the intersection exactly; 'assisted' = allow Meta to expand delivery"),
@@ -197,7 +288,10 @@ export async function decomposeDealAudienceCellsWithAI(
   context: DealAudienceDecompositionContext
 ): Promise<DealAudienceCellBlueprint[]> {
   const { object } = await generateStructuredObject({
-    model: modelForTask("decision"),
+    // Persona decomposition is multi-step strategic generation, not a
+    // short-answer pick, so it routes as "reasoning" rather than "decision"
+    // (which resolves to a fast small model that times out on this shape).
+    model: modelForTask("reasoning"),
     schema: AudienceCellDecompositionSchema,
     system: [
       "You are a Meta Ads audience-precision strategist for cruise campaigns.",
@@ -207,17 +301,18 @@ export async function decomposeDealAudienceCellsWithAI(
       "intentInterests must be travel or cruise purchase-intent signals - the cruise line, competitor lines with similar guests, cruise media, or destination affinities.",
       "The two layers are intersected (AND), so each layer alone should be broad enough to matter and the intersection is what creates precision.",
       "Never put an interest for a cruise line that conflicts with the deal's actual cruise line experience tier.",
-      "Use exclusionInterests for audiences that would waste spend on this specific offer.",
-      "Prefer precision 'strict' for well-defined premium or niche audiences; use 'assisted' only when the cell is intentionally exploratory.",
+      "Always return an empty exclusionInterests array. Meta no longer accepts detailed-interest exclusions; employment and customer suppression require Custom Audiences.",
+      "Prefer precision 'assisted' for prospecting so Meta can optimize within the campaign's hard location control. Use 'strict' only for a non-location business constraint that truly forbids expansion.",
       "Order cells from strongest to weakest conversion hypothesis.",
     ].join(" "),
     prompt: describeDecompositionContext(context),
-    timeoutMs: 30_000,
+    timeoutMs: 60_000,
   });
 
   return object.cells.map((cell) => {
-    const ageMin = cell.ageMin;
-    const ageMax = cell.ageMax !== undefined && ageMin !== undefined && cell.ageMax < ageMin ? undefined : cell.ageMax;
+    const ageMin = cell.ageMin ?? undefined;
+    const rawAgeMax = cell.ageMax ?? undefined;
+    const ageMax = rawAgeMax !== undefined && ageMin !== undefined && rawAgeMax < ageMin ? undefined : rawAgeMax;
     return {
       cellId: slugifyAudienceCellLabel(cell.label),
       label: cell.label.trim(),
@@ -309,7 +404,6 @@ export interface DealAudienceCellDependencies {
 function buildCellTargeting(
   blueprint: DealAudienceCellBlueprint,
   layers: DealAudienceCellResolvedLayer[],
-  exclusions: DealAudienceCellResolvedEntry[],
   geoLocations: Record<string, unknown>
 ): Record<string, unknown> {
   const strict = blueprint.precision === "strict";
@@ -334,12 +428,6 @@ function buildCellTargeting(
     flexibleSpec.push(spec);
   }
   if (flexibleSpec.length > 0) targeting.flexible_spec = flexibleSpec;
-
-  if (exclusions.length > 0) {
-    targeting.exclusions = {
-      interests: exclusions.map((entry) => ({ id: entry.id, name: entry.name })),
-    };
-  }
 
   return targeting;
 }
@@ -385,11 +473,21 @@ async function resolveCellPlan(
 ): Promise<DealAudienceCellPlan> {
   const warnings: string[] = [];
 
-  const compatibleIdentity = blueprint.identityInterests.filter(deps.isCompatibleInterest);
-  const compatibleIntent = blueprint.intentInterests.filter(deps.isCompatibleInterest);
+  const compactIdentity = compactCellQueries(blueprint.identityInterests, 8);
+  const compactIntent = compactCellQueries(blueprint.intentInterests, 6);
+  const droppedByCompaction =
+    blueprint.identityInterests.length + blueprint.intentInterests.length - compactIdentity.length - compactIntent.length;
+  if (droppedByCompaction > 0) {
+    warnings.push(
+      `Compacted ${droppedByCompaction} free-text targeting phrase${droppedByCompaction === 1 ? "" : "s"} into Meta-searchable queries.`
+    );
+  }
+
+  const compatibleIdentity = compactIdentity.filter(deps.isCompatibleInterest);
+  const compatibleIntent = compactIntent.filter(deps.isCompatibleInterest);
   const droppedCount =
-    blueprint.identityInterests.length - compatibleIdentity.length +
-    (blueprint.intentInterests.length - compatibleIntent.length);
+    compactIdentity.length - compatibleIdentity.length +
+    (compactIntent.length - compatibleIntent.length);
   if (droppedCount > 0) {
     warnings.push(`Dropped ${droppedCount} interest quer${droppedCount === 1 ? "y" : "ies"} incompatible with this deal's cruise product.`);
   }
@@ -401,8 +499,14 @@ async function resolveCellPlan(
   warnings.push(...identityResolution.warnings, ...intentResolution.warnings);
 
   const layers: DealAudienceCellResolvedLayer[] = [];
-  const identityEntries = identityResolution.entries.filter((entry) => deps.isCompatibleInterest(entry.name));
-  const intentEntries = intentResolution.entries.filter((entry) => deps.isCompatibleInterest(entry.name));
+  const identityEntries = filterEntriesByAffinity(
+    identityResolution.entries.filter((entry) => deps.isCompatibleInterest(entry.name)),
+    warnings
+  );
+  const intentEntries = filterEntriesByAffinity(
+    intentResolution.entries.filter((entry) => deps.isCompatibleInterest(entry.name)),
+    warnings
+  );
   if (identityEntries.length > 0) {
     layers.push({
       role: "identity",
@@ -424,7 +528,11 @@ async function resolveCellPlan(
   for (const hint of blueprint.behaviorHints) {
     try {
       const behavior = await deps.resolveBehavior(hint);
-      if (behavior) behaviorEntries.push(behavior);
+      if (behavior && hasQueryNameAffinity(hint, behavior.name)) {
+        behaviorEntries.push(behavior);
+      } else if (behavior) {
+        warnings.push(`Dropped low-affinity Meta behavior "${behavior.name}" for hint "${hint}".`);
+      }
     } catch (error) {
       warnings.push(`Behavior lookup failed for "${hint}": ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -438,19 +546,19 @@ async function resolveCellPlan(
     });
   }
 
-  const exclusionResolution = await deps.resolveInterests(blueprint.exclusionInterests);
-  const exclusionIds = new Set<string>();
-  for (const layer of layers) {
-    for (const entry of layer.entries) exclusionIds.add(entry.id);
+  const exclusions: DealAudienceCellResolvedEntry[] = [];
+  if (blueprint.exclusionInterests.length > 0) {
+    warnings.push(
+      `Ignored ${blueprint.exclusionInterests.length} detailed-interest exclusion idea${blueprint.exclusionInterests.length === 1 ? "" : "s"}. Meta no longer accepts detailed-interest exclusions; use a Custom Audience exclusion for employees, existing customers, or other known people.`
+    );
   }
-  const exclusions = exclusionResolution.entries.filter((entry) => !exclusionIds.has(entry.id));
 
   if (layers.length === 0) {
     return {
       blueprint,
       layers,
       exclusions,
-      targeting: buildCellTargeting(blueprint, layers, exclusions, deps.geoLocations),
+      targeting: buildCellTargeting(blueprint, layers, deps.geoLocations),
       relaxed: false,
       dispatchable: false,
       warnings: [...warnings, "No targeting layer resolved to Meta ids; cell is not dispatchable."],
@@ -462,7 +570,7 @@ async function resolveCellPlan(
 
   let activeLayers = layers;
   let relaxed = false;
-  let targeting = buildCellTargeting(blueprint, activeLayers, exclusions, deps.geoLocations);
+  let targeting = buildCellTargeting(blueprint, activeLayers, deps.geoLocations);
   let reach: DealAudienceCellReachEstimate | undefined;
 
   try {
@@ -474,7 +582,7 @@ async function resolveCellPlan(
   if (reach?.verdict === "too_narrow" && activeLayers.length > 1) {
     activeLayers = mergeLayersForRelaxation(activeLayers);
     relaxed = true;
-    targeting = buildCellTargeting(blueprint, activeLayers, exclusions, deps.geoLocations);
+    targeting = buildCellTargeting(blueprint, activeLayers, deps.geoLocations);
     warnings.push(
       `Intersection audience was under ${MIN_CELL_AUDIENCE_USERS.toLocaleString("en-US")} users; relaxed AND layers into one OR group.`
     );

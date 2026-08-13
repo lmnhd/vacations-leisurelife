@@ -11,8 +11,27 @@ import { resolveContext } from '@/lib/chat/context-resolver';
 import { buildRealtimeToolDefinitions } from '@/lib/voice/realtime-tools';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const REALTIME_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
+/**
+ * DEPRECATED PATH - do not extend, and do not point production surfaces here.
+ *
+ * This route predates the conversation runtime and targets the retired
+ * GPT-4o Realtime preview plus the old /v1/realtime/sessions endpoint. It
+ * also accepts a caller-supplied `startingContext`, which the current
+ * architecture forbids for public callers.
+ *
+ * The supported path is POST /api/conversation/launch, which validates a
+ * typed ConversationLaunchEnvelope, resolves the skill/context/tool policy
+ * server-side, and mints a GA client secret with a gateway-resolved model.
+ * See .github/DOCS/Implementation/VOICE_ASSISTANT/VOICE_ASSISTANT_CANONICAL_PLAN.md
+ *
+ * Retained only so the /tests/voice-* developer consoles keep working during
+ * migration validation. Delete this route and lib/voice/realtime-session.ts
+ * once those consoles are ported or retired.
+ */
+const REALTIME_MODEL = process.env.OPENAI_LEGACY_REALTIME_MODEL?.trim() || 'gpt-4o-realtime-preview-2024-12-17';
 const DEFAULT_VOICE = 'alloy';
+const LEGACY_VOICE_SESSION_ENABLED =
+    process.env.LEGACY_VOICE_SESSION_ENABLED === 'true';
 const DEFAULT_TEMPERATURE = 0.8;
 
 const FALLBACK_VOICE_INSTRUCTIONS = [
@@ -54,6 +73,20 @@ interface VoiceSessionResponseData {
 export async function handleVoiceSessionRequest(
     body: VoiceSessionRequestBody
 ): Promise<{ status: number; data: VoiceSessionResponseData }> {
+    if (!LEGACY_VOICE_SESSION_ENABLED) {
+        // Fail closed. The migrated path is /api/conversation/launch; this
+        // route stays reachable only when a developer explicitly opts in for
+        // migration comparison against the old test consoles.
+        return {
+            status: 410,
+            data: {
+                error:
+                    'This voice session endpoint is retired. Use POST /api/conversation/launch. ' +
+                    'Set LEGACY_VOICE_SESSION_ENABLED=true to re-enable it for migration testing.',
+            },
+        };
+    }
+
     if (!OPENAI_API_KEY) {
         return { status: 500, data: { error: 'OPENAI_API_KEY not configured' } };
     }

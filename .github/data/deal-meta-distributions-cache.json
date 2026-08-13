@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAtIso": "2026-07-30T17:19:12.974Z",
+  "generatedAtIso": "2026-08-04T22:42:05.825Z",
   "distributions": [
     {
       "id": "funnel-adcopy-twenty-one-sea-days-zero-unsolved-locks-seabourn-panama-canal-polynesia-3",
@@ -1709,6 +1709,633 @@
         "facebook_page_dispatched_at=2026-07-30T17:19:12.972Z"
       ],
       "facebookPagePostId": "1071836329342347_122123399024816807"
+    },
+    {
+      "id": "funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026-fl-resident",
+      "dealId": "1621785",
+      "sourceMetaAdSynthesisId": "funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026-fl-resident",
+      "generatedAtIso": "2026-08-04T22:41:42.559Z",
+      "mode": "organic_page_only",
+      "status": "dispatched",
+      "plan": {
+        "dealId": "1621785",
+        "destinationUrl": "https://www.leisurelifeinteractive.net/deals/1621785",
+        "caption": "Five Very Merrytime nights on Disney Fantasy, departing Port Canaveral November 20, 2026.\n\nA Western Caribbean holiday sailing with two named port calls and room to enjoy the days at your own pace.\n\nEligible Florida residents may save up to 30% on voyage fare. Limited to 50 staterooms; proof is required at check-in.\n\nDisney Fantasy sails November 20 for five Very Merrytime nights from Port Canaveral. Check current fares and availability.",
+        "cards": [
+          {
+            "cardIndex": 0,
+            "headline": "Trade Park Plans for Sea Days",
+            "primaryText": "Five Very Merrytime nights on Disney Fantasy, departing Port Canaveral November 20, 2026.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026-fl-resident/card0-1785637925835.png"
+          },
+          {
+            "cardIndex": 1,
+            "headline": "Castaway Cay. Cozumel. Five Nights.",
+            "primaryText": "A Western Caribbean holiday sailing with two named port calls and room to enjoy the days at your own pace.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026-fl-resident/card1-1785638039794.png"
+          },
+          {
+            "cardIndex": 2,
+            "headline": "Florida Residents: Save Up to 30%",
+            "primaryText": "Eligible Florida residents may save up to 30% on voyage fare. Limited to 50 staterooms; proof is required at check-in.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026-fl-resident/card2-1785638131877.png"
+          },
+          {
+            "cardIndex": 3,
+            "headline": "Your Holiday, Already on the Calendar",
+            "primaryText": "Disney Fantasy sails November 20 for five Very Merrytime nights from Port Canaveral. Check current fares and availability.",
+            "imageUrl": "https://pub-3374acfeaebd4568a5a41117cc587c85.r2.dev/campaigns/deals/1621785/meta-ad-synthesis/funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026-fl-resident/card3-1785638221873.png"
+          }
+        ],
+        "targeting": {
+          "interestQueries": [
+            "disney cruise line",
+            "walt disney world",
+            "cruise critic"
+          ],
+          "resolvedInterests": [
+            {
+              "id": "6003175475302",
+              "name": "Disney Cruise Line",
+              "sourceQuery": "disney cruise line"
+            },
+            {
+              "id": "6003681754290",
+              "name": "Walt Disney World",
+              "sourceQuery": "walt disney world"
+            },
+            {
+              "id": "6003148986134",
+              "name": "Cruise Critic",
+              "sourceQuery": "cruise critic"
+            }
+          ],
+          "unresolvedQueries": [
+            "disney fantasy",
+            "Port Canaveral",
+            "Castaway Cay",
+            "Cozumel"
+          ],
+          "targeting": {
+            "geo_locations": {
+              "regions": [
+                {
+                  "key": "3843"
+                }
+              ]
+            },
+            "targeting_automation": {
+              "advantage_audience": 1,
+              "individual_setting": {
+                "age": 1
+              }
+            },
+            "flexible_spec": [
+              {
+                "interests": [
+                  {
+                    "id": "6003175475302",
+                    "name": "Disney Cruise Line"
+                  },
+                  {
+                    "id": "6003681754290",
+                    "name": "Walt Disney World"
+                  },
+                  {
+                    "id": "6003148986134",
+                    "name": "Cruise Critic"
+                  }
+                ]
+              }
+            ]
+          },
+          "adSetMode": "dynamic",
+          "geographicRestriction": {
+            "residencyRequired": true,
+            "regionCode": "FL",
+            "countryCode": "US",
+            "regionName": "Florida",
+            "strict": true
+          },
+          "warnings": [
+            "Strict Meta location control: Florida, US. Advantage+ must not expand beyond this location. Meta location is not proof of residency.",
+            "AI query-expansion candidates (18): Travel + Leisure, Conde Nast Traveler, Cruises, Caribbean, Travel attractions and activities, Disney Cruise Line, Disney Fantasy, Port Canaveral, Castaway Cay, Cozumel, Cruise Critic, Luxury travel, All-inclusive resort, Travel Agents and Booking, Adventure travel, disney, luxury goods, theme parks",
+            "Dropped cross-campaign Meta interests for Disney Cruise Line: Royal Caribbean International",
+            "Consolidated 3 persona hypotheses into one Advantage+ prospecting audience using 3 verified cruise-intent suggestions. Persona distinctions remain creative tests, not separate ad sets."
+          ]
+        },
+        "audienceMatrix": {
+          "dealId": "1621785",
+          "generatedAtIso": "2026-08-02T02:58:17.558Z",
+          "source": "ai",
+          "cells": [
+            {
+              "blueprint": {
+                "cellId": "park-weary-disney-parents",
+                "label": "Park-Weary Disney Parents",
+                "description": "Florida parents with school-age children who love Disney but want an easier holiday than another reservation-heavy theme-park trip. They value built-in entertainment, predictable planning and time together.",
+                "rationale": "The five-night Port Canaveral itinerary delivers a complete Disney holiday without daily park logistics, while the Florida-resident fare and fixed departure date make the decision feel concrete.",
+                "identityInterests": [
+                  "Parenting",
+                  "Disney+",
+                  "Pixar",
+                  "Walt Disney Animation Studios"
+                ],
+                "intentInterests": [
+                  "Disney Cruise Line",
+                  "Disney Fantasy",
+                  "Walt Disney World",
+                  "Cruise Critic"
+                ],
+                "exclusionInterests": [],
+                "behaviorHints": [
+                  "Frequent travelers"
+                ],
+                "ageMin": 28,
+                "ageMax": 54,
+                "precision": "assisted"
+              },
+              "layers": [
+                {
+                  "role": "identity",
+                  "queries": [
+                    "parenting",
+                    "disney",
+                    "pixar",
+                    "walt disney animation studios"
+                  ],
+                  "entries": [
+                    {
+                      "id": "6003232518610",
+                      "name": "Parenting",
+                      "type": "interests",
+                      "sourceQuery": "parenting"
+                    },
+                    {
+                      "id": "6003274193708",
+                      "name": "Disneyland",
+                      "type": "interests",
+                      "sourceQuery": "disney"
+                    },
+                    {
+                      "id": "6003365310651",
+                      "name": "Pixar",
+                      "type": "interests",
+                      "sourceQuery": "pixar"
+                    },
+                    {
+                      "id": "6003375444677",
+                      "name": "Walt Disney Animation Studios",
+                      "type": "interests",
+                      "sourceQuery": "walt disney animation studios"
+                    }
+                  ],
+                  "unresolvedQueries": []
+                },
+                {
+                  "role": "intent",
+                  "queries": [
+                    "disney cruise line",
+                    "disney fantasy",
+                    "walt disney world",
+                    "cruise critic"
+                  ],
+                  "entries": [
+                    {
+                      "id": "6003175475302",
+                      "name": "Disney Cruise Line",
+                      "type": "interests",
+                      "sourceQuery": "disney cruise line"
+                    },
+                    {
+                      "id": "6003681754290",
+                      "name": "Walt Disney World",
+                      "type": "interests",
+                      "sourceQuery": "walt disney world"
+                    },
+                    {
+                      "id": "6003148986134",
+                      "name": "Cruise Critic",
+                      "type": "interests",
+                      "sourceQuery": "cruise critic"
+                    }
+                  ],
+                  "unresolvedQueries": [
+                    "disney fantasy"
+                  ]
+                },
+                {
+                  "role": "behavior",
+                  "queries": [
+                    "Frequent travelers"
+                  ],
+                  "entries": [
+                    {
+                      "id": "6002714895372",
+                      "name": "Frequent Travelers",
+                      "type": "behaviors",
+                      "sourceQuery": "Frequent travelers"
+                    }
+                  ],
+                  "unresolvedQueries": []
+                }
+              ],
+              "exclusions": [],
+              "targeting": {
+                "geo_locations": {
+                  "regions": [
+                    {
+                      "key": "3843"
+                    }
+                  ]
+                },
+                "targeting_automation": {
+                  "advantage_audience": 1,
+                  "individual_setting": {
+                    "age": 1
+                  }
+                },
+                "age_min": 28,
+                "flexible_spec": [
+                  {
+                    "interests": [
+                      {
+                        "id": "6003232518610",
+                        "name": "Parenting"
+                      },
+                      {
+                        "id": "6003274193708",
+                        "name": "Disneyland"
+                      },
+                      {
+                        "id": "6003365310651",
+                        "name": "Pixar"
+                      },
+                      {
+                        "id": "6003375444677",
+                        "name": "Walt Disney Animation Studios"
+                      }
+                    ]
+                  },
+                  {
+                    "interests": [
+                      {
+                        "id": "6003175475302",
+                        "name": "Disney Cruise Line"
+                      },
+                      {
+                        "id": "6003681754290",
+                        "name": "Walt Disney World"
+                      },
+                      {
+                        "id": "6003148986134",
+                        "name": "Cruise Critic"
+                      }
+                    ]
+                  },
+                  {
+                    "behaviors": [
+                      {
+                        "id": "6002714895372",
+                        "name": "Frequent Travelers"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "reach": {
+                "estimateReady": true,
+                "usersLowerBound": 390900,
+                "usersUpperBound": 459900,
+                "verdict": "ok"
+              },
+              "relaxed": false,
+              "dispatchable": true,
+              "warnings": []
+            },
+            {
+              "blueprint": {
+                "cellId": "premium-comfort-family-cruisers",
+                "label": "Premium-Comfort Family Cruisers",
+                "description": "Comfort-oriented parents who spend on polished family experiences, good meals and resort-style amenities. They want children entertained without giving up an elevated adult vacation.",
+                "rationale": "Disney Fantasy combines premium service and family programming with sea days, Cozumel and Castaway Cay, directly matching the desire for ease plus quality.",
+                "identityInterests": [
+                  "Fine dining",
+                  "Spa",
+                  "Family",
+                  "Wine tasting"
+                ],
+                "intentInterests": [
+                  "Disney Cruise Line",
+                  "Disney Fantasy",
+                  "Caribbean",
+                  "Cruise Critic"
+                ],
+                "exclusionInterests": [],
+                "behaviorHints": [
+                  "Frequent travelers",
+                  "Frequent international travelers"
+                ],
+                "ageMin": 32,
+                "ageMax": 59,
+                "precision": "assisted"
+              },
+              "layers": [
+                {
+                  "role": "identity",
+                  "queries": [
+                    "fine dining",
+                    "spa",
+                    "family",
+                    "wine tasting"
+                  ],
+                  "entries": [
+                    {
+                      "id": "6003476182657",
+                      "name": "Family",
+                      "type": "interests",
+                      "sourceQuery": "family"
+                    },
+                    {
+                      "id": "6003322500097",
+                      "name": "Wine tasting",
+                      "type": "interests",
+                      "sourceQuery": "wine tasting"
+                    }
+                  ],
+                  "unresolvedQueries": [
+                    "fine dining"
+                  ]
+                },
+                {
+                  "role": "intent",
+                  "queries": [
+                    "disney cruise line",
+                    "disney fantasy",
+                    "caribbean",
+                    "cruise critic"
+                  ],
+                  "entries": [
+                    {
+                      "id": "6003175475302",
+                      "name": "Disney Cruise Line",
+                      "type": "interests",
+                      "sourceQuery": "disney cruise line"
+                    },
+                    {
+                      "id": "6003148986134",
+                      "name": "Cruise Critic",
+                      "type": "interests",
+                      "sourceQuery": "cruise critic"
+                    }
+                  ],
+                  "unresolvedQueries": [
+                    "disney fantasy"
+                  ]
+                },
+                {
+                  "role": "behavior",
+                  "queries": [
+                    "Frequent travelers",
+                    "Frequent international travelers"
+                  ],
+                  "entries": [
+                    {
+                      "id": "6002714895372",
+                      "name": "Frequent Travelers",
+                      "type": "behaviors",
+                      "sourceQuery": "Frequent travelers"
+                    },
+                    {
+                      "id": "6022788483583",
+                      "name": "Frequent international travelers",
+                      "type": "behaviors",
+                      "sourceQuery": "Frequent international travelers"
+                    }
+                  ],
+                  "unresolvedQueries": []
+                }
+              ],
+              "exclusions": [],
+              "targeting": {
+                "geo_locations": {
+                  "regions": [
+                    {
+                      "key": "3843"
+                    }
+                  ]
+                },
+                "targeting_automation": {
+                  "advantage_audience": 1,
+                  "individual_setting": {
+                    "age": 1
+                  }
+                },
+                "age_min": 32,
+                "flexible_spec": [
+                  {
+                    "interests": [
+                      {
+                        "id": "6003476182657",
+                        "name": "Family"
+                      },
+                      {
+                        "id": "6003322500097",
+                        "name": "Wine tasting"
+                      }
+                    ]
+                  },
+                  {
+                    "interests": [
+                      {
+                        "id": "6003175475302",
+                        "name": "Disney Cruise Line"
+                      },
+                      {
+                        "id": "6003148986134",
+                        "name": "Cruise Critic"
+                      }
+                    ]
+                  },
+                  {
+                    "behaviors": [
+                      {
+                        "id": "6002714895372",
+                        "name": "Frequent Travelers"
+                      },
+                      {
+                        "id": "6022788483583",
+                        "name": "Frequent international travelers"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "reach": {
+                "estimateReady": true,
+                "usersLowerBound": 168800,
+                "usersUpperBound": 198600,
+                "verdict": "ok"
+              },
+              "relaxed": false,
+              "dispatchable": true,
+              "warnings": [
+                "Dropped low-affinity Meta match \"Spas\" for query \"spa\"."
+              ]
+            },
+            {
+              "blueprint": {
+                "cellId": "multigenerational-disney-memory-makers",
+                "label": "Multigenerational Disney Memory Makers",
+                "description": "Florida grandparents or older family organizers planning a shared holiday experience for children and grandchildren. They prioritize meaningful memories, familiar entertainment and manageable logistics.",
+                "rationale": "A five-night round-trip sailing from Port Canaveral is easier to coordinate than a complex park stay, while the Very Merrytime theme creates a gift-worthy family holiday with broad age appeal.",
+                "identityInterests": [
+                  "Grandparenting",
+                  "Family",
+                  "Disney+",
+                  "Walt Disney Animation Studios"
+                ],
+                "intentInterests": [
+                  "Disney Cruise Line",
+                  "Disney Fantasy",
+                  "Castaway Cay",
+                  "Caribbean"
+                ],
+                "exclusionInterests": [],
+                "behaviorHints": [
+                  "Frequent travelers"
+                ],
+                "ageMin": 50,
+                "precision": "assisted"
+              },
+              "layers": [
+                {
+                  "role": "identity",
+                  "queries": [
+                    "grandparenting",
+                    "family",
+                    "disney",
+                    "walt disney animation studios",
+                    "disney cruise line",
+                    "disney fantasy",
+                    "castaway cay",
+                    "caribbean",
+                    "Frequent travelers"
+                  ],
+                  "entries": [
+                    {
+                      "id": "6003476182657",
+                      "name": "Family",
+                      "type": "interests",
+                      "sourceQuery": "family"
+                    },
+                    {
+                      "id": "6003274193708",
+                      "name": "Disneyland",
+                      "type": "interests",
+                      "sourceQuery": "disney"
+                    },
+                    {
+                      "id": "6003375444677",
+                      "name": "Walt Disney Animation Studios",
+                      "type": "interests",
+                      "sourceQuery": "walt disney animation studios"
+                    },
+                    {
+                      "id": "6003175475302",
+                      "name": "Disney Cruise Line",
+                      "type": "interests",
+                      "sourceQuery": "disney cruise line"
+                    },
+                    {
+                      "id": "6002714895372",
+                      "name": "Frequent Travelers",
+                      "type": "behaviors",
+                      "sourceQuery": "Frequent travelers"
+                    }
+                  ],
+                  "unresolvedQueries": [
+                    "grandparenting",
+                    "disney fantasy",
+                    "castaway cay"
+                  ]
+                }
+              ],
+              "exclusions": [],
+              "targeting": {
+                "geo_locations": {
+                  "regions": [
+                    {
+                      "key": "3843"
+                    }
+                  ]
+                },
+                "targeting_automation": {
+                  "advantage_audience": 1,
+                  "individual_setting": {
+                    "age": 1
+                  }
+                },
+                "age_min": 50,
+                "flexible_spec": [
+                  {
+                    "interests": [
+                      {
+                        "id": "6003476182657",
+                        "name": "Family"
+                      },
+                      {
+                        "id": "6003274193708",
+                        "name": "Disneyland"
+                      },
+                      {
+                        "id": "6003375444677",
+                        "name": "Walt Disney Animation Studios"
+                      },
+                      {
+                        "id": "6003175475302",
+                        "name": "Disney Cruise Line"
+                      }
+                    ],
+                    "behaviors": [
+                      {
+                        "id": "6002714895372",
+                        "name": "Frequent Travelers"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "reach": {
+                "estimateReady": true,
+                "usersLowerBound": 1300000,
+                "usersUpperBound": 1600000,
+                "verdict": "ok"
+              },
+              "relaxed": true,
+              "dispatchable": true,
+              "warnings": [
+                "Intersection audience was under 150,000 users; relaxed AND layers into one OR group."
+              ]
+            }
+          ],
+          "warnings": []
+        },
+        "campaignName": "[DRAFT] Deal 1621785 — Holiday Magic Without the Holiday Marathon",
+        "adSetName": "[DRAFT] Deal 1621785 Audience",
+        "creativeName": "deal-1621785-funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026-fl-resident-carousel",
+        "adName": "deal-1621785-funnel-1621785-holiday-magic-without-the-holiday-marathon-disney-fantasy-nov-2026-fl-resident"
+      },
+      "notes": [
+        "facebook_page_id=1071836329342347",
+        "facebook_page_post_id=1071836329342347_122124085172816807",
+        "facebook_page_published=true",
+        "facebook_page_media_type=multi_image",
+        "facebook_page_card_count=4",
+        "facebook_page_destination_url=https://www.leisurelifeinteractive.net/deals/1621785",
+        "facebook_page_dispatched_at=2026-08-04T22:42:05.824Z"
+      ],
+      "facebookPagePostId": "1071836329342347_122124085172816807"
     }
   ]
 }

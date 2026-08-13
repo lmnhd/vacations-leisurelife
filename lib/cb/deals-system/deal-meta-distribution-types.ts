@@ -68,10 +68,9 @@ export interface DealMetaDistributionPlan {
   cards: DealMetaDistributionCard[];
   targeting: DealMetaDistributionTargetingPreview;
   /**
-   * Audience precision matrix: 2-4 AND-layered persona cells, each with its
-   * own dispatch-ready targeting spec and reach estimate. When at least one
-   * cell is dispatchable, live dispatch creates one paused ad set per cell
-   * instead of the single legacy combined ad set.
+   * Creative audience matrix: 2-4 persona hypotheses with resolved targeting
+   * diagnostics. Verified intent interests are consolidated into the single
+   * prospecting ad set represented by `targeting`.
    */
   audienceMatrix?: DealAudienceCellMatrix;
   campaignName: string;
@@ -96,7 +95,7 @@ export interface DealMetaDistribution {
   metaAdSetMode?: "dynamic" | "static_fallback";
   facebookCreativeId?: string;
   facebookAdId?: string;
-  /** Per-cell ad set/ad outcomes when the audience matrix drove dispatch. */
+  /** Legacy per-cell outcomes retained for older distribution records. */
   cellDispatches?: DealAudienceCellDispatch[];
   facebookPagePostId?: string;
   instagramCarouselContainerId?: string;

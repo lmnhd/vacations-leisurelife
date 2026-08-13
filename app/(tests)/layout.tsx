@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
 export const metadata: Metadata = {
     title: 'Leisure Life — Test Lab',
@@ -10,6 +11,16 @@ export default function TestsLayout({
 }: {
     children: React.ReactNode;
 }) {
+    // Test workspaces are local operator tooling, not public surface area, so
+    // they 404 on production deploys. This matters most for the
+    // booking-assistant operator console, whose auto-poll drove the late-July
+    // 2026 DynamoDB read spike. Preview deploys and local dev are unaffected,
+    // and the /api/booking-assistant/* routes are untouched — the local console
+    // still works against production data.
+    if (process.env.VERCEL_ENV === 'production') {
+        notFound();
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
             {/* Minimal shell — no Clerk, no Crisp, no heavy providers */}

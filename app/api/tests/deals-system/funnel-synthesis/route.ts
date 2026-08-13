@@ -102,7 +102,7 @@ async function loadManifests(): Promise<DealTripManifest[]> {
 
 async function loadSyntheses(): Promise<DealFunnelSynthesis[]> {
   try {
-    return await listDealFunnelSyntheses();
+    return await listDealFunnelSyntheses({ fresh: true });
   } catch {
     return [];
   }
@@ -274,7 +274,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "synthesisId is required." }, { status: 400 });
     }
     try {
-      const synthesis = await getDealFunnelSynthesis(synthesisId);
+      const synthesis = await getDealFunnelSynthesis(synthesisId, { fresh: true });
       if (!synthesis) {
         return NextResponse.json(
           { ok: false, error: `No synthesis found with id "${synthesisId}".` },

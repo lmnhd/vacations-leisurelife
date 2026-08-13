@@ -31,7 +31,9 @@ export default async function FunnelSynthesisPage({
   // DynamoDB store (canonical write path), not the stale local JSON cache.
   let syntheses: DealFunnelSynthesis[] = [];
   try {
-    syntheses = await listDealFunnelSyntheses();
+    // Image selection writes happen through a separate route bundle. Bypass the
+    // process-local scan cache so refresh always reflects the durable selection.
+    syntheses = await listDealFunnelSyntheses({ fresh: true });
   } catch {
     syntheses = [];
   }

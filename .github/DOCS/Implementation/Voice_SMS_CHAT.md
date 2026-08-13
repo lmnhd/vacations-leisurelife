@@ -1,5 +1,12 @@
 # Voice / SMS / Chat — Complete Build Guide & Agent Skill
 
+> [!CAUTION]
+> **NON-AUTHORITATIVE FOR LEISURE LIFE (August 2026).** This guide was copied from
+> other business demos (including pawn/appraisal examples) and targets the deprecated
+> GPT-4o Realtime preview and pre-GA session endpoints. Do not treat it as a Leisure
+> Life product specification or restore its architecture. The canonical voice
+> architecture is `.github/DOCS/Implementation/VOICE_ASSISTANT/VOICE_ASSISTANT_CANONICAL_PLAN.md`.
+
 > **Purpose**: Reusable skill document for building AI-powered Voice, SMS, and Web Chat
 > systems using Twilio + OpenAI + Next.js. Covers architecture, exact build steps,
 > every pitfall encountered, and production hosting decisions.

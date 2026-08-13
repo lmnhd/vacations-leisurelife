@@ -15,6 +15,8 @@ import type {
   DealAdVariant,
   DealTripManifest,
 } from "@/lib/cb/deals-system";
+import type { DealFunnelSynthesis } from "./deal-page-design-types";
+import type { DealMetaAdSynthesis } from "./deal-meta-ad-synthesis-types";
 import type {
   CuratedDealCruiseFacts,
   CuratedDealPackaging,
@@ -47,6 +49,9 @@ import { generateDealTargetingDemographic } from "./targeting-demographic";
 export interface AssembleFromManifestInput {
   manifest: DealTripManifest;
   adCopy: DealAdCopy;
+  existingDeal?: CuratedOdysseusDeal;
+  funnelSynthesis?: DealFunnelSynthesis;
+  metaAdSynthesis?: DealMetaAdSynthesis;
   generatedAtIso?: string;
 }
 
@@ -369,17 +374,56 @@ function buildPitchBrief(adCopy: DealAdCopy): DealPitchBrief {
   };
 }
 
-function buildMediaPlan(): DealMediaPlan {
+function buildMediaPlan(
+  funnelSynthesis: DealFunnelSynthesis | undefined,
+  metaAdSynthesis: DealMetaAdSynthesis | undefined,
+  generatedAtIso: string
+): DealMediaPlan {
+  const selectedCandidateIds = uniqueNonEmpty([
+    funnelSynthesis?.heroImageId ?? "",
+    ...(funnelSynthesis?.galleryIds ?? []),
+  ]);
+  const selectedCandidates = selectedCandidateIds
+    .map((id) => funnelSynthesis?.candidates.find((candidate) => candidate.id === id))
+    .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
+  const readyMetaCards = (metaAdSynthesis?.cards ?? []).filter(
+    (card) => card.status === "ready" && Boolean(card.imageUrl)
+  );
+  const requiredSourceAssets = uniqueNonEmpty([
+    ...selectedCandidates.map((candidate) => candidate.imageUrl),
+    ...readyMetaCards.map((card) => card.imageUrl ?? ""),
+  ]);
+  const imageSlots = [
+    ...selectedCandidates.map((candidate, index) => ({
+      slot: candidate.id === funnelSynthesis?.heroImageId ? "deal_hero" : `deal_gallery_${index + 1}`,
+      purpose: candidate.title?.trim() || `${candidate.category} image selected in the funnel`,
+      visualConceptPrompt: `Use the operator-selected ${candidate.category} image without regeneration.`,
+      requiredSourceAssets: [candidate.imageUrl],
+    })),
+    ...readyMetaCards.map((card) => ({
+      slot: `meta_carousel_${card.cardIndex + 1}`,
+      purpose: card.headline,
+      visualConceptPrompt: card.imageDirection?.trim() || "Use the operator-approved carousel image.",
+      requiredSourceAssets: card.imageUrl ? [card.imageUrl] : [],
+    })),
+  ];
+  const hasReviewedFunnelMedia = selectedCandidates.length > 0;
+  const hasCompleteMetaCarousel = readyMetaCards.length === 4;
+
   return {
     dealId: "",
     packageId: "",
-    generatedAtIso: new Date().toISOString(),
+    generatedAtIso,
     generator: "deterministic_scaffold",
-    visualDirection: [],
-    imageSlots: [],
+    visualDirection: uniqueNonEmpty([
+      funnelSynthesis?.sailingAngleTitle ?? "",
+      funnelSynthesis?.landingPage.heroHeadline ?? "",
+      metaAdSynthesis?.sailingAngleTitle ?? "",
+    ]),
+    imageSlots,
     shortVideoConcepts: [],
-    requiredSourceAssets: [],
-    readiness: "waived_text_only",
+    requiredSourceAssets,
+    readiness: hasReviewedFunnelMedia && hasCompleteMetaCarousel ? "ready" : "not_started",
   };
 }
 
@@ -450,6 +494,30 @@ export function assembleCuratedDealFromManifest(
   const siid = resolved.siid;
   const briefId = manifest.assembleDraft.suggestedBriefId;
 
+  if (input.funnelSynthesis && input.funnelSynthesis.sourceAdCopyId !== input.adCopy.id) {
+    throw new Error(
+      `Funnel ${input.funnelSynthesis.id} belongs to ad copy ${input.funnelSynthesis.sourceAdCopyId}, not ${input.adCopy.id}.`
+    );
+  }
+  if (input.funnelSynthesis && input.funnelSynthesis.dealId !== dealId) {
+    throw new Error(
+      `Funnel ${input.funnelSynthesis.id} belongs to Deal ${input.funnelSynthesis.dealId}, not ${dealId}.`
+    );
+  }
+  if (
+    input.metaAdSynthesis &&
+    input.metaAdSynthesis.sourceFunnelSynthesisId !== input.funnelSynthesis?.id
+  ) {
+    throw new Error(
+      `Meta synthesis ${input.metaAdSynthesis.id} is not attached to funnel ${input.funnelSynthesis?.id ?? "(missing)"}.`
+    );
+  }
+  if (input.metaAdSynthesis && input.metaAdSynthesis.dealId !== dealId) {
+    throw new Error(
+      `Meta synthesis ${input.metaAdSynthesis.id} belongs to Deal ${input.metaAdSynthesis.dealId}, not ${dealId}.`
+    );
+  }
+
   const cruiseFacts = buildCruiseFacts(manifest);
   const copyPackage = buildCopyPackage(adCopy);
   copyPackage.dealId = dealId;
@@ -468,7 +536,11 @@ export function assembleCuratedDealFromManifest(
   pitchBrief.dealId = dealId;
   pitchBrief.packageId = packageId;
 
-  const mediaPlan = buildMediaPlan();
+  const mediaPlan = buildMediaPlan(
+    input.funnelSynthesis,
+    input.metaAdSynthesis,
+    generatedAtIso
+  );
   mediaPlan.dealId = dealId;
   mediaPlan.packageId = packageId;
 
@@ -495,7 +567,8 @@ export function assembleCuratedDealFromManifest(
   const gates = evaluateApprovalGates(partial, { textOnlyLaunchWaived: false });
   const packaging = buildPackaging(cruiseFacts, copyPackage);
 
-  return {
+  const existingDeal = input.existingDeal?.id === dealId ? input.existingDeal : undefined;
+  const assembled: CuratedOdysseusDeal = {
     id: dealId,
     status: "needs_review",
     source: "odysseus_curated_retail",
@@ -503,24 +576,51 @@ export function assembleCuratedDealFromManifest(
     capturedAtIso: generatedAtIso,
     // Expiration is non-optional: default to exactly 90 days from assembly when the
     // manifest does not carry an operator-chosen cutoff.
-    expiresOnIso: manifest.expiresOnIso?.trim() || defaultDealExpiresOnIso(generatedAtIso),
+    expiresOnIso:
+      manifest.expiresOnIso?.trim() ||
+      existingDeal?.expiresOnIso ||
+      defaultDealExpiresOnIso(generatedAtIso),
     packageId,
     siid,
-    bookingUrl: resolved.bookingUrl ?? `https://bookings.cbagenttools.com/swift/cruise/package/${packageId}?siid=${siid}&lang=1`,
-    bookingUrlSource: resolved.bookingUrl ? "share_button" : "constructed_package_url",
-    linkHealth: partial.linkHealth!,
+    bookingUrl:
+      resolved.bookingUrl ??
+      existingDeal?.bookingUrl ??
+      `https://bookings.cbagenttools.com/swift/cruise/package/${packageId}?siid=${siid}&lang=1`,
+    bookingUrlSource:
+      resolved.bookingUrl ? "share_button" : existingDeal?.bookingUrlSource ?? "constructed_package_url",
+    linkHealth:
+      existingDeal?.linkHealth.status === "valid" ? existingDeal.linkHealth : partial.linkHealth!,
     packageMatch,
     cruiseFacts,
     scoring: buildScoring(partial),
     packaging,
     promoApplicability: manifest.appliedPromos,
     angleResearch,
+    campaignStrategy: existingDeal?.campaignStrategy,
     targetingDemographic,
     pitchBrief,
     copyPackage,
     adStructure,
     mediaPlan,
     operatorApproval: initialApprovalState(dealId, gates, generatedAtIso),
-    agentOnlyNotes: copyPackage.agentOnlyNotes,
+    operatorVisibility: existingDeal?.operatorVisibility,
+    publicContentRefs: {
+      tripManifestId: manifest.id,
+      funnelSynthesisId: input.funnelSynthesis?.id,
+      metaAdSynthesisId: input.metaAdSynthesis?.id,
+      stampedAtIso: generatedAtIso,
+    },
+    agentOnlyNotes: uniqueNonEmpty([
+      ...(existingDeal?.agentOnlyNotes ?? []),
+      ...(copyPackage.agentOnlyNotes ?? []),
+    ]),
   };
+
+  assembled.scoring = buildScoring(assembled);
+  assembled.operatorApproval = initialApprovalState(
+    dealId,
+    evaluateApprovalGates(assembled, { textOnlyLaunchWaived: false }),
+    generatedAtIso
+  );
+  return assembled;
 }

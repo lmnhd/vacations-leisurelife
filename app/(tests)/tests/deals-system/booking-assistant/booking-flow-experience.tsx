@@ -31,6 +31,8 @@ import {
   useState,
 } from "react";
 
+import { BookingVoicePanel } from "./booking-voice-panel";
+
 import {
   CALL_OUTCOME_LABELS,
   COMPLETION_MODE,
@@ -68,6 +70,7 @@ import {
   markReviewReady as apiMarkReviewReady,
   confirmDraftField as apiConfirmDraftField,
   continueDraftLater as apiContinueDraftLater,
+  fetchDraftStatus as apiFetchDraftStatus,
   resumeCurrentDraft as apiResumeCurrentDraft,
   resumeDraft as apiResumeDraft,
   type GuestSaveResponse,
@@ -310,11 +313,22 @@ function workingForTask(taskId: string, draft: MockDraft): WorkingState {
   return {};
 }
 
-/** Voice-simulation value the mock "transcription" produces per task. */
-function voiceValueForTask(taskId: string): { field: string; value: string } | null {
-  if (taskId === "first_name") return { field: "firstName", value: "Margaret" };
-  if (taskId === "email") return { field: "email", value: "margaret@example.com" };
-  if (taskId === "phone") return { field: "phone", value: "(555) 201-7744" };
+/** Tasks that can be answered by voice (Tier A only). */
+function voiceValueForTask(taskId: string): { field: string } | null {
+  if (taskId === "first_name") return { field: "firstName" };
+  if (taskId === "email") return { field: "email" };
+  if (taskId === "phone") return { field: "phone" };
+  return null;
+}
+
+/**
+ * Maps a Tier A field name from the voice tool contract onto this flow's
+ * working-state key. Anything not listed cannot be set by voice.
+ */
+function workingFieldForVoiceField(field: string): string | null {
+  if (field === "first_name") return "firstName";
+  if (field === "email") return "email";
+  if (field === "phone") return "phone";
   return null;
 }
 
@@ -469,8 +483,6 @@ export const BookingFlowExperience = forwardRef<
   const seqRef = useRef(0);
   const [sheet, setSheet] = useState<Sheet>("none");
   const [voiceMode, setVoiceMode] = useState(false);
-  const [voiceState, setVoiceState] = useState<"idle" | "listening" | "heard">("idle");
-  const [heardText, setHeardText] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
   const [questionText, setQuestionText] = useState("");
   const [questionAnswer, setQuestionAnswer] = useState<{ q: string; a: string } | null>(null);
@@ -707,27 +719,40 @@ export const BookingFlowExperience = forwardRef<
   useEffect(() => {
     if (!serverDraftId || draft.status !== "call_signal_pending") return;
     let stopped = false;
+    let inFlight = false;
+
+    // Uses the projected status probe rather than a full draft resume: this
+    // runs on the guest path, so its cost scales with traffic. Skips ticks
+    // while a request is in flight or the tab is backgrounded.
     async function checkAcknowledgement() {
-      const result = await apiResumeDraft(serverDraftId as string);
-      if (stopped || !result.success) return;
-      const metadata = (result.result.draft as {
-        metadata?: { status?: string; version?: number };
-      }).metadata;
-      if (metadata?.status !== "calling_now") return;
-      const acknowledgedVersion = metadata.version ?? serverDraftVersionRef.current;
-      serverDraftVersionRef.current = acknowledgedVersion;
-      setServerDraftVersion(acknowledgedVersion);
-      setDraft((current) => ({ ...current, status: "calling_now" }));
-      setCallSignal((current) => current ? { ...current, acknowledged: true } : current);
-      emit("system", "call_signal_acknowledged", "Operator dashboard acknowledged this call attempt");
+      if (stopped || inFlight || document.visibilityState !== "visible") return;
+      inFlight = true;
+      try {
+        const result = await apiFetchDraftStatus(serverDraftId as string);
+        if (stopped || !result.success) return;
+        const { status, version } = result.result;
+        if (status !== "calling_now") return;
+        const acknowledgedVersion = version ?? serverDraftVersionRef.current;
+        serverDraftVersionRef.current = acknowledgedVersion;
+        setServerDraftVersion(acknowledgedVersion);
+        setDraft((current) => ({ ...current, status: "calling_now" }));
+        setCallSignal((current) => current ? { ...current, acknowledged: true } : current);
+        emit("system", "call_signal_acknowledged", "Operator dashboard acknowledged this call attempt");
+      } finally {
+        inFlight = false;
+      }
     }
+
     void checkAcknowledgement();
     const interval = window.setInterval(() => {
       void checkAcknowledgement();
-    }, 2000);
+    }, 5000);
+    const onVisibility = () => { void checkAcknowledgement(); };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       stopped = true;
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [draft.status, emit, serverDraftId]);
 
@@ -738,7 +763,6 @@ export const BookingFlowExperience = forwardRef<
       setCurrentTaskId(taskId);
       setWorking(workingForTask(taskId, draft));
       setTaskError("");
-      setVoiceState("idle");
       setReturnToReview(Boolean(opts?.fromReview));
       setScreen("task");
       const def = buildTaskList(draft).find((task) => task.id === taskId);
@@ -756,7 +780,6 @@ export const BookingFlowExperience = forwardRef<
     setCurrentTaskId(previousTask.id);
     setWorking(workingForTask(previousTask.id, draft));
     setTaskError("");
-    setVoiceState("idle");
     setReturnToReview(false);
     setScreen("task");
     emit("guest", "navigation_performed", `Back to ${previousTask.title}`, previousTask.id);
@@ -1142,7 +1165,6 @@ export const BookingFlowExperience = forwardRef<
     } else {
       setCurrentTaskId(upcoming);
       setWorking(workingForTask(upcoming, next));
-      setVoiceState("idle");
       const def = buildTaskList(next).find((task) => task.id === upcoming);
       emit("assistant", "task_presented", def ? def.title : upcoming, upcoming);
     }
@@ -1541,21 +1563,44 @@ export const BookingFlowExperience = forwardRef<
     goToTask(target);
   }
 
-  // --- Voice simulation -----------------------------------------------------
+  // --- Real voice: proposals land in the same working state as typing -------
 
-  function startVoice() {
-    const sample = voiceValueForTask(currentTaskId);
-    if (!sample || !currentTask) return;
-    setVoiceState("listening");
-    emit("guest", "voice_started", "Microphone tapped (simulated - nothing is recorded)", currentTaskId);
-    window.setTimeout(() => {
-      setVoiceState("heard");
-      setHeardText(currentTask.voiceSample ?? sample.value);
-      setWorking((prev) => ({ ...prev, [sample.field]: sample.value }));
-      emit("system", "voice_transcript_sanitized", `Heard: "${currentTask.voiceSample ?? sample.value}"`, currentTaskId);
-      emit("assistant", "field_proposed", "Proposed value shown in editable confirmation card", currentTaskId);
-    }, 1400);
-  }
+  /**
+   * The one path from voice into booking state. Voice never writes here
+   * directly: the guest has already confirmed the value in the panel's
+   * editable card, and the deterministic Continue action still commits it,
+   * exactly as it does for a typed answer.
+   */
+  const applyVoiceConfirmedValue = useCallback(
+    (taskId: string, field: string, value: string) => {
+      const workingField = workingFieldForVoiceField(field);
+      if (!workingField) return;
+      if (taskId !== currentTaskId) {
+        emit(
+          "system",
+          "voice_value_deferred",
+          `Voice proposed a value for '${taskId}' while '${currentTaskId}' is active; it was not applied`,
+          currentTaskId
+        );
+        return;
+      }
+      setWorking((prev) => ({ ...prev, [workingField]: value }));
+      emit(
+        "guest",
+        "field_confirmed_by_voice",
+        "Guest confirmed a voice-proposed value in the editable card",
+        currentTaskId
+      );
+    },
+    [currentTaskId, emit]
+  );
+
+  const emitVoiceJournalEvent = useCallback(
+    (actor: "guest" | "assistant" | "system", eventType: string, detail: string) => {
+      emit(actor, eventType, detail, currentTaskId);
+    },
+    [emit, currentTaskId]
+  );
 
   // --- Side questions -------------------------------------------------------
 
@@ -1645,7 +1690,6 @@ export const BookingFlowExperience = forwardRef<
     setSheet("none");
     setTaskError("");
     setVoiceMode(false);
-    setVoiceState("idle");
     setServerDraftId(null);
     setServerDraftVersion(0);
     setServerFallbackKey(null);
@@ -1792,8 +1836,6 @@ export const BookingFlowExperience = forwardRef<
         savedFlash={savedFlash}
         emailConfirmed={emailConfirmed}
         voiceMode={voiceMode}
-        voiceState={voiceState}
-        heardText={heardText}
         onStart={startBooking}
         onContinue={confirmCurrentTask}
         onBackStep={goBackOneTask}
@@ -1809,7 +1851,10 @@ export const BookingFlowExperience = forwardRef<
           setDraft((prev) => ({ ...prev, status: "collecting" }));
           setScreen("task");
         }}
-        onStartVoice={startVoice}
+        serverDraftId={serverDraftId}
+        onVoiceValueConfirmed={applyVoiceConfirmedValue}
+        onVoiceJournalEvent={emitVoiceJournalEvent}
+        onSwitchToTyping={() => setVoiceMode(false)}
         setDraft={setDraft}
         reminderDate={reminderDateLabel()}
         fallbackKey={fallbackKey}
@@ -1891,8 +1936,14 @@ interface FlowContentProps {
   savedFlash: boolean;
   emailConfirmed: boolean;
   voiceMode: boolean;
-  voiceState: "idle" | "listening" | "heard";
-  heardText: string;
+  serverDraftId: string | null;
+  onVoiceValueConfirmed: (taskId: string, field: string, value: string) => void;
+  onVoiceJournalEvent: (
+    actor: "guest" | "assistant" | "system",
+    eventType: string,
+    detail: string
+  ) => void;
+  onSwitchToTyping: () => void;
   reminderDate: string;
   onStart: () => void;
   onContinue: () => void;
@@ -1906,7 +1957,6 @@ interface FlowContentProps {
   onEditFromReview: (taskId: string) => void;
   onResume: () => void;
   onBackFromHelp: () => void;
-  onStartVoice: () => void;
   setDraft: React.Dispatch<React.SetStateAction<MockDraft>>;
   fallbackKey: string;
   callSignal: CallSignal | null;
@@ -2106,8 +2156,9 @@ function LandingScreen({
 function TaskScreen(props: FlowContentProps) {
   const {
     deal, draft, tasks, currentTask, confirmedCount, working, setWorking, taskError, submitting, savedFlash,
-    emailConfirmed, voiceMode, voiceState, heardText, onContinue, onBackStep, onDefer, onOpenOptions,
-    onOpenQuestion, onOpenPause, onSubmitReview, onRestart, onEditFromReview, onStartVoice, setDraft,
+    emailConfirmed, voiceMode, onContinue, onBackStep, onDefer, onOpenOptions,
+    onOpenQuestion, onOpenPause, onSubmitReview, onRestart, onEditFromReview, setDraft,
+    serverDraftId, onVoiceValueConfirmed, onVoiceJournalEvent, onSwitchToTyping,
   } = props;
 
   const errorRef = useRef<HTMLDivElement>(null);
@@ -2189,26 +2240,14 @@ function TaskScreen(props: FlowContentProps) {
         )}
 
         {voiceMode && supportsVoice && !isReview && (
-          <div className="mt-3 rounded-xl bg-white p-3 text-center" style={{ border: `1px solid ${BORDER}` }}>
-            {voiceState === "listening" ? (
-              <p className="text-[13px] font-semibold" style={{ color: GOLD }}>
-                Listening... speak now (simulated)
-              </p>
-            ) : voiceState === "heard" ? (
-              <p className="text-[12px]" style={{ color: MUTED }}>
-                Heard: "{heardText}" - check the box below, edit if needed, then Continue.
-              </p>
-            ) : (
-              <button
-                type="button"
-                onClick={onStartVoice}
-                className="mx-auto rounded-full px-5 py-2.5 text-[13px] font-bold text-white"
-                style={{ background: NAVY, minHeight: 44 }}
-              >
-                Tap to speak
-              </button>
-            )}
-          </div>
+          <BookingVoicePanel
+            dealId={deal.dealId}
+            bookingDraftId={serverDraftId}
+            currentTaskId={currentTask.id}
+            onValueConfirmed={onVoiceValueConfirmed}
+            onJournalEvent={onVoiceJournalEvent}
+            onSwitchToTyping={onSwitchToTyping}
+          />
         )}
 
         <div className="mt-4">

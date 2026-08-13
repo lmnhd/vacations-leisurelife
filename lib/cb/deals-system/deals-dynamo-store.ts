@@ -40,8 +40,13 @@ const SK = "METADATA";
 // server instance. Any write through this module clears the cache, so
 // operator flows read their own writes immediately; cross-instance staleness
 // is bounded by the TTL.
-//   DEALS_STORE_CACHE_TTL_MS: override the window (default 60s; "0" disables).
-const CACHE_TTL_MS = Number(process.env.DEALS_STORE_CACHE_TTL_MS ?? "60000");
+// Raised from 60s to 5min on 2026-08-01: the curated-deals dashboard refreshed
+// on the same 60s cadence, so nearly every refresh missed the cache and paid
+// for a full Scan. Writes through this module still clear the cache, so
+// operators read their own writes immediately regardless of the TTL; a longer
+// window only delays picking up changes made by another process.
+//   DEALS_STORE_CACHE_TTL_MS: override the window (default 5min; "0" disables).
+const CACHE_TTL_MS = Number(process.env.DEALS_STORE_CACHE_TTL_MS ?? "300000");
 const readCache = new Map<string, { at: number; value: unknown }>();
 
 function cacheGet<T>(key: string): T | undefined {
@@ -119,9 +124,11 @@ async function sendWithThrottleRetry<T>(send: () => Promise<T>, label: string): 
   }
 }
 
-async function getItem<T>(pk: string): Promise<T | null> {
-  const cached = cacheGet<T | null>(`get:${pk}`);
-  if (cached !== undefined) return cached;
+async function getItem<T>(pk: string, options: { fresh?: boolean } = {}): Promise<T | null> {
+  if (!options.fresh) {
+    const cached = cacheGet<T | null>(`get:${pk}`);
+    if (cached !== undefined) return cached;
+  }
   try {
     const response = await sendWithThrottleRetry(
       () => chatDynamoDocumentClient.send(new GetCommand({ TableName: TABLE_NAME, Key: { PK: pk, SK } })),
@@ -179,9 +186,14 @@ async function deleteItem(pk: string): Promise<void> {
 }
 
 /** Paginated scan for every item whose PK starts with `prefix` and SK === METADATA. */
-async function scanByPrefix<T>(prefix: string): Promise<T[]> {
-  const cached = cacheGet<T[]>(`scan:${prefix}`);
-  if (cached !== undefined) return cached;
+async function scanByPrefix<T>(
+  prefix: string,
+  options: { fresh?: boolean } = {}
+): Promise<T[]> {
+  if (!options.fresh) {
+    const cached = cacheGet<T[]>(`scan:${prefix}`);
+    if (cached !== undefined) return cached;
+  }
   try {
     const items: T[] = [];
     let lastEvaluatedKey: Record<string, unknown> | undefined;
@@ -356,12 +368,17 @@ export async function deleteDealTripManifestRecord(id: string): Promise<void> {
 
 // ── Deal Funnel Syntheses ────────────────────────────────────────────────────
 
-export async function getDealFunnelSynthesis(id: string): Promise<DealFunnelSynthesis | null> {
-  return getItem<DealFunnelSynthesis>(`SYNTHESIS#${id}`);
+export async function getDealFunnelSynthesis(
+  id: string,
+  options: { fresh?: boolean } = {}
+): Promise<DealFunnelSynthesis | null> {
+  return getItem<DealFunnelSynthesis>(`SYNTHESIS#${id}`, options);
 }
 
-export async function listDealFunnelSyntheses(): Promise<DealFunnelSynthesis[]> {
-  return scanByPrefix<DealFunnelSynthesis>("SYNTHESIS#");
+export async function listDealFunnelSyntheses(
+  options: { fresh?: boolean } = {}
+): Promise<DealFunnelSynthesis[]> {
+  return scanByPrefix<DealFunnelSynthesis>("SYNTHESIS#", options);
 }
 
 export async function upsertDealFunnelSynthesisRecord(

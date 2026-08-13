@@ -7,7 +7,8 @@
  *
  * POST { action: "plan", synthesisId }
  *   -> build a fresh DealMetaDistributionPlan (destination url, caption,
- *      ready cards, resolved Meta targeting) without dispatching.
+ *      ready cards, resolved Meta targeting), persist it for review, and do
+ *      not dispatch anything.
  *
  * POST { action: "dispatch", synthesisId, mode: "simulate" | "live" }
  *   -> build the plan and dispatch it. "simulate" persists a "planned"
@@ -20,6 +21,7 @@ import { NextResponse } from "next/server";
 
 import {
   dispatchDealMetaDistribution,
+  doesDealMetaDistributionPlanMatchSynthesis,
   getCuratedDeal,
   getDealMetaAdSynthesis,
   loadDealMetaAdSynthesisCache,
@@ -105,7 +107,10 @@ export async function POST(request: Request) {
   if (action === "plan") {
     try {
       const plan = await planDealMetaDistribution(synthesis, deal);
-      return NextResponse.json({ ok: true, plan });
+      const distribution = await dispatchDealMetaDistribution(synthesis, plan, "simulate");
+      const cache = upsertDealMetaDistribution(loadDealMetaDistributionCache(), distribution);
+      saveDealMetaDistributionCache(cache);
+      return NextResponse.json({ ok: true, plan, distribution });
     } catch (error) {
       return NextResponse.json(
         { ok: false, error: error instanceof Error ? error.message : String(error) },
@@ -123,7 +128,25 @@ export async function POST(request: Request) {
           ? "organic_page_only"
           : "simulate";
     try {
-      const plan = await planDealMetaDistribution(synthesis, deal);
+      const savedDistribution = loadDealMetaDistributionCache().distributions.find(
+        (distribution) => distribution.id === synthesisId
+      );
+      if (!savedDistribution) {
+        return NextResponse.json(
+          { ok: false, error: "Build and review a Step 9 plan before dispatching." },
+          { status: 409 }
+        );
+      }
+      const plan = savedDistribution.plan;
+      if (!doesDealMetaDistributionPlanMatchSynthesis(plan, synthesis)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "The saved Step 9 plan no longer matches the ready carousel cards. Build and review a new plan before dispatching.",
+          },
+          { status: 409 }
+        );
+      }
       const distribution = await dispatchDealMetaDistribution(synthesis, plan, mode);
       const cache = upsertDealMetaDistribution(loadDealMetaDistributionCache(), distribution);
       saveDealMetaDistributionCache(cache);

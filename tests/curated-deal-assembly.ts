@@ -30,6 +30,8 @@ import {
   type CbPromoIntelligenceRecord,
   type CuratedOdysseusDeal,
   type DealAdCopy,
+  type DealFunnelSynthesis,
+  type DealMetaAdSynthesis,
   type DealTripManifest,
 } from "../lib/cb/deals-system";
 import { installDealsAiStub } from "./deals-ai-stub";
@@ -392,6 +394,83 @@ check(
     "Seattle departures"
   )
 );
+
+console.log("\nExact creative handoff:");
+const handoffAdCopy: DealAdCopy = {
+  ...manifestAssemblyAdCopy,
+  selectedVariantIndex: 1,
+  variants: [
+    manifestAssemblyAdCopy.variants[0],
+    {
+      ...manifestAssemblyAdCopy.variants[0],
+      variantLabel: "Selected pacing angle",
+      headline: "Selected operator headline",
+    },
+  ],
+};
+const handoffFunnel = {
+  id: "funnel-adcopy-alaska-edge",
+  dealId: "1543052",
+  sourceAdCopyId: handoffAdCopy.id,
+  sailingAngleTitle: "Selected pacing angle",
+  landingPage: { heroHeadline: "Selected landing page" },
+  heroImageId: "hero-reviewed",
+  galleryIds: [],
+  candidates: [
+    {
+      id: "hero-reviewed",
+      imageUrl: "https://example.test/reviewed-hero.jpg",
+      thumbnailUrl: "https://example.test/reviewed-hero-thumb.jpg",
+      provenance: "operator_supplied",
+      category: "hero",
+    },
+  ],
+} as unknown as DealFunnelSynthesis;
+const handoffMeta = {
+  id: handoffFunnel.id,
+  dealId: "1543052",
+  sourceFunnelSynthesisId: handoffFunnel.id,
+  sailingAngleTitle: "Selected pacing angle",
+  cards: [0, 1, 2, 3].map((cardIndex) => ({
+    cardIndex,
+    headline: `Reviewed card ${cardIndex + 1}`,
+    primaryText: "Reviewed primary text",
+    status: "ready",
+    imageUrl: `https://example.test/reviewed-card-${cardIndex + 1}.jpg`,
+  })),
+} as unknown as DealMetaAdSynthesis;
+const handoffExisting: CuratedOdysseusDeal = {
+  ...assembledFromManifest,
+  linkHealth: { status: "valid", lastVerifiedAtIso: GEN_AT },
+  operatorVisibility: { pinned: true },
+};
+const handedOff = assembleCuratedDealFromManifest({
+  manifest: manifestAssemblyManifest,
+  adCopy: handoffAdCopy,
+  existingDeal: handoffExisting,
+  funnelSynthesis: handoffFunnel,
+  metaAdSynthesis: handoffMeta,
+  generatedAtIso: GEN_AT,
+});
+check("selected variant becomes the public headline", handedOff.packaging.headline === "Selected operator headline");
+check("exact funnel id is stamped for public reads", handedOff.publicContentRefs?.funnelSynthesisId === handoffFunnel.id);
+check("exact Meta id is stamped for public reads", handedOff.publicContentRefs?.metaAdSynthesisId === handoffMeta.id);
+check("reviewed funnel and four ready cards produce ready media", handedOff.mediaPlan?.readiness === "ready");
+check("valid link verification survives handoff", handedOff.linkHealth.status === "valid");
+check("operator homepage visibility survives handoff", handedOff.operatorVisibility?.pinned === true);
+check("handoff does not silently waive media", handedOff.operatorApproval?.textOnlyLaunchWaived === false);
+let rejectedMismatchedFunnel = false;
+try {
+  assembleCuratedDealFromManifest({
+    manifest: manifestAssemblyManifest,
+    adCopy: handoffAdCopy,
+    funnelSynthesis: { ...handoffFunnel, sourceAdCopyId: "another-ad-copy" },
+    metaAdSynthesis: handoffMeta,
+  });
+} catch {
+  rejectedMismatchedFunnel = true;
+}
+check("mismatched funnel is rejected before assembly", rejectedMismatchedFunnel);
 
 // --- THE CORE GATE: valid link is NOT enough to publish -----------------------
 console.log("\nApproval gate (core safety):");

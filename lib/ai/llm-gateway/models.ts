@@ -28,6 +28,10 @@ export enum ModelName {
   LLAMA_4_MAVERICK = "llama-4-maverick",
   CLAUDE_HAIKU = "claude-4.5-haiku",
 
+  // REALTIME · Speech-to-speech voice transports (WebRTC + SIP)
+  REALTIME_QUALITY = "realtime-quality",
+  REALTIME_FAST = "realtime-fast",
+
   // LEGACY · Low-Complexity Website Tasks
   LEGACY_CHAT = "legacy-chat",
   LEGACY_EXTRACTION = "legacy-extraction",
@@ -75,6 +79,10 @@ export const TASK_MODEL_MAP: Record<string, ModelName> = {
   operator_email_polish: ModelName.LEGACY_FALLBACK,
   /** Memory / preference mining extraction */
   memory_extraction: ModelName.GPT_5_INSTANT,
+  /** Browser + telephone speech-to-speech, quality profile */
+  voice_realtime: ModelName.REALTIME_QUALITY,
+  /** Browser + telephone speech-to-speech, low-latency/low-cost profile */
+  voice_realtime_fast: ModelName.REALTIME_FAST,
   /** Cruise booking simulation / evaluation */
   simulation: ModelName.CLAUDE_4_SONNET,
   /** Creative campaign briefs */
@@ -198,6 +206,33 @@ export const MODEL_METADATA: Record<ModelName, ModelConfig> = {
     contextWindow: 200_000,
     lastVerified: "2026-07-25",
     scores: { coding: 60, logic: 72, speed: 96, context: 85 },
+  },
+
+  // ── REALTIME ───────────────────────────────────────────────────────────────
+  //
+  // Speech-to-speech transports (OpenAI Realtime over WebRTC and SIP). These
+  // are NOT reachable through callLLM: the Realtime transports consume the
+  // apiId directly from this registry so raw Realtime model ids stay in one
+  // auditable place, exactly like every other provider id in the app.
+
+  [ModelName.REALTIME_QUALITY]: {
+    provider: "openai",
+    apiId: process.env.OPENAI_REALTIME_MODEL?.trim() || "gpt-realtime-2.1",
+    maxTokens: 4_096,
+    defaultTemp: 0.7,
+    contextWindow: 128_000,
+    lastVerified: "2026-08-13",
+    scores: { coding: 55, logic: 80, speed: 92, context: 80 },
+  },
+
+  [ModelName.REALTIME_FAST]: {
+    provider: "openai",
+    apiId: process.env.OPENAI_REALTIME_FAST_MODEL?.trim() || "gpt-realtime-2.1-mini",
+    maxTokens: 4_096,
+    defaultTemp: 0.7,
+    contextWindow: 128_000,
+    lastVerified: "2026-08-13",
+    scores: { coding: 45, logic: 70, speed: 97, context: 80 },
   },
 
   // ── LEGACY ─────────────────────────────────────────────────────────────────

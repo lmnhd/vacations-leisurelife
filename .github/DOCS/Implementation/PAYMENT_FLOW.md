@@ -1,3 +1,12 @@
+> [!CAUTION]
+> **OBSOLETE WHERE IT CONFLICTS WITH `AI_POLICY.md` (August 2026).** Plan A below
+> (VGS/Skyflow card vaulting and automated card entry into supplier portals)
+> contradicts the canonical rule that Leisure Life never collects payments locally
+> and the current Booking Assistant plan. Do not implement it. All money flows
+> guest -> Cruise Brothers directly. In voice/chat experiences, payment appears only
+> as the labeled `Secure supplier checkout - simulated` handoff (see
+> `.github/DOCS/Implementation/VOICE_ASSISTANT/VOICE_ASSISTANT_CANONICAL_PLAN.md`).
+
 Plan A: The Agent Orchestration App (The "Middle-Man" Tech)
 This architecture allows you to capture client data securely and "push" it to the cruise line’s systems using your existing credentials.
 

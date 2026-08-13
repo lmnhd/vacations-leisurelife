@@ -508,7 +508,7 @@ export function BookingAssistantOperatorWorkspace({ embedded = false }: { embedd
     activeDraftIdRef.current = activeDraftId;
   }, [activeDraftId]);
 
-  const pollQueue = useCallback(async () => {
+  const pollQueue = useCallback(async (): Promise<QueueCard[] | null> => {
     setQueueLoading(true);
     setQueueError(null);
     try {
@@ -518,15 +518,24 @@ export function BookingAssistantOperatorWorkspace({ embedded = false }: { embedd
         const cards = 'result' in data ? data.result.cards : data.cards;
         setQueue(cards);
         log(`Queue polled: ${cards.length} cards`);
-      } else {
-        setQueueError(data.error);
+        return cards;
       }
+      setQueueError(data.error);
+      return null;
     } catch (err) {
       setQueueError(err instanceof Error ? err.message : 'Queue poll failed');
+      return null;
     } finally {
       setQueueLoading(false);
     }
   }, [log]);
+
+  // Lets the auto-poll loop call the latest pollQueue without re-running its
+  // effect (and resetting backoff) on every render.
+  const pollQueueRef = useRef(pollQueue);
+  useEffect(() => {
+    pollQueueRef.current = pollQueue;
+  }, [pollQueue]);
 
   const loadAvailability = useCallback(async () => {
     try {
@@ -616,11 +625,66 @@ export function BookingAssistantOperatorWorkspace({ embedded = false }: { embedd
     void loadDetail(activeDraftId);
   }, [activeDraftId, loadDetail]);
 
+  // Auto-poll: pauses when the tab is hidden, never overlaps requests, and
+  // backs off when the queue is quiet. A tab left open overnight used to bill
+  // a full-rate poll every 5s indefinitely.
   useEffect(() => {
     if (!autoPoll) return;
-    const interval = setInterval(pollQueue, 5000);
-    return () => clearInterval(interval);
-  }, [autoPoll, pollQueue]);
+
+    // Deliberately slow. Pushover handles time-critical alerts, so the queue
+    // only needs to stay reasonably fresh for a human watching the screen.
+    const ACTIVE_MS = 30_000;
+    const IDLE_MS = 180_000;
+    const IDLE_AFTER_UNCHANGED_POLLS = 3;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
+    let inFlight = false;
+    let unchangedPolls = 0;
+    let lastSignature = '';
+
+    const schedule = (delayMs: number) => {
+      if (cancelled) return;
+      timer = setTimeout(runPoll, delayMs);
+    };
+
+    const runPoll = async () => {
+      if (cancelled) return;
+      if (inFlight || document.visibilityState !== 'visible') {
+        schedule(ACTIVE_MS);
+        return;
+      }
+      inFlight = true;
+      try {
+        const cards = await pollQueueRef.current();
+        const signature = (cards ?? [])
+          .map((card) => `${card.bookingDraftId}:${card.version}:${card.status}`)
+          .join('|');
+        unchangedPolls = signature === lastSignature ? unchangedPolls + 1 : 0;
+        lastSignature = signature;
+      } finally {
+        inFlight = false;
+      }
+      schedule(unchangedPolls >= IDLE_AFTER_UNCHANGED_POLLS ? IDLE_MS : ACTIVE_MS);
+    };
+
+    // Poll immediately on focus so returning to the tab feels instant.
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible' || cancelled) return;
+      unchangedPolls = 0;
+      if (timer) clearTimeout(timer);
+      void runPoll();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    void runPoll();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [autoPoll]);
 
   const handleLookup = useCallback(async () => {
     if (!lookupInput.trim()) return;

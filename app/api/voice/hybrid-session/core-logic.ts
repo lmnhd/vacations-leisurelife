@@ -9,8 +9,16 @@
  *   Browser mic → Realtime STT → transcript → /api/chat → reply text → Realtime TTS → speaker
  */
 
+/**
+ * DEPRECATED PATH - see app/api/voice/session/core-logic.ts for the full
+ * rationale. Retained behind LEGACY_VOICE_SESSION_ENABLED only so the
+ * /tests/voice-hybrid console keeps working during migration validation.
+ * The supported path is POST /api/conversation/launch.
+ */
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const REALTIME_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
+const REALTIME_MODEL = process.env.OPENAI_LEGACY_REALTIME_MODEL?.trim() || 'gpt-4o-realtime-preview-2024-12-17';
+const LEGACY_VOICE_SESSION_ENABLED =
+    process.env.LEGACY_VOICE_SESSION_ENABLED === 'true';
 
 interface HybridSessionRequestBody {
     voice?: string;
@@ -33,6 +41,17 @@ const STT_TTS_ONLY_INSTRUCTIONS = [
 export async function handleHybridSessionRequest(
     body: Record<string, unknown>
 ): Promise<{ status: number; data: HybridSessionResponseData }> {
+    if (!LEGACY_VOICE_SESSION_ENABLED) {
+        return {
+            status: 410,
+            data: {
+                error:
+                    'This hybrid voice endpoint is retired. Use POST /api/conversation/launch. ' +
+                    'Set LEGACY_VOICE_SESSION_ENABLED=true to re-enable it for migration testing.',
+            },
+        };
+    }
+
     if (!OPENAI_API_KEY) {
         return { status: 500, data: { error: 'OPENAI_API_KEY not configured' } };
     }

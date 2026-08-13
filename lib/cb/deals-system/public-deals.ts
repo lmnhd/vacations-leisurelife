@@ -228,7 +228,9 @@ async function loadFunnelSynthesisForDeal(deal: CuratedOdysseusDeal): Promise<De
   const refId = deal.publicContentRefs?.funnelSynthesisId;
   if (refId) {
     try {
-      const synthesis = await getDealFunnelSynthesis(refId);
+      // Funnel image selections are operator-controlled and must appear on the
+      // public Deal immediately after save, even across separate server bundles.
+      const synthesis = await getDealFunnelSynthesis(refId, { fresh: true });
       if (synthesis && findDealFunnelSynthesisForDeal(deal, [synthesis])) return synthesis;
     } catch {
       // fall through to the scan
@@ -237,7 +239,7 @@ async function loadFunnelSynthesisForDeal(deal: CuratedOdysseusDeal): Promise<De
   }
   let syntheses: DealFunnelSynthesis[];
   try {
-    syntheses = await listDealFunnelSyntheses();
+    syntheses = await listDealFunnelSyntheses({ fresh: true });
   } catch {
     return undefined;
   }

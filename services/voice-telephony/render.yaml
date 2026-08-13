@@ -1,0 +1,50 @@
+# Render deployment definition for the Leisure Life telephony control service.
+#
+# This file is a DEFINITION ONLY. No agent creates, deploys, or modifies a
+# Render service; Nathaniel applies it manually. See
+# .github/DOCS/Implementation/VOICE_ASSISTANT/TELEPHONY_DEPLOYMENT.md
+#
+# The service carries no call audio: OpenAI Realtime SIP handles the media.
+# This process only receives the signed incoming-call webhook, accepts or
+# rejects the call with a server-controlled configuration, and holds a
+# sideband WebSocket for tools, transfer, and hangup.
+
+services:
+  - type: web
+    name: leisure-life-voice-telephony
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: services/voice-telephony
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Standard OpenAI API key. Server-side only; never sent to a browser.
+      - key: OPENAI_API_KEY
+        sync: false
+      # Webhook signing secret from the OpenAI project webhook configuration.
+      - key: OPENAI_WEBHOOK_SECRET
+        sync: false
+      # Base URL of the Leisure Life Next.js app, used for tool execution and
+      # the secure web continuation links the agent offers callers.
+      - key: LEISURE_LIFE_APP_URL
+        sync: false
+      # Approved human transfer destination in E.164, e.g. +14015551234.
+      # Leave unset to disable transfer entirely (the tool then reports
+      # failure honestly rather than pretending to transfer).
+      - key: HUMAN_TRANSFER_NUMBER
+        sync: false
+      # Business hours in the operator's timezone, 24h local clock.
+      - key: BUSINESS_HOURS_START
+        value: "9"
+      - key: BUSINESS_HOURS_END
+        value: "20"
+      - key: BUSINESS_TIMEZONE
+        value: America/New_York
+      # Hard call ceiling in seconds; the agent wraps up before this.
+      - key: MAX_CALL_SECONDS
+        value: "900"

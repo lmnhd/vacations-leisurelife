@@ -34,6 +34,8 @@ import {
 import {
   DraftVersionConflictError,
   InvalidTransitionError,
+  backfillQueueCardFields,
+  buildQueueDealSummary,
   getDraft,
   lookupDraftByCallKeyHmac,
   queryOperatorQueue,
@@ -81,47 +83,84 @@ export interface PollQueueInput {
   statuses: BookingDraftStatus[];
 }
 
+/**
+ * Polls the operator queue.
+ *
+ * Cards are built from the projected GSI1 rows — one query per status, no
+ * per-draft reads in the steady state. The card fields are denormalized onto
+ * META at write time, so a poll costs O(statuses) queries instead of the former
+ * O(statuses x 4) queries plus a full-partition read and two KMS decrypts per
+ * card.
+ *
+ * Two cases still need a follow-up read, both self-limiting:
+ *  - `human_requested` cards need the callback window (a cheap projected point
+ *    read), and those are rare.
+ *  - Drafts created before the denormalized fields existed have no cached name.
+ *    Those fall back to the full read *and heal themselves* by writing the
+ *    values onto META, so each legacy draft pays the old cost at most once.
+ *    Guest identity is never sacrificed to save a read.
+ */
 export async function pollOperatorQueue(
   clients: DraftStoreClients,
   config: OperatorServiceConfig,
   input: PollQueueInput
 ): Promise<OperatorQueueCard[]> {
-  const allResults: OperatorQueueCard[] = [];
+  const rowsPerStatus = await Promise.all(
+    input.statuses.map((status) => queryOperatorQueue(clients, config, status))
+  );
 
-  for (const status of input.statuses) {
-    const rows = await queryOperatorQueue(clients, config, status);
+  const allResults: OperatorQueueCard[] = [];
+  const enrichments: Array<Promise<void>> = [];
+
+  for (const rows of rowsPerStatus) {
     for (const row of rows) {
       const card = queueRowToCard(row);
-      // Enrich with contact info (masked) and deal summary
-      try {
-        const draft = await getDraft(clients, config, row.draftId);
-        if (draft) {
-          card.version = draft.metadata.version;
-          card.firstName = draft.contact.firstName;
-          card.dealSummary = `${draft.dealSnapshot.cruiseLine} ${draft.dealSnapshot.ship} — ${draft.dealSnapshot.sailingDateIso.slice(0, 10)}`;
-          card.callKeyState = draft.fallbackCallKey?.state;
-          card.assignedOperatorId = draft.metadata.assignedOperatorId;
-          card.claimLeaseExpiresAtIso = draft.metadata.claimLeaseExpiresAtIso;
-          card.activeCallAttemptId = draft.metadata.activeCallAttemptId;
-          card.callIntentExpiresAtIso = draft.metadata.callIntentExpiresAtIso;
-          if (draft.metadata.status === "human_requested") {
-            const callback = await clients.dynamo.send(new GetItemCommand({
-              TableName: config.tableName,
-              Key: {
-                PK: { S: `DRAFT#${row.draftId}` },
-                SK: { S: "CALLBACK_ACTIVE" },
-              },
-              ProjectionExpression: "callbackWindowLabel",
-            }));
-            card.callbackWindowLabel = callback.Item?.callbackWindowLabel?.S;
-          }
-        }
-      } catch {
-        // Skip enrichment if draft can't be loaded
+      if (row.status === "human_requested") {
+        enrichments.push(
+          (async () => {
+            try {
+              const callback = await clients.dynamo.send(new GetItemCommand({
+                TableName: config.tableName,
+                Key: {
+                  PK: { S: `DRAFT#${row.draftId}` },
+                  SK: { S: "CALLBACK_ACTIVE" },
+                },
+                ProjectionExpression: "callbackWindowLabel",
+              }));
+              card.callbackWindowLabel = callback.Item?.callbackWindowLabel?.S;
+            } catch {
+              // Card still renders without the callback window label.
+            }
+          })()
+        );
       }
+
+      if (!row.firstName || !row.dealSummary) {
+        enrichments.push(
+          (async () => {
+            try {
+              const draft = await getDraft(clients, config, row.draftId);
+              if (!draft) return;
+              const firstName = draft.contact.firstName;
+              const dealSummary = buildQueueDealSummary(draft.dealSnapshot);
+              card.firstName = firstName;
+              card.dealSummary = dealSummary;
+              await backfillQueueCardFields(clients, config, row.draftId, {
+                firstName,
+                dealSummary,
+              });
+            } catch {
+              // Leave the card as-is; the next poll retries the backfill.
+            }
+          })()
+        );
+      }
+
       allResults.push(card);
     }
   }
+
+  await Promise.all(enrichments);
 
   // Sort: urgent first, then by updatedAtIso descending
   allResults.sort((a, b) => {
@@ -138,15 +177,20 @@ export async function pollOperatorQueue(
 function queueRowToCard(row: QueueQueryResult): OperatorQueueCard {
   return {
     bookingDraftId: row.draftId,
-    version: 0,
-    firstName: "",
-    dealSummary: "",
+    version: row.version,
+    firstName: row.firstName,
+    dealSummary: row.dealSummary,
     status: row.status,
     completionPct: 0,
     urgency: row.urgency,
     lastActivityIso: row.updatedAtIso,
     missingSections: [],
     channels: [],
+    assignedOperatorId: row.assignedOperatorId,
+    claimLeaseExpiresAtIso: row.claimLeaseExpiresAtIso,
+    callKeyState: row.callKeyState as OperatorQueueCard["callKeyState"],
+    activeCallAttemptId: row.activeCallAttemptId,
+    callIntentExpiresAtIso: row.callIntentExpiresAtIso,
   };
 }
 

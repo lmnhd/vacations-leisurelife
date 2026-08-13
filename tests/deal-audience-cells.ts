@@ -4,8 +4,9 @@
  * Asserts the persona-cell targeting engine:
  *   - AND-layered flexible_spec stacks (identity x intent x behavior)
  *   - strict cells disable Advantage+ expansion and honor age bands
- *   - Meta exclusions flow from the blueprint into the spec
+ *   - unsupported detailed-interest exclusions never enter a Meta spec
  *   - reach-estimate validation with one relaxation pass for narrow cells
+ *   - persona intent signals consolidate into one Advantage+ prospecting set
  *   - deal-loyalty filtering of cross-product cruise-line interests
  *   - deterministic fallback blueprints when AI decomposition fails
  *   - offline plan builds keep working with a fallback matrix
@@ -15,9 +16,13 @@
  */
 
 import {
+  buildDealAllowedInterestNames,
   buildDealAudienceCellMatrix,
   buildFallbackAudienceCellBlueprints,
+  compactCellQueries,
+  consolidateDealMetaProspectingTargeting,
   dispatchDealMetaDistribution,
+  hasQueryNameAffinity,
   planDealMetaDistribution,
   slugifyAudienceCellLabel,
   MAX_AUDIENCE_CELLS,
@@ -160,6 +165,8 @@ const INTEREST_IDS = new Map<string, DealAudienceCellResolvedEntry>([
   ["theme parks", { id: "i-tp", name: "Theme parks", type: "interests", sourceQuery: "Theme parks" }],
   ["budget travel", { id: "i-budget", name: "Budget travel", type: "interests", sourceQuery: "budget travel" }],
   ["family reunion", { id: "i-reunion", name: "Family reunion", type: "interests", sourceQuery: "Family reunion" }],
+  // Deliberately absurd fuzzy match, mirroring live Meta search behavior.
+  ["family beach vacation", { id: "i-junk", name: "Who Wants to Be a Millionaire?", type: "interests", sourceQuery: "family beach vacation" }],
 ]);
 
 function makeDeps(overrides: Partial<DealAudienceCellDependencies>): DealAudienceCellDependencies {
@@ -225,7 +232,7 @@ async function main(): Promise<void> {
   check("slugify strips punctuation without regex", slugifyAudienceCellLabel("Empty-Nest, Culinary Travelers!") === "empty-nest-culinary-travelers");
   check("slugify never returns empty", slugifyAudienceCellLabel("***") === "cell");
 
-  console.log("\nAI matrix: AND layers, strict mode, exclusions, relaxation");
+  console.log("\nAI matrix: AND layers, strict mode, exclusion safety, relaxation");
   const matrix = await buildDealAudienceCellMatrix(deal, synthesis, makeDeps({
     decompose: async () => [strictCellBlueprint, assistedCellBlueprint],
   }));
@@ -262,10 +269,13 @@ async function main(): Promise<void> {
   const strictAutomation = strictCell.targeting.targeting_automation as Record<string, unknown>;
   check("strict cell disables Advantage+ audience expansion", strictAutomation.advantage_audience === 0);
   check("strict cell honors age band", strictCell.targeting.age_min === 50 && strictCell.targeting.age_max === 65);
-  const strictExclusions = strictCell.targeting.exclusions as { interests?: Array<{ id: string }> };
   check(
-    "strict cell excludes wrong-fit budget audience",
-    strictExclusions?.interests?.some((entry) => entry.id === "i-budget") === true,
+    "detailed-interest exclusions never enter targeting",
+    strictCell.targeting.exclusions === undefined && strictCell.exclusions.length === 0,
+  );
+  check(
+    "ignored exclusion ideas direct the operator to Custom Audiences",
+    strictCell.warnings.some((warning) => warning.includes("Custom Audience")),
   );
 
   const assistedSpec = assistedCell.targeting.flexible_spec as Array<Record<string, unknown>>;
@@ -275,9 +285,122 @@ async function main(): Promise<void> {
   check("assisted cell reach verdict ok", assistedCell.reach?.verdict === "ok");
   check(
     "unresolved identity query is tracked, not fatal",
-    assistedCell.layers.some((layer) => layer.role === "identity" && layer.unresolvedQueries.includes("Unknown Hobby")),
+    assistedCell.layers.some((layer) => layer.role === "identity" && layer.unresolvedQueries.includes("unknown hobby")),
   );
   check("both cells are dispatchable", strictCell.dispatchable && assistedCell.dispatchable);
+
+  console.log("\nConsolidated prospecting targeting");
+  const consolidated = consolidateDealMetaProspectingTargeting(
+    deal,
+    {
+      interestQueries: ["generic travel"],
+      resolvedInterests: [
+        { id: "i-generic", name: "Generic travel", sourceQuery: "generic travel" },
+      ],
+      unresolvedQueries: [],
+      targeting: { geo_locations: { countries: ["US"] } },
+      adSetMode: "dynamic",
+      warnings: [],
+    },
+    matrix,
+  );
+  const consolidatedSpec = consolidated.targeting.flexible_spec as Array<{
+    interests?: Array<{ id: string; name: string }>;
+  }>;
+  const consolidatedAutomation = consolidated.targeting.targeting_automation as Record<string, unknown>;
+  check(
+    "consolidation keeps verified intent interests and drops generic fallback",
+    consolidated.resolvedInterests.some((interest) => interest.id === "i-rc") &&
+      consolidated.resolvedInterests.some((interest) => interest.id === "i-cc") &&
+      !consolidated.resolvedInterests.some((interest) => interest.id === "i-generic"),
+  );
+  check(
+    "consolidation creates one OR suggestion layer",
+    consolidatedSpec.length === 1 && (consolidatedSpec[0].interests?.length ?? 0) === 2,
+  );
+  check(
+    "consolidated prospecting keeps Advantage+ on",
+    consolidatedAutomation.advantage_audience === 1,
+  );
+  check(
+    "consolidation explains that personas remain creative tests",
+    consolidated.warnings.some((warning) => warning.includes("creative tests")),
+  );
+
+  console.log("\nQuery hygiene: compaction + affinity guard");
+  check(
+    "affinity guard rejects absurd fuzzy matches",
+    !hasQueryNameAffinity("family beach vacation", "Who Wants to Be a Millionaire?") &&
+      !hasQueryNameAffinity("port canaveral experience seekers", "Flower"),
+  );
+  check(
+    "affinity guard keeps legitimate fuzzy matches",
+    hasQueryNameAffinity("fine dining", "FineDiningLovers") &&
+      hasQueryNameAffinity("Royal Caribbean", "Royal Caribbean International"),
+  );
+  const compacted = compactCellQueries(
+    [
+      "cozy mystery readers",
+      "Florida-resident families who want a meaningful Disney holiday without another tightly scheduled park trip",
+    ],
+    8,
+  );
+  check(
+    "sentence-length research prose never becomes a raw search query",
+    compacted.includes("cozy mystery readers") &&
+      compacted.every((query) => query.split(" ").length <= 4),
+    compacted.join(" | "),
+  );
+
+  const junkMatrix = await buildDealAudienceCellMatrix(deal, synthesis, makeDeps({
+    decompose: async () => [
+      {
+        ...assistedCellBlueprint,
+        label: "Junk Match Probe",
+        identityInterests: ["family beach vacation"],
+        intentInterests: ["Royal Caribbean"],
+      },
+    ],
+  }));
+  const junkCell = junkMatrix.cells[0];
+  check(
+    "low-affinity resolution is dropped from the layer stack",
+    !JSON.stringify(junkCell.targeting).includes("Millionaire"),
+  );
+  check(
+    "low-affinity drop is explained to the operator",
+    junkCell.warnings.some((w) => w.includes("low-affinity")),
+  );
+  check(
+    "cell survives on its remaining legitimate layer",
+    junkCell.dispatchable &&
+      junkCell.warnings.some((w) => w.includes("Only one layer resolved")),
+  );
+
+  console.log("\nDeal-aware interest allowlist");
+  const disneyDeal: CuratedOdysseusDeal = {
+    ...deal,
+    cruiseFacts: {
+      ...deal.cruiseFacts,
+      cruiseLine: "Disney Cruise Line",
+      shipName: "Disney Fantasy",
+      portsOfCall: ["Port Canaveral, FL", "Castaway Cay", "Cozumel"],
+    },
+  };
+  const allowed = buildDealAllowedInterestNames(disneyDeal);
+  check(
+    "allowlist includes the deal's own line, ship, and ports",
+    allowed.includes("Disney Cruise Line") &&
+      allowed.includes("Disney Fantasy") &&
+      allowed.includes("Castaway Cay") &&
+      allowed.includes("Port Canaveral"),
+    allowed.join(", "),
+  );
+  check(
+    "allowlist keeps the static travel-media names without duplicates",
+    allowed.includes("Cruise Critic") &&
+      allowed.filter((name) => name.toLowerCase() === "cruise critic").length === 1,
+  );
 
   console.log("\nCell cap + duplicate ids");
   const crowded = await buildDealAudienceCellMatrix(deal, synthesis, makeDeps({

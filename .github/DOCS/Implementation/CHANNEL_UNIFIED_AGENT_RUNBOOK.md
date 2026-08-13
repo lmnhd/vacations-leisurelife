@@ -1,5 +1,12 @@
 # Channel Unified Agent Runbook
 
+> [!CAUTION]
+> **NON-AUTHORITATIVE FOR LEISURE LIFE (August 2026).** This runbook is branded for
+> EmperorLinda and describes another product's channel stack. Keep it only as
+> historical reference for the "one agent, many transports" idea. The canonical
+> Leisure Life voice/channel architecture is
+> `.github/DOCS/Implementation/VOICE_ASSISTANT/VOICE_ASSISTANT_CANONICAL_PLAN.md`.
+
 ## Purpose
 This runbook is the permanent guardrail for EmperorLinda so all customer channels (web chat, browser voice, phone voice, SMS) behave as one agent with one control source.
 

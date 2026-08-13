@@ -6,6 +6,17 @@ import { queueCoreLogic } from "./core-logic";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Short read-through cache so overlapping polls — multiple tabs, a refresh
+ * during an in-flight request, or a future second operator — collapse onto one
+ * set of DynamoDB queries. Kept well under the poll interval so the queue still
+ * reflects operator actions promptly.
+ *
+ * BOOKING_QUEUE_CACHE_TTL_MS overrides the window (default 3s; "0" disables).
+ */
+const CACHE_TTL_MS = Number(process.env.BOOKING_QUEUE_CACHE_TTL_MS ?? "3000");
+let queueCache: { at: number; key: string; payload: unknown } | undefined;
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const hostname = request.headers.get("host") ?? undefined;
@@ -29,11 +40,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ? (statusParams.filter((s) => validStatuses.includes(s as never)) as readonly string[])
       : (validStatuses as readonly string[]);
 
+    const cacheKey = `${hostname ?? ""}|${statuses.join(",")}`;
+    if (
+      CACHE_TTL_MS > 0 &&
+      queueCache &&
+      queueCache.key === cacheKey &&
+      Date.now() - queueCache.at <= CACHE_TTL_MS
+    ) {
+      return NextResponse.json({ success: true, result: queueCache.payload });
+    }
+
     const result = await queueCoreLogic({
       clients: ctx.clients,
       config: operatorService,
       statuses: statuses as never,
     });
+
+    if (CACHE_TTL_MS > 0) {
+      queueCache = { at: Date.now(), key: cacheKey, payload: result };
+    }
 
     return NextResponse.json({ success: true, result });
   } catch (error) {

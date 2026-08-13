@@ -56,3 +56,22 @@ Vacation booking platform with cruise and destination management capabilities.
 ## 5. Data Models
 
 See `prisma/schema.prisma` for definitive source.
+
+---
+
+## 6. Voice Assistant (August 2026)
+
+The canonical voice architecture (public `/voice-assistant` showcase, Booking
+Assistant voice mode, and the Twilio/OpenAI Realtime SIP telephone path) is
+documented in `.github/DOCS/Implementation/VOICE_ASSISTANT/VOICE_ASSISTANT_CANONICAL_PLAN.md`.
+Key rules for future work:
+
+- OpenAI Realtime uses the GA client-secret contract (`/v1/realtime/client_secrets`,
+  `/v1/realtime/calls`) with `gpt-realtime-2.1` / `gpt-realtime-2.1-mini` resolved
+  through `lib/ai/llm-gateway`. The GPT-4o Realtime preview is deprecated; do not
+  restore it.
+- All conversations start from a server-validated `ConversationLaunchEnvelope`
+  (`lib/conversation/`); public clients never supply prompt text, skill paths,
+  tools, or context blobs.
+- `Voice_SMS_CHAT.md` and `CHANNEL_UNIFIED_AGENT_RUNBOOK.md` are non-authoritative
+  demo material; `PAYMENT_FLOW.md` Plan A is obsolete.

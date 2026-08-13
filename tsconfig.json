@@ -44,6 +44,7 @@
     "node_modules",
     "scripts/**/*",
     "tests/**/*",
-    "tmp/**/*"
+    "tmp/**/*",
+    "services/**/*"
   ]
 }

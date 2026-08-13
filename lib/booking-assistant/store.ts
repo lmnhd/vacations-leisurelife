@@ -123,6 +123,74 @@ export interface CreateDraftWithArtifactsInput extends CreateDraftInput {
 }
 
 /**
+ * Builds the denormalized queue-card summary stored on META.
+ * Must match the string the operator queue previously derived from the
+ * decrypted DEAL blob, so cards render identically without the read.
+ */
+export function buildQueueDealSummary(deal: DealPriceSnapshot): string {
+  return `${deal.cruiseLine} ${deal.ship} — ${deal.sailingDateIso.slice(0, 10)}`;
+}
+
+/**
+ * Reads just the draft's status/version/owner from META.
+ *
+ * A projected point read — no partition scan, no KMS decrypt — for callers that
+ * only need to know "has this changed yet?". Used by the guest-side call-signal
+ * poll, which previously ran a full getDraft (every item in the partition plus
+ * two decrypts) every 2 seconds to read a single status string.
+ */
+export async function getDraftStatusSummary(
+  clients: DraftStoreClients,
+  config: DraftStoreConfig,
+  draftId: string
+): Promise<{ status: BookingDraftStatus; version: number; personId: string } | null> {
+  const result = await clients.dynamo.send(
+    new GetItemCommand({
+      TableName: config.tableName,
+      Key: { PK: { S: draftPk(draftId) }, SK: { S: "META" } },
+      ProjectionExpression: "#status, #version, personId",
+      ExpressionAttributeNames: { "#status": "status", "#version": "version" },
+    })
+  );
+  const item = result.Item;
+  if (!item) return null;
+  return {
+    status: (item.status as { S?: string })?.S as BookingDraftStatus,
+    version: Number((item.version as { N?: string })?.N ?? "0"),
+    personId: (item.personId as { S?: string })?.S ?? "",
+  };
+}
+
+/**
+ * Writes the denormalized queue-card fields onto an existing META item.
+ *
+ * For drafts created before these fields existed. Deliberately does NOT touch
+ * `version`, `updatedAtIso`, or the GSI keys: this is a cache fill, not a state
+ * change, so it must not bump optimistic-concurrency versions or reorder the
+ * queue. Conditioned on the META item existing.
+ */
+export async function backfillQueueCardFields(
+  clients: DraftStoreClients,
+  config: DraftStoreConfig,
+  draftId: string,
+  fields: { firstName: string; dealSummary: string }
+): Promise<void> {
+  await clients.dynamo.send(
+    new UpdateItemCommand({
+      TableName: config.tableName,
+      Key: { PK: { S: draftPk(draftId) }, SK: { S: "META" } },
+      UpdateExpression:
+        "SET queueFirstName = :firstName, queueDealSummary = :dealSummary",
+      ConditionExpression: "attribute_exists(PK)",
+      ExpressionAttributeValues: {
+        ":firstName": { S: fields.firstName },
+        ":dealSummary": { S: fields.dealSummary },
+      },
+    })
+  );
+}
+
+/**
  * Creates a new draft with META, DEAL, and CONTACT items in a transaction.
  * Fails if a draft with the same ID already exists.
  */
@@ -153,6 +221,8 @@ export async function createDraft(
     dealId: input.dealSnapshot.dealId,
     packageId: input.dealSnapshot.packageId,
     personId: input.personId,
+    queueFirstName: input.contact.firstName,
+    queueDealSummary: buildQueueDealSummary(input.dealSnapshot),
     gsi1pk: `STATUS#${input.initialStatus}`,
     gsi1sk: nowIso,
     gsi2pk: `PERSON#${input.personId}`,
@@ -238,6 +308,8 @@ export async function createDraftWithArtifacts(
     dealId: input.dealSnapshot.dealId,
     packageId: input.dealSnapshot.packageId,
     personId: input.personId,
+    queueFirstName: input.contact.firstName,
+    queueDealSummary: buildQueueDealSummary(input.dealSnapshot),
     gsi1pk: `STATUS#${input.initialStatus}`,
     gsi1sk: nowIso,
     gsi2pk: `PERSON#${input.personId}`,
@@ -1007,51 +1079,90 @@ export interface QueueQueryResult {
   urgency: string;
   updatedAtIso: string;
   personId: string;
+  /**
+   * Card fields read straight off the projected META row. These make the
+   * operator queue self-sufficient — see pollOperatorQueue.
+   */
+  version: number;
+  firstName: string;
+  dealSummary: string;
+  assignedOperatorId?: string;
+  claimLeaseExpiresAtIso?: string;
+  callKeyState?: string;
+  activeCallAttemptId?: string;
+  callIntentExpiresAtIso?: string;
 }
 
 /**
- * Query the operator queue by GSI1 (status#urgency -> updatedAtIso).
- * Pass statusPrefix to filter, e.g. "call_signal_pending" or "ready_to_call_agent".
+ * Attributes the queue needs from the GSI1 META row. Projecting explicitly
+ * keeps read cost proportional to what the card renders rather than to the
+ * full item (which carries every task/flow field).
+ */
+const QUEUE_PROJECTION = [
+  "PK",
+  "GSI1SK",
+  "#status",
+  "urgency",
+  "personId",
+  "#version",
+  "queueFirstName",
+  "queueDealSummary",
+  "assignedOperatorId",
+  "claimLeaseExpiresAtIso",
+  "callKeyState",
+  "activeCallAttemptId",
+  "callIntentExpiresAtIso",
+].join(", ");
+
+/**
+ * Query the operator queue by GSI1 (STATUS#<status> -> updatedAtIso).
+ *
+ * One query per status: every write path (createDraft, createDraftWithArtifacts,
+ * updateDraftStatusWithJournal) sets GSI1PK to the bare `STATUS#<status>` form,
+ * so the previously-queried `#URGENCY#*` partitions never existed and always
+ * returned empty. Urgency is an attribute on the row, not part of the key.
  */
 export async function queryOperatorQueue(
   clients: DraftStoreClients,
   config: DraftStoreConfig,
   statusPrefix: string
 ): Promise<QueueQueryResult[]> {
-  const keysToQuery = [
-    `STATUS#${statusPrefix}`,
-    `STATUS#${statusPrefix}#URGENCY#informational`,
-    `STATUS#${statusPrefix}#URGENCY#normal`,
-    `STATUS#${statusPrefix}#URGENCY#urgent`,
-  ];
+  const result = await clients.dynamo.send(
+    new QueryCommand({
+      TableName: config.tableName,
+      IndexName: "GSI1",
+      KeyConditionExpression: "GSI1PK = :pk",
+      ExpressionAttributeValues: { ":pk": { S: `STATUS#${statusPrefix}` } },
+      ExpressionAttributeNames: { "#status": "status", "#version": "version" },
+      ProjectionExpression: QUEUE_PROJECTION,
+      ScanIndexForward: false,
+      Limit: 20,
+    })
+  );
 
   const seen = new Set<string>();
   const allRows: QueueQueryResult[] = [];
 
-  for (const gsi1pk of keysToQuery) {
-    const result = await clients.dynamo.send(
-      new QueryCommand({
-        TableName: config.tableName,
-        IndexName: "GSI1",
-        KeyConditionExpression: "GSI1PK = :pk",
-        ExpressionAttributeValues: { ":pk": { S: gsi1pk } },
-        ScanIndexForward: false,
-        Limit: 20,
-      })
-    );
-
-    for (const item of result.Items ?? []) {
-      const draftId = ((item[PK] as { S?: string })?.S ?? "").replace("DRAFT#", "");
-      if (seen.has(draftId)) continue;
-      seen.add(draftId);
-      allRows.push({
-        draftId,
-        status: (item.status as { S?: string })?.S as BookingDraftStatus,
-        urgency: (item.urgency as { S?: string })?.S ?? "informational",
-        updatedAtIso: (item[GSI1SK] as { S?: string })?.S ?? "",
-        personId: (item.personId as { S?: string })?.S ?? "",
-      });
-    }
+  for (const item of result.Items ?? []) {
+    const s = (key: string): string | undefined => (item[key] as { S?: string })?.S;
+    const draftId = (s(PK) ?? "").replace("DRAFT#", "");
+    if (seen.has(draftId)) continue;
+    seen.add(draftId);
+    allRows.push({
+      draftId,
+      status: s("status") as BookingDraftStatus,
+      urgency: s("urgency") ?? "informational",
+      updatedAtIso: s(GSI1SK) ?? "",
+      personId: s("personId") ?? "",
+      version: Number((item.version as { N?: string })?.N ?? "0"),
+      firstName: s("queueFirstName") ?? "",
+      dealSummary: s("queueDealSummary") ?? "",
+      assignedOperatorId: s("assignedOperatorId"),
+      claimLeaseExpiresAtIso: s("claimLeaseExpiresAtIso"),
+      callKeyState: s("callKeyState"),
+      activeCallAttemptId: s("activeCallAttemptId"),
+      callIntentExpiresAtIso: s("callIntentExpiresAtIso"),
+    });
   }
 
   return allRows;
@@ -1114,6 +1225,8 @@ function serializeMetaItem(item: DraftMetaItem): Record<string, unknown> {
     ...(item.callKeyState && { callKeyState: { S: item.callKeyState } }),
     ...(item.activeCallAttemptId && { activeCallAttemptId: { S: item.activeCallAttemptId } }),
     ...(item.callIntentExpiresAtIso && { callIntentExpiresAtIso: { S: item.callIntentExpiresAtIso } }),
+    ...(s(item.queueFirstName ?? "") && { queueFirstName: s(item.queueFirstName ?? "") }),
+    ...(s(item.queueDealSummary ?? "") && { queueDealSummary: s(item.queueDealSummary ?? "") }),
   };
 }
 
@@ -1152,6 +1265,8 @@ function parseMetaItem(item: Record<string, unknown>): DraftMetaItem {
     callKeyState: (s("callKeyState") || undefined) as CallKeyState | undefined,
     activeCallAttemptId: s("activeCallAttemptId") || undefined,
     callIntentExpiresAtIso: s("callIntentExpiresAtIso") || undefined,
+    queueFirstName: s("queueFirstName") || undefined,
+    queueDealSummary: s("queueDealSummary") || undefined,
   };
 }
 
