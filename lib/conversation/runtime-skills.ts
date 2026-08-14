@@ -57,12 +57,8 @@ const REGISTRY: Record<string, RuntimeAgentSkill> = {
     allowedModes: ["showcase"],
     allowedTransitions: ["human_help_handoff_v1"],
     maxToolIds: [
-      "perplexity_cruise_research",
       "cruise_brothers_knowledge",
-      "excursion_finder",
       "cruise_brothers_scraper",
-      "social_media_insights",
-      "cruise_trend_analysis",
       "odysseus_search",
       "pricing_comparator",
       "showcase_preferences_read",
@@ -90,7 +86,6 @@ const REGISTRY: Record<string, RuntimeAgentSkill> = {
     allowedTransitions: ["human_help_handoff_v1"],
     maxToolIds: [
       "cruise_brothers_knowledge",
-      "excursion_finder",
       "pricing_comparator",
       "booking_field_propose",
       "booking_progress_read",
@@ -114,7 +109,6 @@ const REGISTRY: Record<string, RuntimeAgentSkill> = {
     allowedTransitions: ["human_help_handoff_v1"],
     maxToolIds: [
       "cruise_brothers_knowledge",
-      "excursion_finder",
       "request_human_help",
     ],
     requiredSubject: "campaignSlug",
@@ -133,7 +127,6 @@ const REGISTRY: Record<string, RuntimeAgentSkill> = {
     allowedTransitions: ["human_help_handoff_v1"],
     maxToolIds: [
       "cruise_brothers_knowledge",
-      "excursion_finder",
       "request_human_help",
       "transfer_phone_call",
     ],

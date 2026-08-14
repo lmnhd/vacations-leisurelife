@@ -130,6 +130,15 @@ Existing systems
   -> Booking Assistant contracts and DynamoDB store
 ```
 
+For the live concierge, expose no deep-research tool. Route cruise options,
+itineraries, availability, and starting-price requests to read-only
+`odysseus_search`, checking the normalized DynamoDB tool cache first. Preserve
+capture time and freshness language, use a short TTL for successful live
+results, and never cache empty/error responses. Legacy Perplexity-backed tools
+must not appear in any guest runtime skill. Gemini Deep Research remains a
+separate asynchronous operator campaign workflow, not a telephone or browser
+voice capability.
+
 ### Mandatory Context and Runtime Skill Architecture
 
 Preserve and harden the original structured prompt system. Do not build a fixed voice-only prompt, and do not create separate agent brains for text, browser voice, and telephone.

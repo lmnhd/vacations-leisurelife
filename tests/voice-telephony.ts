@@ -23,6 +23,7 @@ import {
   resolveTransferTarget,
   type CallIntentRecord,
 } from "../services/voice-telephony/src/call-policy.ts";
+import { buildCallOpeningResponse } from "../services/voice-telephony/src/call-opening.ts";
 
 const SECRET = "whsec_" + Buffer.from("test-secret-value-1234567890").toString("base64");
 
@@ -300,6 +301,17 @@ function testEmergencyDetection(): void {
   console.log("  emergency language detection: ok");
 }
 
+function testCallOpeningResponse(): void {
+  const event = buildCallOpeningResponse("Hello from the AI assistant.");
+  assert.equal(event["type"], "response.create");
+  const response = event["response"] as Record<string, unknown>;
+  assert.equal(
+    response["instructions"],
+    "Say exactly this, then stop: Hello from the AI assistant."
+  );
+  console.log("  proactive call opening: ok");
+}
+
 function run(): void {
   console.log("Telephony service checks:");
   testWebhookVerification();
@@ -308,6 +320,7 @@ function run(): void {
   testCallAdmission();
   testTransferAvailability();
   testEmergencyDetection();
+  testCallOpeningResponse();
   console.log("All telephony service checks passed.");
 }
 

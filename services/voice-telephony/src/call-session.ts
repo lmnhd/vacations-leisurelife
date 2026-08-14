@@ -17,6 +17,7 @@ import {
   type BusinessHoursConfig,
 } from "./call-policy.js";
 import type { RealtimeSipClient } from "./realtime-sip-client.js";
+import { buildCallOpeningResponse } from "./call-opening.js";
 
 export interface CallSessionOptions {
   callId: string;
@@ -27,6 +28,8 @@ export interface CallSessionOptions {
   transferNumber?: string;
   businessHours: BusinessHoursConfig;
   maxCallSeconds: number;
+  /** Mandatory AI disclosure and first question spoken when the call connects. */
+  openingText: string;
   onJournal: (event: string, detail: Record<string, string | number | boolean>) => void;
   onClosed: (callId: string) => void;
 }
@@ -47,6 +50,8 @@ export class CallSession {
 
     socket.on("open", () => {
       this.options.onJournal("sideband.connected", { callId: this.options.callId });
+      this.send(buildCallOpeningResponse(this.options.openingText));
+      this.options.onJournal("call.opening_requested", { callId: this.options.callId });
       this.keepAliveTimer = setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) socket.ping();
       }, 25_000);
@@ -207,10 +212,7 @@ export class CallSession {
 
   /** Makes the agent say a specific line, used for safety interventions. */
   speak(text: string): void {
-    this.send({
-      type: "response.create",
-      response: { instructions: `Say exactly this, then stop: ${text}` },
-    });
+    this.send(buildCallOpeningResponse(text));
   }
 
   async hangup(reason: string): Promise<void> {

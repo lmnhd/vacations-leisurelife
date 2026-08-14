@@ -150,7 +150,7 @@ async function setUpCall(callId: string, fromUri: string | null): Promise<void> 
 
   const accepted = await client.acceptCall(callId, {
     model: configuration.model,
-    instructions: `${configuration.instructions}\n\n# Call opening\nOpen the call by saying: ${AI_DISCLOSURE_TEXT}`,
+    instructions: configuration.instructions,
     voice: configuration.voice,
     tools: configuration.tools,
   });
@@ -170,6 +170,7 @@ async function setUpCall(callId: string, fromUri: string | null): Promise<void> 
     transferNumber: TRANSFER_NUMBER,
     businessHours: BUSINESS_HOURS,
     maxCallSeconds: MAX_CALL_SECONDS,
+    openingText: AI_DISCLOSURE_TEXT,
     onJournal: journal,
     onClosed: (endedCallId) => {
       activeSessions.delete(endedCallId);

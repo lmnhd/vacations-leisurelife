@@ -23,6 +23,7 @@ import {
   NEVER_GUEST_EXPOSED,
 } from "../lib/conversation/tool-policy.ts";
 import { getRuntimeSkill, listRuntimeSkillIds } from "../lib/conversation/runtime-skills.ts";
+import { getToolDefinition } from "../lib/conversation/tool-definitions.ts";
 import { buildContextSnapshot } from "../lib/conversation/context-providers.ts";
 import {
   renderSnapshot,
@@ -202,6 +203,29 @@ function testToolPolicyIntersection(): void {
   });
   assert.ok(showcase.allowedToolIds.includes("showcase_preferences_save"));
   assert.ok(showcase.allowedToolIds.includes("odysseus_search"));
+  assert.equal(
+    showcase.allowedToolIds.includes("perplexity_cruise_research"),
+    false,
+    "the retired Perplexity research tool must not be exposed to voice"
+  );
+  for (const retiredTool of [
+    "excursion_finder",
+    "social_media_insights",
+    "cruise_trend_analysis",
+  ]) {
+    assert.equal(
+      showcase.allowedToolIds.includes(retiredTool),
+      false,
+      `${retiredTool} still depends on Perplexity and must not be exposed`
+    );
+  }
+  const odysseusDefinition = getToolDefinition("odysseus_search");
+  assert.ok(odysseusDefinition, "Odysseus tool definition must exist");
+  assert.deepEqual(
+    odysseusDefinition?.parameters.required,
+    [],
+    "quick voice searches may use the documented two-adult default"
+  );
   assert.equal(showcase.allowedToolIds.includes("booking_field_propose"), false);
   assert.equal(
     showcase.allowedToolIds.includes("transfer_phone_call"),

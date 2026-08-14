@@ -137,7 +137,7 @@ const DEFINITIONS: Record<string, RealtimeToolDefinition> = {
     type: "function",
     name: "odysseus_search",
     description:
-      "Search live cruise availability and starting prices from the agency booking engine. Read-only. Use when the traveler gives dates, party size, or a cruise line.",
+      "Primary and authoritative search for cruise options, itineraries, live availability, and starting prices from the Cruise Brothers booking engine. Read-only. Use this for every guest cruise search; never substitute general web research.",
     parameters: {
       type: "object",
       properties: {
@@ -151,7 +151,7 @@ const DEFINITIONS: Record<string, RealtimeToolDefinition> = {
         endDate: { type: "string", description: "Search window end, MM/DD/YYYY (optional)" },
         vendorId: { type: "number", description: "Cruise line vendor id (optional)" },
       },
-      required: ["passengers", "guestAges"],
+      required: [],
     },
   },
 

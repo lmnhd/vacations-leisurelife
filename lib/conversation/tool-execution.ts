@@ -194,9 +194,12 @@ const TrendPayload = z.object({
   cruise_line: z.string().nullish(),
   timeframe: z.string().nullish(),
 });
+const DEFAULT_ODYSSEUS_ADULT_AGE = 40;
+const ODYSSEUS_SEARCH_CACHE_SECONDS = 15 * 60;
+
 const OdysseusPayload = z.object({
-  passengers: z.number().int().positive().max(12),
-  guestAges: z.array(z.number().int().positive().max(120)).max(12),
+  passengers: z.number().int().positive().max(12).optional(),
+  guestAges: z.array(z.number().int().positive().max(120)).max(12).optional(),
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
   vendorId: z.number().int().positive().nullish(),
@@ -238,8 +241,9 @@ async function runTool(
   toolId: string,
   payload: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
+  const normalizedPayload = normalizeToolPayload(toolId, payload);
   // Research tools share the existing cache and handlers.
-  const cached = await getToolCache<Record<string, unknown>>(toolId, payload);
+  const cached = await getToolCache<Record<string, unknown>>(toolId, normalizedPayload);
   if (cached && isCacheableTool(toolId)) {
     return { status: 200, data: cached };
   }
@@ -308,22 +312,40 @@ async function runTool(
   }
 
   if (toolId === "odysseus_search") {
-    const p = OdysseusPayload.parse(payload);
+    const p = OdysseusPayload.parse(normalizedPayload);
+    const passengers = p.passengers ?? 2;
+    const guestAges =
+      p.guestAges ?? Array.from({ length: passengers }, () => DEFAULT_ODYSSEUS_ADULT_AGE);
     const result = await runOdysseusSearch({
-      passengers: p.passengers,
-      guestAges: p.guestAges,
+      passengers,
+      guestAges,
       startDate: p.startDate ?? null,
       endDate: p.endDate ?? null,
       vendorId: p.vendorId ?? null,
     });
-    await setToolCache(toolId, payload, result as unknown as Record<string, unknown>, 300);
+    const capturedAtIso = new Date().toISOString();
+    const data: Record<string, unknown> = {
+      ...(result as unknown as Record<string, unknown>),
+      capturedAtIso,
+      freshness: "Live Odysseus result; revalidate before booking because fares and availability change.",
+      assumedParty:
+        payload["guestAges"] === undefined
+          ? `${passengers} adults, age ${DEFAULT_ODYSSEUS_ADULT_AGE} each`
+          : null,
+      priceBasis:
+        "Starting-from fares captured live just now. Quote them as a starting point and say they are confirmed at booking.",
+    };
+    if (result.results.length > 0) {
+      await setToolCache(
+        toolId,
+        normalizedPayload,
+        data,
+        ODYSSEUS_SEARCH_CACHE_SECONDS
+      );
+    }
     return {
       status: 200,
-      data: {
-        ...(result as unknown as Record<string, unknown>),
-        priceBasis:
-          "Starting-from fares captured live just now. Quote them as a starting point and say they are confirmed at booking.",
-      },
+      data,
     };
   }
 
@@ -474,6 +496,24 @@ async function runTool(
   }
 
   return { status: 400, data: { error: "unsupported_tool" } };
+}
+
+function normalizeToolPayload(
+  toolId: string,
+  payload: Record<string, unknown>
+): Record<string, unknown> {
+  if (toolId !== "odysseus_search") return payload;
+  const parsed = OdysseusPayload.parse(payload);
+  const passengers = parsed.passengers ?? parsed.guestAges?.length ?? 2;
+  const guestAges =
+    parsed.guestAges ?? Array.from({ length: passengers }, () => DEFAULT_ODYSSEUS_ADULT_AGE);
+  return {
+    passengers,
+    guestAges,
+    startDate: parsed.startDate ?? null,
+    endDate: parsed.endDate ?? null,
+    vendorId: parsed.vendorId ?? null,
+  };
 }
 
 function isCacheableTool(toolId: string): boolean {

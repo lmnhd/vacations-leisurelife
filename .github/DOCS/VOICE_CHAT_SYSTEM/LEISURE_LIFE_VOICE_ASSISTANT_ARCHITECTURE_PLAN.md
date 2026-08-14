@@ -36,7 +36,7 @@ The repository contains much more than a blank voice experiment:
 - Browser microphone and WebRTC lifecycle in `lib/voice/realtime-session.ts`.
 - Ephemeral Realtime session creation in `app/api/voice/session/`.
 - Pure Realtime, hybrid voice, and simulator test pages under `app/(tests)/tests/voice-*`.
-- Tool definitions and a server-side tool dispatcher for cruise research, Cruise Brothers knowledge, excursions, live Odysseus search, and pricing comparison.
+- Tool definitions and a server-side dispatcher for Cruise Brothers knowledge, cached agency deals, live Odysseus search, pricing comparison, and safe conversation actions. Legacy Perplexity-backed research tools exist in the repository but are not part of the guest voice surface.
 - An assembled chat prompt system with channel-specific context.
 - A structured context resolver, runtime skill loader, and context-scoped tool registry in `lib/chat/**`.
 - Existing support for a forced `startingContext` and a runtime campaign context block. The Group campaign chat route already uses both, which proves the original context-injection idea is viable.
@@ -402,6 +402,14 @@ The optional `How this works` disclosure must include the hidden-by-default trac
 
 Do not expose internal marketing, campaign-generation, commission, or operator-only tools to anonymous users.
 
+Cruise-search routing is deterministic at the tool-policy level: Odysseus is
+the sole live voice tool for cruise options, itineraries, availability, and
+starting prices. Successful normalized results may be served from the
+DynamoDB tool cache for 15 minutes and must retain their capture time and
+freshness warning. Empty/error results are not cached. The concierge does not
+have a deep-research capability; Gemini Deep Research remains an asynchronous,
+operator-run campaign workflow.
+
 ## Model and Latency Strategy
 
 Use a feature-flagged session profile rather than hardcoding a single permanent choice:
@@ -481,6 +489,8 @@ This produces a stronger portfolio story: the system demonstrates tool orchestra
 
 - Create a narrow allowlist of public read-only tools.
 - Reuse existing tool handlers, caches, and normalized data contracts.
+- Remove Perplexity-backed handlers from guest runtime skill allowlists; do not replace them with a multi-minute deep-research call during a live conversation.
+- Make Odysseus the single authoritative cruise-search tool and cache only successful normalized results for the short voice freshness window.
 - Add preference proposal/read tools using an in-session showcase store.
 - Add booking-draft preparation using existing Booking Assistant contracts without mutating supplier state.
 - Require evidence/freshness labels for prices and inventory.

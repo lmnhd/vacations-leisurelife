@@ -16,8 +16,8 @@
 
 | Asset | Verdict |
 | --- | --- |
-| `lib/chat/tools/*` (Perplexity, CB knowledge, excursions, CB scraper, social insights, Odysseus search, pricing comparator) | Reusable. All voice tool dispatch continues to route through these handlers. |
-| `lib/chat/tool-cache.ts` | Reusable, unchanged. |
+| `lib/chat/tools/*` | Reusable selectively. Guest voice uses Odysseus for cruise search, Cruise Brothers knowledge, the cached CB deal reader, pricing, and safe conversation tools. Perplexity-backed handlers are legacy and are not exposed to runtime voice skills. |
+| `lib/chat/tool-cache.ts` | Reused as the DynamoDB read-through cache. Successful normalized Odysseus queries use a short freshness window; empty/error responses are never cached. |
 | `app/api/voice/tool-dispatch/core-logic.ts` | Reusable pattern (typed zod payload schemas per tool). Hardened: dispatch is now bound to a server-side conversation tool policy instead of trusting any browser-supplied `toolId`. |
 | Booking Assistant contracts, store, journal, flow definition (`lib/booking-assistant/**`) | Authoritative. Voice proposes Tier A values into this system; it never forks a second booking state model. |
 | Prompt data assets under `lib/chat/prompt-data/` (persona, skills, tools) | Reusable as content. Loading is now deduplicated (see 1.3). |
@@ -38,6 +38,8 @@
 2. **Voice tool dispatch trusted the browser.** `/api/voice/tool-dispatch` executed any known `toolId`. It now requires a conversation reference and enforces the server-persisted tool policy (skill x mode x authorization intersection) before dispatch.
 3. **Realtime sessions had no durable conversation identity.** Transport sessions now map to a logical `conversationId` with persisted skill ID/version and context snapshot ID/version per sanitized turn.
 4. **Pre-existing policy violations noted, not expanded:** `lib/chat/context-resolver.ts` trigger parsing uses regex (violates `AI_POLICY.md`). New code introduces zero regex; the resolver is scheduled for a non-regex rewrite but was not modified mid-flight because unrelated dirty-tree work depends on it.
+5. **SIP accepted calls but stayed silent.** Accepting a Realtime SIP call configures the session but does not create the first response. The Render sideband now sends an explicit `response.create` with the approved AI disclosure immediately after the WebSocket opens and journals `call.opening_requested`.
+6. **Stale research routing overlapped authoritative cruise search.** The public skill exposed a Perplexity tool whose description included availability and pricing, so the model could choose it instead of Odysseus. Perplexity-backed tools are removed from guest runtime skills. `odysseus_search` is the sole cruise option, itinerary, availability, and starting-price search for live voice; Gemini Deep Research remains an asynchronous operator campaign facility and is not a concierge capability.
 
 ### 1.4 Documents marked non-authoritative
 
@@ -98,13 +100,15 @@ OpenAI realtime.call.incoming webhook -> Render control service (services/voice-
   -> verify signature (HMAC over id.timestamp.payload, standard webhook signature scheme)
   -> deduplicate webhook IDs
   -> accept (server-controlled config from the same assembler) or reject
-  -> sideband WebSocket: tools, monitoring, transfer (refer), hangup
+  -> sideband WebSocket: explicit opening response, tools, monitoring, transfer (refer), hangup
   -> sanitized journal events
 ```
 
 - Caller ID never authenticates or attaches a draft. Resume requires the approved short-lived call-intent correlation or another authorized credential; otherwise the call is the anonymous cold-call concierge.
 - Transfer uses `POST /v1/realtime/calls/{call_id}/refer` and is narrated as successful only after the API accepts the request.
 - Raw call audio is never recorded.
+- The opening is transport-triggered: after `sideband.connected`, Render sends `response.create` with the mandatory AI disclosure. Prompt text alone must never be assumed to start speech.
+- Live voice has no deep-research tool. Cruise search is Odysseus-first and read-only, with successful normalized queries cached for 15 minutes. Gemini Deep Research stays in the separate operator-run campaign workflow.
 - Deployment/config steps: `TELEPHONY_DEPLOYMENT.md`. No external Twilio/OpenAI/Render/Google Voice changes are made by agents; they require Nathaniel.
 
 ### 2.4 Payment boundary

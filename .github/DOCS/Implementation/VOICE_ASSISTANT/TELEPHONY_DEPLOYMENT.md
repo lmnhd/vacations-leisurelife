@@ -92,8 +92,9 @@ secret. An unsigned request must return 401.
    Twilio account offers it.
 
 Verification: call the Twilio number. Twilio's trunk logs should show the call
-routed to OpenAI, and Render should log `call.admitted` then `call.accepted`,
-followed by `sideband.connected`. You should hear the AI disclosure line.
+routed to OpenAI, and Render should log `call.admitted`, `call.accepted`,
+`sideband.connected`, then `call.opening_requested`. The AI disclosure and
+opening question should begin without waiting for the caller to speak.
 
 ### 4. Configure the human transfer destination
 
@@ -139,6 +140,7 @@ separate business decision with service-continuity consequences.
 | Call connects then drops immediately | `LEISURE_LIFE_APP_URL` wrong or `TELEPHONY_SERVICE_TOKEN` mismatched; look for `call.configuration_unavailable` |
 | Every webhook returns 401 | `OPENAI_WEBHOOK_SECRET` missing or stale after a redeploy |
 | Caller hears silence | Trunk Origination URI wrong, or project id incorrect in the SIP URI |
+| Call is accepted but waits for the caller to speak | Render is missing the explicit sideband `response.create`; verify `call.opening_requested` appears after `sideband.connected` |
 | Busy signal | `MAX_CONCURRENT_CALLS` reached; Render logs show `call.rejected` with `at_concurrent_call_capacity` |
 | Agent refuses to transfer | `HUMAN_TRANSFER_NUMBER` unset or outside business hours; this is intended behavior |
 | Calls drop during a deploy | Expected: Render recycles instances. The service says a wrap-up line and hangs up gracefully (`service.shutdown_started`). |
