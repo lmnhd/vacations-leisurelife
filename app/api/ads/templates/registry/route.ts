@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 const SlotDescriptorSchema = z.object({
     name: z.string().min(1),

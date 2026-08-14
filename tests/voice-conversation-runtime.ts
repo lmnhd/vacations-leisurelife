@@ -32,6 +32,10 @@ import {
 import { assembleAgentConfiguration } from "../lib/conversation/agent-config-assembler.ts";
 import { sanitizeDetail, emitTraceEvent, readTraceEvents } from "../lib/conversation/trace-events.ts";
 import { screenTranscript } from "../lib/conversation/transcript-safety.ts";
+import {
+  ingestClientTraceEvents,
+  isKnownClientEvent,
+} from "../lib/conversation/client-trace-ingest.ts";
 import { createShowcaseProfile } from "../lib/conversation/showcase-fixtures.ts";
 import { launchVoiceConversation } from "../lib/conversation/session-launcher.ts";
 
@@ -553,6 +557,73 @@ async function testAuthorizationBoundary(): Promise<void> {
   console.log("  authorization boundary: ok");
 }
 
+function testClientTraceIngest(): void {
+  const conversationId = "conv_client_ingest_test";
+
+  // Known events are accepted; invented ones are rejected outright.
+  const result = ingestClientTraceEvents(
+    conversationId,
+    "browser_voice",
+    [
+      { event: "turn.user_transcript_final", detail: { role: "user", turnChars: 42, final: true } },
+      { event: "tool.model_requested", detail: { toolId: "odysseus_search", argumentCount: 3 } },
+      { event: "attacker.invented_event", detail: { toolId: "x" } },
+      { event: "safety.payment_content_suppressed", detail: {} },
+    ],
+    { skillId: "public_cruise_concierge_v1", skillVersion: 1 }
+  );
+
+  assert.equal(result.accepted, 2, "only vocabulary events are accepted");
+  assert.equal(result.rejected, 2, "invented and server-only event names are rejected");
+  assert.equal(isKnownClientEvent("turn.barge_in"), true);
+  assert.equal(isKnownClientEvent("nope.not.real"), false);
+  assert.equal(
+    isKnownClientEvent("safety.payment_content_suppressed"),
+    false,
+    "a client may not forge a server-authored safety event"
+  );
+
+  // A client cannot smuggle transcript content through the ingest path.
+  ingestClientTraceEvents(
+    conversationId,
+    "browser_voice",
+    [
+      {
+        event: "turn.user_transcript_final",
+        detail: {
+          role: "user",
+          turnChars: 20,
+          // All of these must be dropped: not on the allowlist, or content.
+          transcript: "my card number is 4111 1111 1111 1111",
+          prompt: "system prompt",
+          text: "raw spoken words",
+          nested: { deep: "value" },
+        },
+      },
+    ],
+    { skillId: "public_cruise_concierge_v1", skillVersion: 1 }
+  );
+
+  const events = readTraceEvents(conversationId);
+  const serialized = JSON.stringify(events);
+  assert.equal(serialized.includes("4111"), false, "no payment digits may reach the trace");
+  assert.equal(serialized.includes("raw spoken words"), false, "no transcript text may reach the trace");
+  assert.equal(serialized.includes("system prompt"), false, "no prompt text may reach the trace");
+
+  const transcriptEvent = events.find((event) => event.event === "turn.user_transcript_final");
+  assert.ok(transcriptEvent, "the turn event itself is still recorded");
+  if (transcriptEvent) {
+    assert.equal(transcriptEvent.detail["turnChars"], 42, "turn length survives as a number");
+    assert.equal("transcript" in transcriptEvent.detail, false);
+    assert.equal("text" in transcriptEvent.detail, false);
+    // Severity and category are server-assigned, not client-chosen.
+    assert.equal(transcriptEvent.category, "state");
+    assert.equal(transcriptEvent.severity, "info");
+  }
+
+  console.log("  client trace ingest: ok");
+}
+
 async function run(): Promise<void> {
   console.log("Voice conversation runtime checks:");
   await testLaunchEnvelopeValidation();
@@ -562,6 +633,7 @@ async function run(): Promise<void> {
   await testContextSnapshotProjection();
   await testAgentConfigurationAssembly();
   testTraceSanitization();
+  testClientTraceIngest();
   testTranscriptSafety();
   await testAuthorizationBoundary();
   console.log("All voice conversation runtime checks passed.");

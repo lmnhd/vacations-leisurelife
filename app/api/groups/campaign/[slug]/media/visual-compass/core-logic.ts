@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getAestheticBrief, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import type { AssetRecord, SourceQualityMetadata } from '@/lib/campaigns/schema';
 import {

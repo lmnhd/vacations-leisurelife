@@ -8,7 +8,7 @@
  *   4. generateProductionBibleFromStills — scene library + storyboards from validated stills
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 import type { Campaign } from "./types";
 import type {
   CampaignAestheticBrief,

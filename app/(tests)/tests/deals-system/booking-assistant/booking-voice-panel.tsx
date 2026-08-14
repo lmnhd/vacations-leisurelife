@@ -114,7 +114,7 @@ export function BookingVoicePanel({
       "field_confirmed",
       `Guest confirmed the voice-proposed value for ${pending.field}`
     );
-    resolveConfirmation(pending.id);
+    resolveConfirmation(pending.id, "confirmed");
     setPending(null);
     setEditedValue("");
   }, [pending, editedValue, onValueConfirmed, resolveConfirmation]);
@@ -126,7 +126,7 @@ export function BookingVoicePanel({
       "field_proposal_discarded",
       `Guest discarded the voice-proposed value for ${pending.field ?? "a field"}`
     );
-    resolveConfirmation(pending.id);
+    resolveConfirmation(pending.id, "discarded");
     setPending(null);
     setEditedValue("");
   }, [pending, resolveConfirmation]);

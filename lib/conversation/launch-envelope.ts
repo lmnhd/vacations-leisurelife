@@ -11,7 +11,7 @@
  * See .github/DOCS/Implementation/VOICE_ASSISTANT/VOICE_ASSISTANT_CANONICAL_PLAN.md
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 export type ConversationChannel = "text" | "browser_voice" | "telephone";
 export type ConversationMode =

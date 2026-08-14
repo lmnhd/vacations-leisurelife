@@ -13,7 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { runCampaignEmailSchedule } from '@/lib/campaigns/email/email-scheduler';
 

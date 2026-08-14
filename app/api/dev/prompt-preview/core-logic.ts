@@ -2,7 +2,7 @@
  * Dev Prompt Preview API — Core Logic
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getPromptPreviewForSession } from '@/lib/chat/pipeline';
 
 const PromptPreviewQuerySchema = z.object({

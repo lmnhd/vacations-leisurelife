@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 const RULES_DIRECTORY = path.join(process.cwd(), 'lib', 'chat', 'prompt-data', 'rules');
 

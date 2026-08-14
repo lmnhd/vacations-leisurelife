@@ -8,7 +8,7 @@
 
 import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import type { z } from 'zod';
+import type { z } from 'zod/v3';
 import type {
   MessageCreateParamsNonStreaming,
   ToolUseBlock,

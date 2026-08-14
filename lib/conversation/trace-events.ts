@@ -95,6 +95,22 @@ const ALLOWED_DETAIL_KEYS: string[] = [
   "callId",
   "transferTarget",
   "latencyMs",
+  // turn taking / conversation shape.
+  // These describe the SHAPE of a turn (who spoke, how long, how many
+  // characters), never its content. `turnChars` is a length, not text.
+  "role",
+  "turnNumber",
+  "turnChars",
+  "activity",
+  "previousActivity",
+  "final",
+  "interruptedResponse",
+  "micState",
+  "textFallbackUsed",
+  // tool arguments, described structurally only
+  "argumentKeys",
+  "argumentCount",
+  "resultChars",
   // safety
   "classification",
   "action",
@@ -138,16 +154,37 @@ const MAX_EVENTS_PER_CONVERSATION = 400;
 /**
  * In-memory ring buffer per conversation. Traces are demo-scale observability,
  * intentionally ephemeral: they never become a second data store.
+ *
+ * Pinned to globalThis on purpose. Next.js evaluates route handlers in
+ * separate module registries (and re-evaluates them on hot reload), so a
+ * plain module-level Map is NOT shared between, say, the launch route and the
+ * trace-read route - each would get its own empty copy and every read would
+ * return nothing. A single global keyed store gives all handlers in the
+ * process one buffer.
  */
-const buffers = new Map<string, TraceEvent[]>();
+interface TraceGlobalState {
+  buffers: Map<string, TraceEvent[]>;
+  sequence: number;
+}
 
-let sequence = 0;
+const TRACE_GLOBAL_KEY = "__leisureLifeTraceState__";
+
+function traceState(): TraceGlobalState {
+  const holder = globalThis as unknown as Record<string, TraceGlobalState | undefined>;
+  let state = holder[TRACE_GLOBAL_KEY];
+  if (!state) {
+    state = { buffers: new Map<string, TraceEvent[]>(), sequence: 0 };
+    holder[TRACE_GLOBAL_KEY] = state;
+  }
+  return state;
+}
 
 export function emitTraceEvent(conversationId: string, input: TraceEmitInput): TraceEvent | null {
   try {
-    sequence += 1;
+    const state = traceState();
+    state.sequence += 1;
     const event: TraceEvent = {
-      eventId: `trc_${Date.now().toString(36)}_${sequence.toString(36)}`,
+      eventId: `trc_${Date.now().toString(36)}_${state.sequence.toString(36)}`,
       occurredAtIso: new Date().toISOString(),
       severity: input.severity,
       category: input.category,
@@ -159,14 +196,14 @@ export function emitTraceEvent(conversationId: string, input: TraceEmitInput): T
       detail: sanitizeDetail(input.detail ?? {}),
     };
 
-    const existing = buffers.get(conversationId);
+    const existing = state.buffers.get(conversationId);
     if (existing) {
       existing.push(event);
       if (existing.length > MAX_EVENTS_PER_CONVERSATION) {
         existing.splice(0, existing.length - MAX_EVENTS_PER_CONVERSATION);
       }
     } else {
-      buffers.set(conversationId, [event]);
+      state.buffers.set(conversationId, [event]);
     }
 
     return event;
@@ -177,7 +214,7 @@ export function emitTraceEvent(conversationId: string, input: TraceEmitInput): T
 }
 
 export function readTraceEvents(conversationId: string, sinceEventId?: string): TraceEvent[] {
-  const events = buffers.get(conversationId);
+  const events = traceState().buffers.get(conversationId);
   if (!events) return [];
   if (!sinceEventId) return [...events];
   const index = events.findIndex((event) => event.eventId === sinceEventId);
@@ -186,5 +223,5 @@ export function readTraceEvents(conversationId: string, sinceEventId?: string): 
 }
 
 export function clearTraceEvents(conversationId: string): void {
-  buffers.delete(conversationId);
+  traceState().buffers.delete(conversationId);
 }

@@ -22,7 +22,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { normalizeAttribution } from "@/lib/campaigns/lead-attribution";
 import { appendDealEvent } from "@/lib/cb/deals-system/deal-events-store";

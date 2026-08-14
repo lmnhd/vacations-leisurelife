@@ -6,7 +6,7 @@
  * that drive context resolution (which tools are available, which skill loads, etc.)
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { callChatLlm, MODEL_FAST } from './llm-call';
 
 const IntentSignalSchema = z.object({

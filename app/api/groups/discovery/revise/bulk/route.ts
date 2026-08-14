@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { reviseDiscoveryBlueprint } from '@/lib/campaigns/discovery-revision';
 import type { Campaign } from '@/lib/campaigns/types';
 

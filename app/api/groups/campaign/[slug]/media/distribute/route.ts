@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getAestheticBrief, getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { dispatchDiscordPost } from '@/lib/campaigns/distribution-discord';
 import { dispatchMarketingPost, type MarketingProviderMode } from '@/lib/campaigns/distribution-marketing';

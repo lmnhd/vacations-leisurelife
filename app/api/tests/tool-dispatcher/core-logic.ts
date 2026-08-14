@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { dispatchTools } from '@/lib/chat/tool-dispatcher';
 
 const DispatchToolsRequestSchema = z.object({

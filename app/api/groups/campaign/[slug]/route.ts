@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getCampaignBlueprint, deleteCampaignBlueprint, saveCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { getLaunchWindowAssessment } from '@/lib/campaigns/launch-window';
 import { VisualFlavorEnum } from '@/lib/campaigns/schema';

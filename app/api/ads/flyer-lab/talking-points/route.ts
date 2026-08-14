@@ -5,7 +5,7 @@
 // the chosen chips per campaign in localStorage.
 
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { generateStructuredObject, modelForTask } from '@/lib/ai/llm-gateway';
 import { getAestheticBrief } from '@/lib/campaigns/campaign-store';
 import { getMediaManifest } from '@/lib/campaigns/media/media-store';

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { callGlobalGenerateObject } from '@/lib/chat/llm-call';
 import { ModelName } from '@/lib/ai/llm-gateway';
 import { getCampaignBlueprint, saveCampaignBlueprint, scanAllCampaigns } from '@/lib/campaigns/campaign-store';

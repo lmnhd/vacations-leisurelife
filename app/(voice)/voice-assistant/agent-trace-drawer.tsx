@@ -6,12 +6,13 @@
  * Hidden by default, opened from "How this works". Opening it never pauses
  * or restarts the live conversation - it only polls a sanitized server
  * projection. If the trace fails, the conversation is unaffected.
+ *
+ * Color is scoped here to match the route's tropical-pop palette; each event
+ * category gets its own hue so a long stream stays readable at a glance.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
@@ -19,6 +20,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+
+const INK = '#1A0B2E';
+const INK_2 = '#2D0F4C';
+const MAGENTA = '#FF2D95';
+const CORAL = '#FF5E3A';
+const TANGERINE = '#FFA51F';
+const LIME = '#B4FF39';
+const CYAN = '#22E4FF';
+const VIOLET = '#A855F7';
+const CREAM = '#FFF4E8';
 
 type TraceCategory =
   | 'context'
@@ -42,6 +53,16 @@ interface TraceEvent {
   detail: Record<string, string | number | boolean>;
 }
 
+const CATEGORY_COLOR: Record<TraceCategory, string> = {
+  context: CYAN,
+  skill: VIOLET,
+  tools: LIME,
+  state: TANGERINE,
+  transport: MAGENTA,
+  safety: '#FFE23D',
+  errors: CORAL,
+};
+
 const CATEGORIES: TraceCategory[] = [
   'context',
   'skill',
@@ -51,13 +72,6 @@ const CATEGORIES: TraceCategory[] = [
   'safety',
   'errors',
 ];
-
-const SEVERITY_STYLES: Record<TraceEvent['severity'], string> = {
-  info: 'text-slate-300',
-  notice: 'text-sky-300',
-  warning: 'text-amber-300',
-  error: 'text-rose-300',
-};
 
 export function AgentTraceDrawer({
   open,
@@ -150,30 +164,57 @@ export function AgentTraceDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col gap-0 border-slate-800 bg-slate-950 p-0 text-slate-100 sm:max-w-xl"
+        className="flex h-full w-full flex-col gap-0 p-0 sm:max-w-xl"
+        style={{
+          background: `linear-gradient(180deg, ${INK_2}, ${INK})`,
+          borderLeft: `3px solid ${VIOLET}`,
+          color: CREAM,
+        }}
       >
-        <SheetHeader className="border-b border-slate-800 px-5 py-4 text-left">
-          <SheetTitle className="font-display text-lg text-slate-50">Agent trace</SheetTitle>
-          <SheetDescription className="text-xs text-slate-400">
+        <div
+          aria-hidden
+          style={{
+            height: 6,
+            background: `linear-gradient(90deg, ${MAGENTA}, ${CORAL}, ${TANGERINE}, ${LIME}, ${CYAN}, ${VIOLET})`,
+          }}
+        />
+
+        <SheetHeader
+          className="px-5 py-4 text-left"
+          style={{ borderBottom: `2px solid ${VIOLET}44` }}
+        >
+          <SheetTitle
+            className="text-lg font-black uppercase tracking-[0.14em]"
+            style={{ color: LIME }}
+          >
+            Agent trace
+          </SheetTitle>
+          <SheetDescription className="text-xs" style={{ color: '#D2B8E4' }}>
             A sanitized projection of server events: context, skill, tool, state, transport, and
             safety activity. No prompts, reasoning, transcripts, or personal data appear here.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-wrap gap-1.5 border-b border-slate-800 px-5 py-3">
+        <div
+          className="flex flex-wrap gap-1.5 px-5 py-3"
+          style={{ borderBottom: `2px solid ${VIOLET}44` }}
+        >
           {CATEGORIES.map((category) => {
             const active = activeCategories.includes(category);
+            const color = CATEGORY_COLOR[category];
             return (
               <button
                 key={category}
                 type="button"
                 onClick={() => toggleCategory(category)}
                 aria-pressed={active}
-                className={`rounded-full border px-3 py-1 text-xs capitalize transition-colors ${
-                  active
-                    ? 'border-sky-500/60 bg-sky-500/15 text-sky-200'
-                    : 'border-slate-700 text-slate-400 hover:border-slate-600'
-                }`}
+                className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest transition-transform duration-150 hover:scale-105"
+                style={{
+                  background: active ? color : 'transparent',
+                  color: active ? INK : color,
+                  border: `2px solid ${color}`,
+                  boxShadow: active ? `0 0 16px ${color}66` : 'none',
+                }}
               >
                 {category}
               </button>
@@ -181,75 +222,68 @@ export function AgentTraceDrawer({
           })}
         </div>
 
-        <div className="flex items-center gap-2 border-b border-slate-800 px-5 py-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs text-slate-300 hover:text-slate-50"
-            onClick={() => setFollowing((value) => !value)}
-          >
-            {following ? 'Pause following' : 'Follow live'}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs text-slate-300 hover:text-slate-50"
-            onClick={copySelected}
-            disabled={!selectedEventId}
-          >
+        <div
+          className="flex items-center gap-2 px-5 py-2"
+          style={{ borderBottom: `2px solid ${VIOLET}44` }}
+        >
+          <TraceAction onClick={() => setFollowing((value) => !value)} color={CYAN}>
+            {following ? 'Pause' : 'Follow'}
+          </TraceAction>
+          <TraceAction onClick={copySelected} disabled={!selectedEventId} color={TANGERINE}>
             Copy event
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs text-slate-300 hover:text-slate-50"
-            onClick={exportTrace}
-            disabled={events.length === 0}
-          >
+          </TraceAction>
+          <TraceAction onClick={exportTrace} disabled={events.length === 0} color={MAGENTA}>
             Export JSON
-          </Button>
+          </TraceAction>
         </div>
 
-        <div ref={listRef} className="flex-1 overflow-y-auto px-2 py-2">
+        <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-2">
           {traceUnavailable && (
-            <p className="px-3 py-2 text-xs text-amber-300">
+            <p className="px-3 py-2 text-xs font-bold" style={{ color: TANGERINE }}>
               The trace stream is not reachable right now. The conversation is unaffected.
             </p>
           )}
           {visibleEvents.length === 0 ? (
-            <p className="px-3 py-6 text-center text-xs text-slate-500">
+            <p className="px-3 py-6 text-center text-xs" style={{ color: '#A98CBD' }}>
               No events yet. Start a conversation to see activity.
             </p>
           ) : (
             <ul className="space-y-1">
               {visibleEvents.map((event) => {
                 const selected = event.eventId === selectedEventId;
+                const color = CATEGORY_COLOR[event.category];
                 return (
                   <li key={event.eventId}>
                     <button
                       type="button"
                       onClick={() => setSelectedEventId(selected ? null : event.eventId)}
-                      className={`w-full rounded-md px-3 py-2 text-left font-mono text-[11px] leading-relaxed transition-colors ${
-                        selected ? 'bg-slate-800/80' : 'hover:bg-slate-900'
-                      }`}
+                      className="w-full rounded-lg px-3 py-2 text-left font-mono text-[11px] leading-relaxed transition-colors"
+                      style={{
+                        background: selected ? `${color}26` : 'transparent',
+                        borderLeft: `4px solid ${color}`,
+                      }}
                     >
                       <span className="flex flex-wrap items-baseline gap-x-2">
-                        <span className="text-slate-500">
+                        <span style={{ color: '#9B7FB0' }}>
                           {event.occurredAtIso.slice(11, 23)}
                         </span>
-                        <Badge
-                          variant="outline"
-                          className="border-slate-700 px-1.5 py-0 text-[10px] capitalize text-slate-400"
+                        <span
+                          className="rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider"
+                          style={{ background: `${color}2E`, color }}
                         >
                           {event.category}
-                        </Badge>
-                        <span className={SEVERITY_STYLES[event.severity]}>{event.event}</span>
+                        </span>
+                        <span className="font-bold" style={{ color: CREAM }}>
+                          {event.event}
+                        </span>
+                        {/* One-glance summary so the stream is readable
+                            without expanding every row. */}
+                        {summarizeDetail(event) && (
+                          <span style={{ color: '#9B7FB0' }}>{summarizeDetail(event)}</span>
+                        )}
                       </span>
                       {selected && (
-                        <span className="mt-2 block space-y-0.5 text-slate-400">
+                        <span className="mt-2 block space-y-0.5" style={{ color: '#CDB2DE' }}>
                           {event.skillId && (
                             <span className="block">
                               skill: {event.skillId} v{event.skillVersion ?? 1}
@@ -273,5 +307,60 @@ export function AgentTraceDrawer({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/**
+ * A short inline summary for the collapsed row. Picks the one or two details
+ * that make an event meaningful at a glance - the tool name, the turn size,
+ * the connection state - so a reviewer can follow the conversation's rhythm
+ * by scrolling rather than by clicking every row.
+ */
+function summarizeDetail(event: TraceEvent): string {
+  const detail = event.detail;
+  const parts: string[] = [];
+
+  if (typeof detail['toolId'] === 'string') parts.push(String(detail['toolId']));
+  if (typeof detail['argumentKeys'] === 'string' && detail['argumentKeys'].length > 0) {
+    parts.push(`(${detail['argumentKeys']})`);
+  }
+  if (typeof detail['role'] === 'string') parts.push(String(detail['role']));
+  if (typeof detail['turnChars'] === 'number') parts.push(`${detail['turnChars']} chars`);
+  if (typeof detail['durationMs'] === 'number') {
+    parts.push(`${(Number(detail['durationMs']) / 1000).toFixed(1)}s`);
+  }
+  if (typeof detail['connectionState'] === 'string') parts.push(String(detail['connectionState']));
+  if (typeof detail['skillId'] === 'string' && event.category === 'skill') {
+    parts.push(String(detail['skillId']));
+  }
+  if (typeof detail['allowedCount'] === 'number') parts.push(`${detail['allowedCount']} tools`);
+  if (typeof detail['snapshotChars'] === 'number') parts.push(`${detail['snapshotChars']} chars`);
+  if (typeof detail['resultStatus'] === 'number') parts.push(`HTTP ${detail['resultStatus']}`);
+  if (typeof detail['field'] === 'string') parts.push(String(detail['field']));
+
+  return parts.slice(0, 3).join(' ');
+}
+
+function TraceAction({
+  children,
+  onClick,
+  disabled,
+  color,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  color: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-transform duration-150 hover:scale-105 disabled:opacity-35 disabled:hover:scale-100"
+      style={{ border: `2px solid ${color}`, color }}
+    >
+      {children}
+    </button>
   );
 }

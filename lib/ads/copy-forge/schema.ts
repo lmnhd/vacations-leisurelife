@@ -3,7 +3,7 @@
 // Zod schema for AdCopySet. Enforces length limits at the model boundary so
 // even a misbehaving LLM cannot leak past-budget copy downstream.
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 const AD_ASSET_TYPES = ['scene_image', 'ship_reference', 'hero', 'aesthetic_concept', 'still', 'merch'] as const;
 

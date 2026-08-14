@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { callLLM, modelForTask } from '@/lib/ai/llm-gateway';
 import {
     KnowledgeCacheSchema,

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { CabinPrices, absoluteUrl, cabinTypes, cn, depositAmount, getPhoneNumber } from "@/lib/utils";
 
@@ -123,6 +123,7 @@ const schema = z.object({
   ),
 });
 export type PreRegisterForm2Values = z.infer<typeof schema>;
+type PreRegisterForm2Input = z.input<typeof schema>;
 
 export default function PreRegisterForm2({closeButton}:{closeButton:any}) {
   const [partyNameVisible, setPartyNameVisible] = useState(true);
@@ -141,7 +142,7 @@ export default function PreRegisterForm2({closeButton}:{closeButton:any}) {
     getLLVPhone();
   }, []);
 
-  const form = useForm<PreRegisterForm2Values>({
+  const form = useForm<PreRegisterForm2Input, unknown, PreRegisterForm2Values>({
     mode: "onChange",
     resolver: zodResolver(schema),
 

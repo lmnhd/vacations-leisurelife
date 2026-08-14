@@ -1,5 +1,5 @@
 import { VIDEO_DELIVERABLE_SPECS } from "./media/video-deliverable-specs";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { Campaign } from "./types";
 import { ModelName, modelForTask } from "@/lib/ai/llm-gateway";
 import { callGlobalGenerateObject } from "@/lib/chat/llm-call";

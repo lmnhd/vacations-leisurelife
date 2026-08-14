@@ -18,19 +18,13 @@ authorization decision, a versioned runtime skill, a bounded guest-safe
 context snapshot, and a tool-policy intersection - then hands the SAME
 assembled agent configuration to text, browser WebRTC, and SIP telephone.
 
-**One deviation, documented and deliberate:** the assignment prefers
-`RealtimeAgent`/`RealtimeSession` from `@openai/agents/realtime`. Every
-published `@openai/agents` version that supports the GA Realtime contract
-declares a `zod@^4` peer dependency, and installing it against this repo's
-`zod@3.25.76` crashes at import (verified empirically:
-`TypeError: Cannot read properties of undefined` from
-`@openai/agents-core/dist/types/protocol.js` via `zod/v3/types.cjs`).
-Upgrading the workspace to zod 4 would touch the Booking Assistant and deals
-contracts mid-flight, well outside this assignment's blast radius. Instead,
-`lib/voice/realtime-transport.ts` implements the same GA contract directly in
-about 300 typed lines, with no SDK calls in components. The telephony service
-has its own `package.json` and can adopt the SDK independently later.
-**No dependency was added to the main app.**
+**Agents SDK dependency compatibility is now resolved:** the main app uses
+`zod@4.4.3`, `openai@7.4.0`, `@openai/agents@0.15.0`, and the dual-compatible
+`@hookform/resolvers@5.8.0`. Existing Booking Assistant, deals, and chat schemas
+use Zod 4's supported `zod/v3` compatibility entrypoint, preserving their established behavior while making
+`@openai/agents/realtime` safely importable. `lib/voice/realtime-transport.ts`
+still implements the GA contract directly; replacing it with
+`RealtimeAgent`/`RealtimeSession` is now an optional contained follow-up.
 
 ## 2. Browser voice route
 
@@ -61,6 +55,7 @@ synthetic booking-draft preparation, and the simulated payment handoff.
 | SDP exchange | `POST /v1/realtime?model=...` | `POST /v1/realtime/calls` |
 | Events | pre-GA names | GA names, with both old and new audio-transcript event names handled |
 | Model selection | in a route handler | server-side only, through the gateway (`voice-model-policy.ts`) |
+| SDK dependencies | OpenAI SDK 4 with root Zod 3 | OpenAI SDK 7 + Agents SDK 0.15 with root Zod 4; legacy schemas isolated on `zod/v3` |
 
 The legacy routes (`/api/voice/session`, `/api/voice/hybrid-session`) now
 **fail closed with HTTP 410** unless `LEGACY_VOICE_SESSION_ENABLED=true`.
@@ -233,3 +228,34 @@ operator work). No commits were made. No destructive git commands were used.
    regex in trigger parsing, violating `AI_POLICY.md`. It predates this work
    and unrelated dirty-tree code depends on it, so it was left alone rather
    than changed mid-flight. New code adds no regex.
+10. **Optional follow-up, now unblocked:** with Zod 4 and `@openai/agents@0.15.0`
+    installed, `lib/voice/realtime-transport.ts` could be replaced by
+    `RealtimeAgent`/`RealtimeSession`. This is a contained swap behind the
+    existing `useConversationVoice` interface - the server-side runtime
+    (envelope, skill, snapshot, tool policy) is unaffected either way. Worth
+    doing for less transport code to maintain; not urgent, since the current
+    transport implements the same GA contract and is covered by tests. Do it
+    as its own change with the evaluation suite run before and after, so any
+    latency or barge-in regression is attributable.
+
+## 11. Dependency migration verification (August 13, 2026)
+
+The Zod 4 / OpenAI SDK 7 / Agents SDK migration was verified independently
+after it landed:
+
+- Installed and resolving: `zod@4.4.3`, `openai@7.4.0`, `@openai/agents@0.15.0`
+  (with `@openai/agents-core` and `@openai/agents-realtime` at 0.15.0), and
+  `@hookform/resolvers@5.8.0`.
+- `import("@openai/agents/realtime")` succeeds and exports both
+  `RealtimeAgent` and `RealtimeSession` as functions. (Note: `require()` of
+  these packages fails by design - they are ESM-only with restrictive export
+  maps. That is expected, not a broken install.)
+- Import split is clean and total: 110 files on `zod/v3`, zero on bare `zod`.
+- `zod/v3` schemas still enforce `.strict()` unknown-key rejection under Zod 4.
+- The LLM gateway loads and resolves both Realtime profiles to the correct
+  provider ids (`gpt-realtime-2.1`, `gpt-realtime-2.1-mini`).
+- An OpenAI v7 client constructs successfully. No `zodResponseFormat`,
+  `zodTextFormat`, or `zodFunction` helpers are used anywhere in the app, which
+  removes the most common v4-to-v7 breakage vector.
+- Root typecheck clean; `npm run test:voice` green (15 groups); Booking
+  Assistant contracts, redaction, field-flow, and option-registry suites green.

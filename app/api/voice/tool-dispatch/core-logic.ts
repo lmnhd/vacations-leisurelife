@@ -6,7 +6,7 @@
  * Returns the raw tool result as JSON for Realtime to include in its response.
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getToolCache, setToolCache } from '@/lib/chat/tool-cache';
 import { runPerplexityCruiseResearch } from '@/lib/chat/tools/perplexity-research';
 import { runCruiseBrothersKnowledgeLookup } from '@/lib/chat/tools/cruise-brothers-knowledge';

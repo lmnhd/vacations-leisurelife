@@ -8,7 +8,7 @@
  * strict payload schema and its own handler.
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { getToolCache, setToolCache } from "@/lib/chat/tool-cache";
 import { runPerplexityCruiseResearch } from "@/lib/chat/tools/perplexity-research";

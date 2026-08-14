@@ -13,7 +13,7 @@
  * through `buildOfferLines` unchanged (the stub does not touch offer lines).
  */
 
-import type { z } from "zod";
+import type { z } from "zod/v3";
 
 import type { generateStructuredObject } from "../lib/ai/llm-gateway";
 import {

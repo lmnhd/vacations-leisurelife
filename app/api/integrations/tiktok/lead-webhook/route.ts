@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { upsertCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
 import { appendLeadEvent } from '@/lib/campaigns/conversion-store';
 import { buildTikTokAttribution } from '@/lib/campaigns/lead-attribution';

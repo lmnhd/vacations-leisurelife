@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { ModelName, getModelConfig } from '@/lib/ai/llm-gateway';
 import { ProductionBibleSchema, LandingStillBibleSchema, type LandingStillBible, type ProductionBible } from '../../schema';
 import type { TrinityAgent, TrinityAgentContext, TrinityAgentResult, TrinityFeedbackItem } from '../types';

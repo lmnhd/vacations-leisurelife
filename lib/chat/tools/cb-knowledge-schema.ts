@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 // ─── Shared Cruise Brothers knowledge-cache schema ──────────────────────────────
 //

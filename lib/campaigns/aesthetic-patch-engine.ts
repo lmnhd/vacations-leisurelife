@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { saveAestheticBrief } from './campaign-store';

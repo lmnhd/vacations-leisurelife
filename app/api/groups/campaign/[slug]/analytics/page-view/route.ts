@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { appendLeadEvent } from '@/lib/campaigns/conversion-store';
 import { isCampaignRetired } from '@/lib/campaigns/discovery-iteration';

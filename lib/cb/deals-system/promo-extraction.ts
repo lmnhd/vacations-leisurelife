@@ -14,7 +14,7 @@
  * "may qualify"-style language — never a guaranteed perk.
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import {
   ModelName,

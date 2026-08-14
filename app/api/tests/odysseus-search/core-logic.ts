@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { runOdysseusSearch } from '@/lib/chat/tools/odysseus-search';
 
 const OdysseusSearchTestRequestSchema = z.object({

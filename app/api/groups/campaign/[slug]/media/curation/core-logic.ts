@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { AssetCurationSchema, ImageContextEnum } from '@/lib/campaigns/schema';
 import { getActiveAssetRecord, updateAssetCuration } from '@/lib/campaigns/media/media-store';
 import { normalizeAssetCuration } from '@/lib/campaigns/media/image-selection';

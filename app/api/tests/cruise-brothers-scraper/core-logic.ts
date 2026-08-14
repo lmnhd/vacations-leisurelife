@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { runCruiseBrothersScraper } from '@/lib/chat/tools/cruise-brothers-scraper';
 
 const CbScraperTestRequestSchema = z.object({

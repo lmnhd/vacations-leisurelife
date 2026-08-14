@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { callLLM, modelForTask } from '@/lib/ai/llm-gateway';
 
 const SlotSuggestionSchema = z.object({

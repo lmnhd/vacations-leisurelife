@@ -14,7 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { timingSafeEqual } from "node:crypto";
 
 import { validateLaunchEnvelope } from "@/lib/conversation/launch-envelope";

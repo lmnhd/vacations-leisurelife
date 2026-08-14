@@ -5,7 +5,7 @@
  * with known-good examples and known-toxic patterns per niche family + slot role.
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { LandingStillSlotRoleEnum } from './schema';
 
 // ── Niche family enum — maps campaign archetypes to reference packs ──────────

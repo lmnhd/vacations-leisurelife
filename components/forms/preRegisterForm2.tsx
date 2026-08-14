@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { DevTool } from "@hookform/devtools";
 import Passengers, { Passenger, ContactMethod, PaxType } from "./passengers";
 
@@ -92,6 +92,7 @@ const schema = z.object({
   ),
 });
 export type PreRegisterForm2Values = z.infer<typeof schema>;
+type PreRegisterForm2Input = z.input<typeof schema>;
 // export type PreRegisterForm2Values = {
 //   partyName: string;
 //   cabinsInParty: number;
@@ -117,7 +118,7 @@ export default function PreRegisterForm2() {
     
   ]
   
-  const form = useForm<PreRegisterForm2Values>({
+  const form = useForm<PreRegisterForm2Input, unknown, PreRegisterForm2Values>({
     mode: "onChange",
     resolver: zodResolver(schema),
 
@@ -292,7 +293,7 @@ export default function PreRegisterForm2() {
                 <p className="text-lg font-medium text-center text-blue-100">
                   {getValues("partyName") !== ""
                     ? `${getValues("cabinsInParty")} ${
-                        getValues("cabinsInParty") > 1 ? "Cabins" : "Cabin"
+                        (getValues("cabinsInParty") ?? 1) > 1 ? "Cabins" : "Cabin"
                       }`
                     : ""}
                 </p>

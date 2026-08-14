@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { storeAsset } from '@/lib/campaigns/media/storage-client';
 import {
     getActiveAssetRecord,

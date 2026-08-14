@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { runCruiseGroupsManager } from '@/lib/chat/tools/cruise-groups-manager';
 
 const CruiseGroupDataSchema = z.object({

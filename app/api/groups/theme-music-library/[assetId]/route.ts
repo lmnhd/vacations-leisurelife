@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getActiveAssetRecord, saveAssetRecord } from '@/lib/campaigns/media/media-store';
 import { SHARED_THEME_MUSIC_LIBRARY_SLUG, parseThemeMusicTags } from '@/lib/campaigns/media/theme-music-library';
 

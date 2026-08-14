@@ -5,7 +5,7 @@
 // regenerate once with the failure reasons injected. We never loop.
 
 import { generateStructuredObject, modelForTask, ModelName } from '@/lib/ai/llm-gateway';
-import { ZodError } from 'zod';
+import { ZodError } from 'zod/v3';
 import { AD_COPY_FORGE_MODEL_OVERRIDE } from '../config';
 import { assembleCopyForgePrompt } from './prompt';
 import { AdCopySetSchema } from './schema';

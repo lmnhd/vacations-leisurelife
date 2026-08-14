@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 
 export interface CruiseSearchCriteria {
     vendorId?: number; // e.g. 8 for Royal Caribbean

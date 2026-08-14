@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { polishOperatorEmailDraft } from "@/lib/booking-assistant/operator-email-polish";
 import { createOperatorRouteContext } from "@/lib/booking-assistant/operator-route-context";

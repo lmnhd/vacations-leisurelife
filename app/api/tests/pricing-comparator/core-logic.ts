@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { runPricingComparator } from '@/lib/chat/tools/pricing-comparator';
 
 const PricingComparatorTestRequestSchema = z.object({

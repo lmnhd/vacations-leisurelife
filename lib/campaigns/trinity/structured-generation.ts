@@ -1,7 +1,7 @@
 import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { getModelConfig, ModelName } from '@/lib/ai/llm-gateway';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 const TRINITY_GENERATION_TIMEOUT_MS = Number(process.env.TRINITY_GENERATION_TIMEOUT_MS ?? '60000');
 

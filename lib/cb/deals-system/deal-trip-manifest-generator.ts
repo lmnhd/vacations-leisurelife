@@ -21,7 +21,7 @@
  * are validated against the prefiltered input — hallucinated ids are dropped.
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { generateStructuredObject, ModelName } from "@/lib/ai/llm-gateway";
 import type { RankedPackageCandidate } from "@/lib/cb/link-broker/package-lookup";

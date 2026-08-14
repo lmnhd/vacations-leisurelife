@@ -21,7 +21,7 @@
  * to merge an approved patch into the brief.
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 import { ModelName } from "@/lib/ai/llm-gateway";
 import { callGlobalGenerateObject } from "@/lib/chat/llm-call";
 import type { Campaign } from "../types";

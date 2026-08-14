@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { DistributionCallerEnum, DistributionPlatformEnum } from '@/lib/campaigns/schema';
 
 export const AgentWorkflowIdEnum = z.enum([

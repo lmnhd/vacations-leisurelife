@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { resolveOnboardingStage } from '@/lib/chat/onboarding-flow';
 
 const OnboardingStageRequestSchema = z.object({

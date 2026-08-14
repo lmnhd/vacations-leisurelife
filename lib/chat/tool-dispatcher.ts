@@ -1,6 +1,6 @@
 import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { pipelineLog } from './pipeline-logger';
 import { getToolCache, setToolCache } from './tool-cache';
 import { runPerplexityCruiseResearch } from './tools/perplexity-research';

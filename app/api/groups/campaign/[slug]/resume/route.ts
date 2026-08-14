@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getCampaignWaitlistEntry } from '@/lib/campaigns/waitlist-store';
 
 export const dynamic = 'force-dynamic';

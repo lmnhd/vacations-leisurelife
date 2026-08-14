@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import type { ChatMessage } from './types';
 import { generateObject } from 'ai';
 import { openai as vercelOpenAI } from '@ai-sdk/openai';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { ModelName, getModelConfig, modelForTask } from '@/lib/ai/llm-gateway';
 
 const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];

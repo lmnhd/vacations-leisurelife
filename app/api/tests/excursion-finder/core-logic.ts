@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { runExcursionFinder } from '@/lib/chat/tools/excursion-finder';
 
 const ExcursionFinderTestRequestSchema = z.object({

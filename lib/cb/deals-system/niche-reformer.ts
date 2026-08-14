@@ -21,7 +21,7 @@
  * a ModelName enum value. No Gemini/Perplexity here — saved research is read-only.
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { generateStructuredObject, ModelName } from "@/lib/ai/llm-gateway";
 

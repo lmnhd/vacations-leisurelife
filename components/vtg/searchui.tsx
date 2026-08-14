@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/form";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
-import { object } from "zod";
+import { object } from "zod/v3";
 import { Button } from "@/components/ui/button";
 
 import axios from "axios";

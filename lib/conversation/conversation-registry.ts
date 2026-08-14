@@ -57,10 +57,42 @@ export interface ConversationRecord {
 }
 
 const CONVERSATION_TTL_MS = 45 * 60 * 1000;
-const records = new Map<string, ConversationRecord>();
-const transportIndex = new Map<string, string>();
+
+/**
+ * Pinned to globalThis for the same reason as the trace buffer: Next.js gives
+ * route handlers separate module registries and re-evaluates them on hot
+ * reload, so a plain module-level Map is not shared between the launch route,
+ * the tool route, and the trace routes. Without this, a conversation created
+ * by /api/conversation/launch is invisible to every subsequent request, and
+ * tool dispatch fails with conversation_not_found.
+ *
+ * This remains process-local and ephemeral by design. Durable booking state
+ * lives in DynamoDB; nothing here is a second source of truth. A multi-
+ * instance deployment needs a shared store (Redis or Dynamo) - see the
+ * canonical plan's scaling note.
+ */
+interface RegistryGlobalState {
+  records: Map<string, ConversationRecord>;
+  transportIndex: Map<string, string>;
+}
+
+const REGISTRY_GLOBAL_KEY = "__leisureLifeConversationRegistry__";
+
+function registry(): RegistryGlobalState {
+  const holder = globalThis as unknown as Record<string, RegistryGlobalState | undefined>;
+  let state = holder[REGISTRY_GLOBAL_KEY];
+  if (!state) {
+    state = {
+      records: new Map<string, ConversationRecord>(),
+      transportIndex: new Map<string, string>(),
+    };
+    holder[REGISTRY_GLOBAL_KEY] = state;
+  }
+  return state;
+}
 
 function pruneExpired(): void {
+  const { records, transportIndex } = registry();
   const now = Date.now();
   for (const [id, record] of records.entries()) {
     if (record.expiresAtMs <= now) {
@@ -110,19 +142,20 @@ export function createConversation(input: CreateConversationInput): Conversation
     toolCallCount: 0,
     turnCount: 0,
   };
-  records.set(record.conversationId, record);
+  registry().records.set(record.conversationId, record);
   return record;
 }
 
 export function getConversation(conversationId: string): ConversationRecord | null {
   pruneExpired();
-  return records.get(conversationId) ?? null;
+  return registry().records.get(conversationId) ?? null;
 }
 
 export function getConversationByTransport(
   transportSessionId: string
 ): ConversationRecord | null {
   pruneExpired();
+  const { records, transportIndex } = registry();
   const conversationId = transportIndex.get(transportSessionId);
   if (!conversationId) return null;
   return records.get(conversationId) ?? null;
@@ -133,6 +166,7 @@ export function attachTransportSession(
   transportSessionId: string,
   channel: ConversationChannel
 ): boolean {
+  const { records, transportIndex } = registry();
   const record = records.get(conversationId);
   if (!record) return false;
   if (!record.transports.some((t) => t.transportSessionId === transportSessionId)) {
@@ -163,7 +197,7 @@ export function updateConversation(
   conversationId: string,
   update: ConversationUpdate
 ): ConversationRecord | null {
-  const record = records.get(conversationId);
+  const record = registry().records.get(conversationId);
   if (!record) return null;
   if (update.skillId !== undefined) record.skillId = update.skillId;
   if (update.skillVersion !== undefined) record.skillVersion = update.skillVersion;
@@ -179,7 +213,7 @@ export function updateConversation(
 }
 
 export function recordToolCall(conversationId: string): number {
-  const record = records.get(conversationId);
+  const record = registry().records.get(conversationId);
   if (!record) return 0;
   record.toolCallCount += 1;
   touch(record);
@@ -187,7 +221,7 @@ export function recordToolCall(conversationId: string): number {
 }
 
 export function recordTurn(conversationId: string): number {
-  const record = records.get(conversationId);
+  const record = registry().records.get(conversationId);
   if (!record) return 0;
   record.turnCount += 1;
   touch(record);
@@ -195,6 +229,7 @@ export function recordTurn(conversationId: string): number {
 }
 
 export function endConversation(conversationId: string): void {
+  const { records, transportIndex } = registry();
   const record = records.get(conversationId);
   if (!record) return;
   for (const transport of record.transports) {

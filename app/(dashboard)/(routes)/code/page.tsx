@@ -1,6 +1,6 @@
 "use client";
 import axios from "axios";
-import * as z from "zod";
+import * as z from "zod/v3";
 import { Heading } from "@/components/heading";
 import { Code2 } from "lucide-react";
 import { useForm } from "react-hook-form";

@@ -13,7 +13,10 @@ import type {
   ToolAgentResult,
   ToolAgentSource,
 } from '../types';
-import type { ResponseInput } from "openai/resources/responses/responses";
+import type {
+  ResponseInput,
+  ResponseInputItem,
+} from "openai/resources/responses/responses";
 
 const COMPLETION_TOKENS_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.2', 'gpt-5.2-pro', 'o1', 'o1-mini', 'o3', 'o3-mini'];
 
@@ -234,7 +237,7 @@ export async function runOpenAIResponsesToolAgent(
     const functionCalls = response.output.filter((item) => item.type === "function_call");
     if (functionCalls.length === 0) break;
 
-    input.push(...response.output);
+    input.push(...(response.output as unknown as ResponseInputItem[]));
     for (const call of functionCalls) {
       let argumentsValue: Record<string, unknown> = {};
       let output: unknown;

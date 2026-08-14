@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { ReviewStatusEnum } from '@/lib/campaigns/schema';
 import { updateAssetReview } from '@/lib/campaigns/media/media-store';
 

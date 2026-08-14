@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 const PROMPT_SCHEMA_FILE_PATH = path.join(
     process.cwd(),

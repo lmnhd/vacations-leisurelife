@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 const CACHE_FILE_PATH = path.join(process.cwd(), '.github', 'data', 'cb-deals-cache.json');
 

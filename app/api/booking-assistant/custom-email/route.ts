@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { sendCustomOperatorEmail } from "@/lib/booking-assistant/operator-custom-email";
 import { readBookingAssistantEnvConfig } from "@/lib/booking-assistant/operator-config";

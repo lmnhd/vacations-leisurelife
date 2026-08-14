@@ -4,7 +4,7 @@
  * Validates query input, calls Google Custom Search, returns image results.
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { searchGoogleImages } from '@/lib/services/media/google-images';
 import type { GoogleImageSearchResponse } from '@/lib/services/media/google-images';
 

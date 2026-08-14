@@ -14,7 +14,7 @@
  * against the unified manifest's appliedPromos.
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { generateStructuredObject, ModelName } from "@/lib/ai/llm-gateway";
 

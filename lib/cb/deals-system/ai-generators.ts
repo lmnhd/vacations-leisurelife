@@ -18,7 +18,7 @@
  * enum/array/record/union/literal/optional).
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { generateStructuredObject, ModelName } from "@/lib/ai/llm-gateway";
 

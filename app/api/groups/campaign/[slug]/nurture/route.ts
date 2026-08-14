@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { getCampaignBlueprint } from '@/lib/campaigns/campaign-store';
 import { dispatchNurtureStage } from '@/lib/campaigns/nurture-orchestrator';
 import type { NurtureStage } from '@/lib/campaigns/nurture-orchestrator';

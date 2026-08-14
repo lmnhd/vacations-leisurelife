@@ -4,7 +4,7 @@
  * Business logic separated from the Next.js route handler.
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { runPipeline } from '@/lib/chat/pipeline';
 import type { ChatResponse } from '@/lib/chat/types';
 

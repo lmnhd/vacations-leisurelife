@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 
 import { modelForTask, runToolAgent } from "@/lib/ai/llm-gateway";
 
