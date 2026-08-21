@@ -26,6 +26,7 @@ import {
   type VoiceStatus,
 } from '@/app/hooks/useConversationVoice';
 import { AgentTraceDrawer } from './agent-trace-drawer';
+import { VoiceEntryDialog } from './voice-entry-dialog';
 
 // ── Palette ────────────────────────────────────────────────────────────────
 
@@ -121,7 +122,7 @@ const TOOL_LABELS: Record<string, string> = {
 
 const TOOL_COLOR_CYCLE = [CYAN, LIME, MAGENTA, TANGERINE, VIOLET, CORAL];
 
-export function VoiceAssistantExperience() {
+export function VoiceAssistantExperience({ telephoneNumber }: { telephoneNumber: string }) {
   const [traceOpen, setTraceOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [typedMessage, setTypedMessage] = useState('');
@@ -188,6 +189,8 @@ export function VoiceAssistantExperience() {
         color: CREAM,
       }}
     >
+      <VoiceEntryDialog telephoneNumber={telephoneNumber} />
+
       {/* Rainbow top rule */}
       <div
         aria-hidden

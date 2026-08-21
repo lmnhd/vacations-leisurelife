@@ -165,7 +165,7 @@ export function useConversationVoice(options: UseConversationVoiceOptions) {
   }, [flushTrace]);
 
   const dispatchTool = useCallback(
-    async (toolId: string, argumentsJson: string): Promise<string> => {
+    async (toolId: string, argumentsJson: string, toolCallId: string): Promise<string> => {
       const conversationId = conversationIdRef.current;
       if (!conversationId) {
         return JSON.stringify({ error: 'no_active_conversation' });
@@ -186,6 +186,7 @@ export function useConversationVoice(options: UseConversationVoiceOptions) {
       // startDate] is the interesting part; the values are guest data.
       reportTrace('tool.model_requested', {
         toolId,
+        toolCallId,
         argumentCount: Object.keys(payload).length,
         argumentKeys: Object.keys(payload).sort().join(','),
       });
@@ -193,7 +194,7 @@ export function useConversationVoice(options: UseConversationVoiceOptions) {
       const response = await fetch('/api/conversation/tool', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId, toolId, payload }),
+        body: JSON.stringify({ conversationId, toolId, toolCallId, payload }),
       });
 
       const body = (await response.json()) as {
@@ -203,6 +204,7 @@ export function useConversationVoice(options: UseConversationVoiceOptions) {
 
       reportTrace('tool.result_returned', {
         toolId,
+        toolCallId,
         resultStatus: response.status,
         resultChars: JSON.stringify(body.data ?? {}).length,
       });
@@ -386,7 +388,16 @@ export function useConversationVoice(options: UseConversationVoiceOptions) {
               )
             );
           },
-          onToolCall: async ({ toolId, argumentsJson }) => dispatchTool(toolId, argumentsJson),
+          onToolCall: async ({ callId, toolId, argumentsJson }) =>
+            dispatchTool(toolId, argumentsJson, callId),
+          onRealtimeError: (detail) => {
+            reportTrace('client.error', {
+              errorCode: detail.code,
+              errorType: detail.type,
+              errorParam: detail.param,
+              eventId: detail.eventId,
+            });
+          },
           onError: (message: string) => {
             setErrorMessage(message);
             reportTrace('client.error');

@@ -121,10 +121,13 @@ invented, and no number was ported.
 
 ```
 npm run test:voice                       # both suites below
-npm run test:voice:runtime               # 9 groups, all passing
-npm run test:voice:telephony             # 6 groups, all passing
+npm run test:voice:runtime               # 12 groups, all passing
+npm run test:voice:telephony             # 8 groups, all passing
 npx tsc --noEmit -p tsconfig.json        # clean
 cd services/voice-telephony && npx tsc -p tsconfig.json --noEmit   # clean
+npx tsc -p services/odysseus-worker/tsconfig.json                  # clean
+npm run build                            # production Next build clean
+cd services/voice-telephony && npm run build                        # clean
 ```
 
 Regression spot-checks (unchanged, passing):
@@ -185,6 +188,16 @@ tests/voice-conversation-runtime.ts
 tests/voice-telephony.ts
 ```
 
+**New - production Odysseus execution and shared traces**
+```
+services/odysseus-worker/{Dockerfile,render.yaml,tsconfig.json}
+services/odysseus-worker/src/server.ts
+lib/conversation/odysseus-executor.ts
+lib/conversation/telephony-trace-ingest.ts
+app/api/conversation/trace/telephony-ingest/route.ts
+.dockerignore
+```
+
 **Modified**
 ```
 lib/ai/llm-gateway/models.ts                     Realtime profiles + task mappings
@@ -192,7 +205,7 @@ lib/campaigns/media/media-pipeline-config.ts     exhaustive map updated for new 
 app/api/voice/session/core-logic.ts              deprecated, fails closed behind a flag
 app/api/voice/hybrid-session/core-logic.ts       deprecated, fails closed behind a flag
 app/(tests)/.../booking-flow-experience.tsx      real voice panel replaces the simulation
-package.json                                     three test scripts (no dependency changes)
+package.json                                     test scripts plus pinned tsx worker runtime
 tsconfig.json                                    excludes services/ (own tsconfig)
 PDR.md                                           voice architecture section
 .github/DOCS/Implementation/Voice_SMS_CHAT.md    non-authoritative banner
@@ -207,9 +220,11 @@ operator work). No commits were made. No destructive git commands were used.
 
 1. **Approve a live Realtime test** so the evaluation suite can be run and real
    latency numbers recorded.
-2. **Telephony external setup** - Render service, OpenAI webhook, Twilio number
-   and SIP trunk, per `TELEPHONY_DEPLOYMENT.md`. All billable.
-3. **Set `TELEPHONY_SERVICE_TOKEN`** identically in Vercel and Render.
+2. **Deploy the Odysseus Render worker** and set `ODYSSEUS_WORKER_URL` plus
+   `ODYSSEUS_WORKER_TOKEN` in Vercel, per `TELEPHONY_DEPLOYMENT.md` section 1A.
+3. **Confirm shared voice state** by setting
+   `VOICE_CONVERSATION_STORE=dynamodb` and
+   `VOICE_CONVERSATION_TABLE=lll-shadow-campaigns` in Vercel Production.
 4. **Decide the human transfer destination**, or leave it unset (the agent then
    honestly declines to transfer).
 5. **Google Voice** - confirm the subscription tier, then configure the auto

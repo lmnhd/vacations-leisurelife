@@ -21,8 +21,8 @@ import {
   type TravelerPerspective,
   type TrendCategory,
 } from "@/lib/chat/tools/social-media-insights";
-import { runOdysseusSearch } from "@/lib/chat/tools/odysseus-search";
 import { runPricingComparator } from "@/lib/chat/tools/pricing-comparator";
+import { executeOdysseusSearch } from "./odysseus-executor";
 
 import {
   getConversation,
@@ -43,6 +43,7 @@ export interface ToolExecutionRequest {
   conversationId: string;
   toolId: string;
   payload: Record<string, unknown>;
+  toolCallId?: string;
 }
 
 export interface ToolExecutionResult {
@@ -61,7 +62,7 @@ export interface ToolExecutionResult {
 export async function executeConversationTool(
   request: ToolExecutionRequest
 ): Promise<ToolExecutionResult> {
-  const conversation = getConversation(request.conversationId);
+  const conversation = await getConversation(request.conversationId);
   if (!conversation) {
     return { status: 404, data: { error: "conversation_not_found" } };
   }
@@ -75,12 +76,17 @@ export async function executeConversationTool(
       channel: conversation.envelope.channel,
       skillId: conversation.skillId,
       skillVersion: conversation.skillVersion,
-      detail: { toolId: request.toolId, allowed: false, reason: "not_in_allowlist" },
+      detail: {
+        toolId: request.toolId,
+        toolCallId: request.toolCallId,
+        allowed: false,
+        reason: "not_in_allowlist",
+      },
     });
     return { status: 403, data: { error: "tool_not_allowed_for_this_conversation" } };
   }
 
-  const callCount = recordToolCall(conversation.conversationId);
+  const callCount = await recordToolCall(conversation.conversationId);
   if (callCount > MAX_TOOL_CALLS_PER_CONVERSATION) {
     emitTraceEvent(conversation.conversationId, {
       severity: "warning",
@@ -88,7 +94,11 @@ export async function executeConversationTool(
       event: "tool.rate_limited",
       correlationId: conversation.conversationId,
       channel: conversation.envelope.channel,
-      detail: { toolId: request.toolId, reason: "session_tool_budget_exhausted" },
+      detail: {
+        toolId: request.toolId,
+        toolCallId: request.toolCallId,
+        reason: "session_tool_budget_exhausted",
+      },
     });
     return {
       status: 429,
@@ -108,7 +118,11 @@ export async function executeConversationTool(
     channel: conversation.envelope.channel,
     skillId: conversation.skillId,
     skillVersion: conversation.skillVersion,
-    detail: { toolId: request.toolId, toolLabel: getDisplayToolLabel(request.toolId) },
+    detail: {
+      toolId: request.toolId,
+      toolCallId: request.toolCallId,
+      toolLabel: getDisplayToolLabel(request.toolId),
+    },
   });
 
   try {
@@ -127,6 +141,7 @@ export async function executeConversationTool(
       skillVersion: conversation.skillVersion,
       detail: {
         toolId: request.toolId,
+        toolCallId: request.toolCallId,
         durationMs: Date.now() - startedMs,
         resultStatus: result.status,
       },
@@ -141,7 +156,11 @@ export async function executeConversationTool(
       event: timedOut ? "tool.timeout" : "tool.error",
       correlationId: conversation.conversationId,
       channel: conversation.envelope.channel,
-      detail: { toolId: request.toolId, durationMs: Date.now() - startedMs },
+      detail: {
+        toolId: request.toolId,
+        toolCallId: request.toolCallId,
+        durationMs: Date.now() - startedMs,
+      },
     });
     return {
       status: timedOut ? 504 : 500,
@@ -262,7 +281,9 @@ async function runTool(
   if (toolId === "cruise_brothers_knowledge") {
     const p = KnowledgePayload.parse(payload);
     const result = await runCruiseBrothersKnowledgeLookup({ query: p.query });
-    await setToolCache(toolId, payload, result, 86_400 * 7);
+    if (result.available && result.matches.length > 0) {
+      await setToolCache(toolId, payload, result, 86_400 * 7);
+    }
     return { status: 200, data: result as unknown as Record<string, unknown> };
   }
 
@@ -316,13 +337,25 @@ async function runTool(
     const passengers = p.passengers ?? 2;
     const guestAges =
       p.guestAges ?? Array.from({ length: passengers }, () => DEFAULT_ODYSSEUS_ADULT_AGE);
-    const result = await runOdysseusSearch({
+    const execution = await executeOdysseusSearch({
       passengers,
       guestAges,
       startDate: p.startDate ?? null,
       endDate: p.endDate ?? null,
       vendorId: p.vendorId ?? null,
     });
+    if (!execution.ok) {
+      return {
+        status: execution.status,
+        data: {
+          error: execution.error,
+          executor: execution.executor,
+          guidance:
+            "Tell the guest that live cruise inventory is temporarily unavailable. Do not say the booking system is down and do not invent results.",
+        },
+      };
+    }
+    const result = execution.output;
     const capturedAtIso = new Date().toISOString();
     const data: Record<string, unknown> = {
       ...(result as unknown as Record<string, unknown>),
@@ -334,6 +367,7 @@ async function runTool(
           : null,
       priceBasis:
         "Starting-from fares captured live just now. Quote them as a starting point and say they are confirmed at booking.",
+      executor: execution.executor,
     };
     if (result.results.length > 0) {
       await setToolCache(
@@ -387,7 +421,7 @@ async function runTool(
       } else {
         profile.preferences.push({ key: p.key, value: p.value, origin: "session" });
       }
-      updateConversation(conversation.conversationId, { showcaseProfile: profile });
+      await updateConversation(conversation.conversationId, { showcaseProfile: profile });
     }
     return {
       status: 200,

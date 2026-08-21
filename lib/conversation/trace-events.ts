@@ -12,6 +12,9 @@
  */
 
 import type { ConversationChannel } from "./launch-envelope";
+import { randomUUID } from "node:crypto";
+import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { chatDynamoDocumentClient } from "@/lib/chat/dynamo-client";
 
 export type TraceCategory =
   | "context"
@@ -76,6 +79,7 @@ const ALLOWED_DETAIL_KEYS: string[] = [
   "hintOverridden",
   // tools
   "toolId",
+  "toolCallId",
   "toolLabel",
   "allowed",
   "deniedCount",
@@ -83,6 +87,9 @@ const ALLOWED_DETAIL_KEYS: string[] = [
   "durationMs",
   "cacheHit",
   "resultStatus",
+  "duplicateCount",
+  "batchSize",
+  "executor",
   // state / booking
   "taskId",
   "previousTaskId",
@@ -95,6 +102,10 @@ const ALLOWED_DETAIL_KEYS: string[] = [
   "callId",
   "transferTarget",
   "latencyMs",
+  "errorCode",
+  "errorType",
+  "errorParam",
+  "eventId",
   // turn taking / conversation shape.
   // These describe the SHAPE of a turn (who spoke, how long, how many
   // characters), never its content. `turnChars` is a length, not text.
@@ -150,6 +161,16 @@ export interface TraceEmitInput {
 }
 
 const MAX_EVENTS_PER_CONVERSATION = 400;
+const TRACE_TTL_SECONDS = 60 * 60;
+const TABLE_NAME = process.env.VOICE_CONVERSATION_TABLE ?? "lll-shadow-campaigns";
+const pendingWrites = new Set<Promise<void>>();
+
+function usesSharedStore(): boolean {
+  const configured = process.env.VOICE_CONVERSATION_STORE;
+  if (configured === "memory") return false;
+  if (configured === "dynamodb") return true;
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+}
 
 /**
  * In-memory ring buffer per conversation. Traces are demo-scale observability,
@@ -164,7 +185,6 @@ const MAX_EVENTS_PER_CONVERSATION = 400;
  */
 interface TraceGlobalState {
   buffers: Map<string, TraceEvent[]>;
-  sequence: number;
 }
 
 const TRACE_GLOBAL_KEY = "__leisureLifeTraceState__";
@@ -173,7 +193,7 @@ function traceState(): TraceGlobalState {
   const holder = globalThis as unknown as Record<string, TraceGlobalState | undefined>;
   let state = holder[TRACE_GLOBAL_KEY];
   if (!state) {
-    state = { buffers: new Map<string, TraceEvent[]>(), sequence: 0 };
+    state = { buffers: new Map<string, TraceEvent[]>() };
     holder[TRACE_GLOBAL_KEY] = state;
   }
   return state;
@@ -182,9 +202,8 @@ function traceState(): TraceGlobalState {
 export function emitTraceEvent(conversationId: string, input: TraceEmitInput): TraceEvent | null {
   try {
     const state = traceState();
-    state.sequence += 1;
     const event: TraceEvent = {
-      eventId: `trc_${Date.now().toString(36)}_${state.sequence.toString(36)}`,
+      eventId: `trc_${randomUUID()}`,
       occurredAtIso: new Date().toISOString(),
       severity: input.severity,
       category: input.category,
@@ -206,6 +225,26 @@ export function emitTraceEvent(conversationId: string, input: TraceEmitInput): T
       state.buffers.set(conversationId, [event]);
     }
 
+    if (usesSharedStore()) {
+      const write = chatDynamoDocumentClient
+        .send(
+          new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+              PK: `VOICE_TRACE#${conversationId}`,
+              SK: `${event.occurredAtIso}#${event.eventId}`,
+              entityType: "voice_trace_event",
+              ttl: Math.floor(Date.now() / 1000) + TRACE_TTL_SECONDS,
+              traceEvent: event,
+            },
+          })
+        )
+        .then(() => undefined)
+        .catch(() => undefined);
+      pendingWrites.add(write);
+      void write.finally(() => pendingWrites.delete(write));
+    }
+
     return event;
   } catch {
     // Trace collection must never break the conversation.
@@ -213,9 +252,40 @@ export function emitTraceEvent(conversationId: string, input: TraceEmitInput): T
   }
 }
 
-export function readTraceEvents(conversationId: string, sinceEventId?: string): TraceEvent[] {
-  const events = traceState().buffers.get(conversationId);
-  if (!events) return [];
+export async function flushTraceEvents(): Promise<void> {
+  await Promise.all([...pendingWrites]);
+}
+
+export async function readTraceEvents(
+  conversationId: string,
+  sinceEventId?: string
+): Promise<TraceEvent[]> {
+  if (usesSharedStore()) {
+    await flushTraceEvents();
+    const result = await chatDynamoDocumentClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: "PK = :pk",
+        ExpressionAttributeValues: { ":pk": `VOICE_TRACE#${conversationId}` },
+        ScanIndexForward: false,
+        Limit: MAX_EVENTS_PER_CONVERSATION,
+      })
+    );
+    const cutoffMs = Date.now() - TRACE_TTL_SECONDS * 1000;
+    const events = (result.Items ?? [])
+      .map((item) => item["traceEvent"])
+      .filter((item): item is TraceEvent => Boolean(item && typeof item === "object"))
+      .filter((event) => Date.parse(event.occurredAtIso) >= cutoffMs)
+      .reverse();
+    if (!sinceEventId) return events;
+    const index = events.findIndex((event) => event.eventId === sinceEventId);
+    return index < 0 ? events : events.slice(index + 1);
+  }
+
+  const storedEvents = traceState().buffers.get(conversationId);
+  if (!storedEvents) return [];
+  const cutoffMs = Date.now() - TRACE_TTL_SECONDS * 1000;
+  const events = storedEvents.filter((event) => Date.parse(event.occurredAtIso) >= cutoffMs);
   if (!sinceEventId) return [...events];
   const index = events.findIndex((event) => event.eventId === sinceEventId);
   if (index < 0) return [...events];

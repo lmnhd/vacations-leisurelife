@@ -39,6 +39,16 @@ import {
 } from "../lib/conversation/client-trace-ingest.ts";
 import { createShowcaseProfile } from "../lib/conversation/showcase-fixtures.ts";
 import { launchVoiceConversation } from "../lib/conversation/session-launcher.ts";
+import { canonicalToolInvocationKey } from "../lib/voice/realtime-transport.ts";
+import {
+  attachTransportSession,
+  createConversation,
+  endConversation,
+  getConversation,
+  getConversationByTransport,
+  recordToolCall,
+  updateConversation,
+} from "../lib/conversation/conversation-registry.ts";
 
 async function testLaunchEnvelopeValidation(): Promise<void> {
   // Valid showcase launch.
@@ -100,6 +110,55 @@ async function testLaunchEnvelopeValidation(): Promise<void> {
   assert.equal(draftInShowcase.ok, false, "showcase may not reference a booking draft");
 
   console.log("  launch envelope validation: ok");
+}
+
+async function testSharedConversationRegistryContract(): Promise<void> {
+  const validation = validateLaunchEnvelope({
+    channel: "telephone",
+    mode: "showcase",
+    source: "telephone",
+    subjectRefs: {},
+  });
+  assert.equal(validation.ok, true);
+  if (!validation.ok) return;
+
+  const record = await createConversation({
+    envelope: validation.envelope,
+    authorization: "public",
+    skillId: "public_cruise_concierge_v1",
+    skillVersion: 1,
+    snapshotId: "snapshot-test",
+    snapshotVersion: 1,
+    allowedToolIds: [],
+    sessionProfile: "fast",
+  });
+  await updateConversation(record.conversationId, { allowedToolIds: ["odysseus_search"] });
+  await attachTransportSession(record.conversationId, "rtc_registry_test", "telephone");
+
+  const loaded = await getConversation(record.conversationId);
+  assert.deepEqual(loaded?.allowedToolIds, ["odysseus_search"]);
+  assert.equal(await recordToolCall(record.conversationId), 1);
+  assert.equal(
+    (await getConversationByTransport("rtc_registry_test"))?.conversationId,
+    record.conversationId
+  );
+
+  await endConversation(record.conversationId);
+  assert.equal(await getConversation(record.conversationId), null);
+  console.log("  shared conversation registry contract: ok");
+}
+
+function testBrowserToolInvocationDeduplicationKey(): void {
+  const first = canonicalToolInvocationKey(
+    "odysseus_search",
+    JSON.stringify({ guestAges: [40, 40], passengers: 2 })
+  );
+  const reordered = canonicalToolInvocationKey(
+    "odysseus_search",
+    JSON.stringify({ passengers: 2, guestAges: [40, 40] })
+  );
+  assert.equal(first, reordered);
+  console.log("  browser tool invocation deduplication key: ok");
 }
 
 function testRouteToSkillSelection(): void {
@@ -436,7 +495,7 @@ async function testAgentConfigurationAssembly(): Promise<void> {
   console.log("  agent configuration assembly: ok");
 }
 
-function testTraceSanitization(): void {
+async function testTraceSanitization(): Promise<void> {
   // Unlisted keys are dropped; listed keys survive; long strings are clamped.
   const cleaned = sanitizeDetail({
     toolId: "odysseus_search",
@@ -463,7 +522,7 @@ function testTraceSanitization(): void {
     channel: "browser_voice",
     detail: { toolId: "excursion_finder" },
   });
-  const events = readTraceEvents("conv_trace_test");
+  const events = await readTraceEvents("conv_trace_test");
   assert.equal(events.length, 1);
   assert.equal(events[0]?.event, "tool.started");
 
@@ -481,7 +540,7 @@ function testTraceSanitization(): void {
   console.log("  trace sanitization: ok");
 }
 
-function testTranscriptSafety(): void {
+async function testTranscriptSafety(): Promise<void> {
   // A spoken card number is discarded entirely and triggers the warning.
   const payment = screenTranscript(
     "conv_safety_test",
@@ -515,7 +574,7 @@ function testTranscriptSafety(): void {
   assert.ok(normal.text.includes("Caribbean"));
 
   // The security event carries no content.
-  const events = readTraceEvents("conv_safety_test");
+  const events = await readTraceEvents("conv_safety_test");
   const paymentEvent = events.find((event) => event.event === "safety.payment_content_suppressed");
   assert.ok(paymentEvent, "a payment security event must be emitted");
   if (paymentEvent) {
@@ -581,7 +640,7 @@ async function testAuthorizationBoundary(): Promise<void> {
   console.log("  authorization boundary: ok");
 }
 
-function testClientTraceIngest(): void {
+async function testClientTraceIngest(): Promise<void> {
   const conversationId = "conv_client_ingest_test";
 
   // Known events are accepted; invented ones are rejected outright.
@@ -628,7 +687,7 @@ function testClientTraceIngest(): void {
     { skillId: "public_cruise_concierge_v1", skillVersion: 1 }
   );
 
-  const events = readTraceEvents(conversationId);
+  const events = await readTraceEvents(conversationId);
   const serialized = JSON.stringify(events);
   assert.equal(serialized.includes("4111"), false, "no payment digits may reach the trace");
   assert.equal(serialized.includes("raw spoken words"), false, "no transcript text may reach the trace");
@@ -651,14 +710,16 @@ function testClientTraceIngest(): void {
 async function run(): Promise<void> {
   console.log("Voice conversation runtime checks:");
   await testLaunchEnvelopeValidation();
+  await testSharedConversationRegistryContract();
+  testBrowserToolInvocationDeduplicationKey();
   testRouteToSkillSelection();
   testSkillTransitionPolicy();
   testToolPolicyIntersection();
   await testContextSnapshotProjection();
   await testAgentConfigurationAssembly();
-  testTraceSanitization();
-  testClientTraceIngest();
-  testTranscriptSafety();
+  await testTraceSanitization();
+  await testClientTraceIngest();
+  await testTranscriptSafety();
   await testAuthorizationBoundary();
   console.log("All voice conversation runtime checks passed.");
 }

@@ -103,28 +103,49 @@ export async function runCruiseBrothersKnowledgeLookup(input: {
 }): Promise<{
     knowledgeSummary: string;
     matches: CruiseBrothersKnowledgeMatch[];
+    available: boolean;
+    guidance?: string;
 }> {
     let rawCacheFile: string;
     try {
         rawCacheFile = await readFile(CACHE_FILE_PATH, 'utf-8');
     } catch {
-        throw new Error(
-            `Cruise Brothers knowledge cache is missing at ${CACHE_FILE_PATH}. ` +
-            'Run the ingestion workflow to generate cb-knowledge-cache.json before using this tool.'
-        );
+        return unavailableKnowledgeResult();
     }
 
-    const parsedCache = KnowledgeCacheSchema.parse(JSON.parse(rawCacheFile));
-    const entries = entriesFromCache(parsedCache);
+    let entries: KnowledgeEntry[];
+    try {
+        const parsedCache = KnowledgeCacheSchema.parse(JSON.parse(rawCacheFile));
+        entries = entriesFromCache(parsedCache);
+    } catch {
+        console.warn('[cruise-brothers-knowledge] Knowledge cache could not be parsed.');
+        return unavailableKnowledgeResult();
+    }
 
     if (!input.query.trim()) {
-        throw new Error('Cruise Brothers query must not be empty.');
+        return {
+            knowledgeSummary: 'No agency-reference question was provided.',
+            matches: [],
+            available: true,
+            guidance: 'Ask the guest what agency-policy or booking-process question they want answered.',
+        };
     }
 
-    const selectedIndices = await selectRelevantEntries(input.query, entries);
+    let selectedIndices: number[];
+    try {
+        selectedIndices = await selectRelevantEntries(input.query, entries);
+    } catch {
+        console.warn('[cruise-brothers-knowledge] Semantic selection unavailable.');
+        return unavailableKnowledgeResult();
+    }
 
     if (selectedIndices.length === 0) {
-        throw new Error(`No relevant Cruise Brothers knowledge found for query: "${input.query}"`);
+        return {
+            knowledgeSummary: 'No directly relevant agency guidance was found for that question.',
+            matches: [],
+            available: true,
+            guidance: 'Say that the agency reference did not contain an answer. Do not describe the cruise search or booking system as unavailable.',
+        };
     }
 
     const selectedEntries = selectedIndices.map((idx) => entries[idx]!);
@@ -135,6 +156,7 @@ export async function runCruiseBrothersKnowledgeLookup(input: {
 
     return {
         knowledgeSummary,
+        available: true,
         matches: selectedEntries.map((entry) => ({
             title: entry.title,
             source: entry.source,
@@ -147,5 +169,19 @@ export async function runCruiseBrothersKnowledgeLookup(input: {
             retrievedAtIso: entry.retrievedAtIso,
             freshness: assessFreshness(entry).state,
         })),
+    };
+}
+
+function unavailableKnowledgeResult(): {
+    knowledgeSummary: string;
+    matches: CruiseBrothersKnowledgeMatch[];
+    available: boolean;
+    guidance: string;
+} {
+    return {
+        knowledgeSummary: 'The agency reference lookup is temporarily unavailable.',
+        matches: [],
+        available: false,
+        guidance: 'Say only that the agency reference lookup is unavailable. The live cruise search and booking flow are separate systems and must not be described as down.',
     };
 }

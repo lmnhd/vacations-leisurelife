@@ -1,4 +1,4 @@
-import { chromium, Browser, BrowserContext, Page } from 'playwright';
+import { chromium, Browser, BrowserContext, Page, type LaunchOptions } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CruiseSearchCriteria, CruiseResult, ItineraryDetail, ItineraryDetailSchema, PackagePageSummary } from './types';
@@ -28,12 +28,20 @@ export class OdysseusEngine {
      */
     async init(headless: boolean = false) {
         console.log('[OdysseusEngine] Starting initialization...');
-        // Use real Chrome to avoid bot detection (Playwright Chromium is fingerprint-detected)
-        this.browser = await chromium.launch({
+        const launchOptions: LaunchOptions = {
             headless,
-            executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
             args: ['--no-sandbox', '--disable-blink-features=AutomationControlled']
-        });
+        };
+        const configuredExecutable = process.env.ODYSSEUS_CHROME_EXECUTABLE_PATH?.trim();
+        const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+        if (configuredExecutable) {
+            launchOptions.executablePath = configuredExecutable;
+        } else if (process.platform === 'win32' && fs.existsSync(localChrome)) {
+            // Local Windows development uses installed Chrome. Linux workers
+            // use Playwright's managed Chromium unless explicitly overridden.
+            launchOptions.executablePath = localChrome;
+        }
+        this.browser = await chromium.launch(launchOptions);
 
         // Attempt to load existing authentication session
         if (fs.existsSync(STATE_FILE)) {

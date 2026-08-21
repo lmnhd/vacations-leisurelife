@@ -11,16 +11,6 @@
       "sameSite": "None"
     },
     {
-      "name": "MR",
-      "value": "0",
-      "domain": ".c.bing.com",
-      "path": "/",
-      "expires": 1785728870.560896,
-      "httpOnly": false,
-      "secure": true,
-      "sameSite": "None"
-    },
-    {
       "name": "SRM_B",
       "value": "09CE5865990667A900174FC6987766FB",
       "domain": ".c.bing.com",
@@ -41,81 +31,11 @@
       "sameSite": "None"
     },
     {
-      "name": "MR",
-      "value": "0",
-      "domain": ".c.clarity.ms",
-      "path": "/",
-      "expires": 1785728870.663474,
-      "httpOnly": false,
-      "secure": true,
-      "sameSite": "None"
-    },
-    {
-      "name": "CBAT-STICKY-LB",
-      "value": "\"Cg8xMC4xMzYuNTcuNDc6ODAQ969e\"",
-      "domain": "www.cbagenttools.com",
-      "path": "/",
-      "expires": 1785625166.37355,
-      "httpOnly": true,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "_gid",
-      "value": "GA1.2.1619292350.1785538768",
-      "domain": ".cbagenttools.com",
-      "path": "/",
-      "expires": 1785625168,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "_gat_gtag_UA_149507583_1",
-      "value": "1",
-      "domain": ".cbagenttools.com",
-      "path": "/",
-      "expires": 1785538828,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "csrftoken",
-      "value": "39VcF7ktrhPoer8ipRPqMlYc2UKtWO7Y",
-      "domain": "www.cbagenttools.com",
-      "path": "/",
-      "expires": 1816988368.547923,
-      "httpOnly": false,
-      "secure": true,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "sessionid",
-      "value": "rtctnttkfndiuknbyqsucsqomxy5rajw",
-      "domain": "www.cbagenttools.com",
-      "path": "/",
-      "expires": 1785711568.322263,
-      "httpOnly": true,
-      "secure": true,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "_ga_DPV9B4D4T2",
-      "value": "GS2.1.s1785538767$o9$g1$t1785538769$j58$l0$h0",
-      "domain": ".cbagenttools.com",
-      "path": "/",
-      "expires": 1820098769.64299,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
       "name": "_ga",
       "value": "GA1.1.726124511.1782002155",
       "domain": ".cbagenttools.com",
       "path": "/",
-      "expires": 1820098769.643569,
+      "expires": 1821803860.910474,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -141,16 +61,6 @@
       "sameSite": "Lax"
     },
     {
-      "name": "_clsk",
-      "value": "1hbg7m8%5E1785538771087%5E1%5E1%5Ea.clarity.ms%2Fcollect",
-      "domain": ".cbagenttools.com",
-      "path": "/",
-      "expires": 1785625171,
-      "httpOnly": false,
-      "secure": false,
-      "sameSite": "Lax"
-    },
-    {
       "name": "SM",
       "value": "C",
       "domain": ".c.clarity.ms",
@@ -161,14 +71,44 @@
       "sameSite": "None"
     },
     {
-      "name": "ANONCHK",
-      "value": "0",
-      "domain": ".c.clarity.ms",
+      "name": "CBAT-STICKY-LB",
+      "value": "\"Cg8xMC4xMzYuNTcuNDc6ODAQ+rjGAQ==\"",
+      "domain": "www.cbagenttools.com",
       "path": "/",
-      "expires": 1785539371.59509,
+      "expires": 1787330258.0223,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "csrftoken",
+      "value": "oUlkZVUmHGvOZBaROm0ZVO1FHheDSJBT",
+      "domain": "www.cbagenttools.com",
+      "path": "/",
+      "expires": 1818693460.241267,
       "httpOnly": false,
       "secure": true,
-      "sameSite": "None"
+      "sameSite": "Lax"
+    },
+    {
+      "name": "sessionid",
+      "value": "ulr01fyhw6uwnxn7hijx4dfnl7mi43l2",
+      "domain": "www.cbagenttools.com",
+      "path": "/",
+      "expires": 1787416659.990699,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_DPV9B4D4T2",
+      "value": "GS2.1.s1787243860$o10$g0$t1787243860$j60$l0$h0",
+      "domain": ".cbagenttools.com",
+      "path": "/",
+      "expires": 1821803860.909376,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
     }
   ],
   "origins": []

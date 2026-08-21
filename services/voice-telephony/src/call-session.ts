@@ -39,6 +39,8 @@ export class CallSession {
   private durationTimer: NodeJS.Timeout | null = null;
   private keepAliveTimer: NodeJS.Timeout | null = null;
   private closed = false;
+  private readonly pendingToolCalls = new Map<string, PendingToolCall>();
+  private flushingTools = false;
 
   constructor(private readonly options: CallSessionOptions) {}
 
@@ -111,21 +113,100 @@ export class CallSession {
       const toolId = typeof message["name"] === "string" ? message["name"] : null;
       const args = typeof message["arguments"] === "string" ? message["arguments"] : "{}";
       if (!callId || !toolId) return;
-      await this.executeTool(callId, toolId, args);
+      if (!this.pendingToolCalls.has(callId)) {
+        this.pendingToolCalls.set(callId, { toolId, argumentsJson: args, startedMs: Date.now() });
+        this.options.onJournal("tool.queued", {
+          callId: this.options.callId,
+          toolId,
+          toolCallId: callId,
+        });
+      }
+      return;
+    }
+
+    if (type === "response.done" && this.pendingToolCalls.size > 0) {
+      await this.flushToolCalls();
       return;
     }
 
     if (type === "error") {
-      this.options.onJournal("realtime.error", { callId: this.options.callId });
+      const error = objectField(message, "error");
+      this.options.onJournal("realtime.error", {
+        callId: this.options.callId,
+        errorCode: stringField(error, "code") ?? "unknown",
+        errorType: stringField(error, "type") ?? "unknown",
+        errorParam: stringField(error, "param") ?? "none",
+        eventId: stringField(message, "event_id") ?? "none",
+      });
     }
+  }
+
+  private async flushToolCalls(): Promise<void> {
+    if (this.flushingTools || this.pendingToolCalls.size === 0) return;
+    this.flushingTools = true;
+    const calls = [...this.pendingToolCalls.entries()];
+    for (const [toolCallId] of calls) this.pendingToolCalls.delete(toolCallId);
+
+    try {
+      const uniqueResults = new Map<string, Record<string, unknown>>();
+      const firstCallByKey = new Map<string, string>();
+      for (const [toolCallId, call] of calls) {
+        const key = canonicalToolInvocationKey(call.toolId, call.argumentsJson);
+        if (!firstCallByKey.has(key)) firstCallByKey.set(key, toolCallId);
+      }
+
+      this.options.onJournal("tool.batch_started", {
+        callId: this.options.callId,
+        batchSize: calls.length,
+        duplicateCount: calls.length - firstCallByKey.size,
+      });
+
+      for (const [key, toolCallId] of firstCallByKey.entries()) {
+        const call = this.pendingCallFromBatch(calls, toolCallId);
+        if (!call) continue;
+        uniqueResults.set(
+          key,
+          await this.executeTool(toolCallId, call.toolId, call.argumentsJson)
+        );
+      }
+
+      for (const [toolCallId, call] of calls) {
+        const key = canonicalToolInvocationKey(call.toolId, call.argumentsJson);
+        this.sendToolResult(toolCallId, uniqueResults.get(key) ?? { error: "tool_failed" });
+        this.options.onJournal("tool.result_returned", {
+          callId: this.options.callId,
+          toolId: call.toolId,
+          toolCallId,
+          durationMs: Date.now() - call.startedMs,
+        });
+      }
+      this.send({ type: "response.create" });
+      this.options.onJournal("tool.batch_completed", {
+        callId: this.options.callId,
+        batchSize: calls.length,
+      });
+    } finally {
+      this.flushingTools = false;
+    }
+  }
+
+  private pendingCallFromBatch(
+    calls: Array<[string, PendingToolCall]>,
+    toolCallId: string
+  ): PendingToolCall | null {
+    return calls.find(([candidateId]) => candidateId === toolCallId)?.[1] ?? null;
   }
 
   private async executeTool(
     toolCallId: string,
     toolId: string,
     argumentsJson: string
-  ): Promise<void> {
-    this.options.onJournal("tool.started", { callId: this.options.callId, toolId });
+  ): Promise<Record<string, unknown>> {
+    this.options.onJournal("tool.started", {
+      callId: this.options.callId,
+      toolId,
+      toolCallId,
+    });
 
     // The phone transfer tool is executed by this service, not the app: it is
     // a SIP operation on this specific call.
@@ -140,13 +221,12 @@ export class CallSession {
           callId: this.options.callId,
           reason: availability.reason,
         });
-        this.sendToolResult(toolCallId, {
+        return {
           transferred: false,
           reason: availability.reason,
           guidance:
             "Tell the caller honestly that you cannot transfer them right now, and offer a callback or the secure web continuation instead.",
-        });
-        return;
+        };
       }
 
       const result = await this.options.client.referCall(
@@ -159,15 +239,14 @@ export class CallSession {
         outcome: result.ok ? "accepted" : "failed",
       });
 
-      this.sendToolResult(toolCallId, {
+      return {
         // Deliberately "requested", not "completed": the API accepting a
         // refer is not proof the caller reached a person.
         transferRequested: result.ok,
         guidance: result.ok
           ? "The transfer request was accepted. Tell the caller you are connecting them now and stop talking."
           : "The transfer request failed. Say so plainly and offer a callback instead. Do not claim the transfer happened.",
-      });
-      return;
+      };
     }
 
     // Every other tool runs in the Next.js app against the same conversation
@@ -179,6 +258,7 @@ export class CallSession {
         body: JSON.stringify({
           conversationId: this.options.conversationId,
           toolId,
+          toolCallId,
           payload: safeParseObject(argumentsJson),
         }),
       });
@@ -186,15 +266,20 @@ export class CallSession {
       this.options.onJournal("tool.completed", {
         callId: this.options.callId,
         toolId,
+        toolCallId,
         resultStatus: response.status,
       });
-      this.sendToolResult(toolCallId, body.data ?? { error: "tool_failed" });
+      return body.data ?? { error: "tool_failed" };
     } catch {
-      this.options.onJournal("tool.error", { callId: this.options.callId, toolId });
-      this.sendToolResult(toolCallId, {
+      this.options.onJournal("tool.error", {
+        callId: this.options.callId,
+        toolId,
+        toolCallId,
+      });
+      return {
         error: "tool_failed",
         guidance: "Tell the caller this lookup did not work. Do not invent a result.",
-      });
+      };
     }
   }
 
@@ -207,7 +292,6 @@ export class CallSession {
         output: JSON.stringify(data),
       },
     });
-    this.send({ type: "response.create" });
   }
 
   /** Makes the agent say a specific line, used for safety interventions. */
@@ -248,6 +332,12 @@ export class CallSession {
   }
 }
 
+interface PendingToolCall {
+  toolId: string;
+  argumentsJson: string;
+  startedMs: number;
+}
+
 function safeParseObject(raw: string): Record<string, unknown> {
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -258,4 +348,37 @@ function safeParseObject(raw: string): Record<string, unknown> {
     // fall through
   }
   return {};
+}
+
+export function canonicalToolInvocationKey(toolId: string, argumentsJson: string): string {
+  return `${toolId}:${JSON.stringify(sortJsonValue(safeParseUnknown(argumentsJson)))}`;
+}
+
+function safeParseUnknown(raw: string): unknown {
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return raw;
+  }
+}
+
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortJsonValue);
+  if (!value || typeof value !== "object") return value;
+  const source = value as Record<string, unknown>;
+  const sorted: Record<string, unknown> = {};
+  for (const key of Object.keys(source).sort()) sorted[key] = sortJsonValue(source[key]);
+  return sorted;
+}
+
+function objectField(source: Record<string, unknown>, key: string): Record<string, unknown> {
+  const value = source[key];
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function stringField(source: Record<string, unknown>, key: string): string | null {
+  const value = source[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
 }

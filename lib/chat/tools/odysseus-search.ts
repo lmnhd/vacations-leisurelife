@@ -18,6 +18,7 @@ export type OdysseusSearchInput = {
 };
 
 export type OdysseusSearchOutput = {
+    status: 'success' | 'no_matches' | 'error';
     searchSummary: string;
     results: OdysseusCruiseSummary[];
 };
@@ -72,13 +73,18 @@ export async function runOdysseusSearch(input: OdysseusSearchInput): Promise<Ody
             ? `Found ${rawResults.length} live cruise itineraries. Showing top ${mappedResults.length}:`
             : 'No live cruises matched that exact criteria.';
 
-        return { searchSummary, results: mappedResults };
+        return {
+            status: mappedResults.length > 0 ? 'success' : 'no_matches',
+            searchSummary,
+            results: mappedResults,
+        };
 
     } catch (error) {
         console.error('[odysseus-search-tool] Error:', error);
         // Release the broken session so the next call cold-starts cleanly (avoids login page trap)
         void releaseOdysseusSession();
         return {
+            status: 'error',
             searchSummary: 'An error occurred while connecting to the live booking engine. Please try again or refine search criteria.',
             results: [],
         };

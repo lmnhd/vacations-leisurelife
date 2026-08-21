@@ -1,9 +1,9 @@
 # Telephony Deployment - Manual Steps (Twilio, OpenAI, Render, Google Voice)
 
 **Created:** August 13, 2026
-**Status:** Nothing in this document has been executed. Every step below changes
-an external, billable account and requires Nathaniel to perform it personally.
-Agents implemented the code and the configuration definition only.
+**Status:** The telephone control service, OpenAI webhook, Twilio SIP route, and
+initial live call have been deployed. The Odysseus worker and the new Vercel
+variables below still require deployment after this reliability update.
 
 Architecture reference: `VOICE_ASSISTANT_CANONICAL_PLAN.md` section 2.3.
 Service code: `services/voice-telephony/`.
@@ -21,6 +21,10 @@ OpenAI realtime.call.incoming webhook
   -> accept or reject the call
   -> sideband WebSocket wss://api.openai.com/v1/realtime?call_id=...
        tools, safety interventions, transfer (refer), hangup
+
+Vercel tool policy/cache
+  -> Render Odysseus worker /internal/odysseus-search
+  -> one serialized persistent Playwright session
 ```
 
 The Render service never carries call audio. OpenAI Realtime SIP handles the
@@ -62,7 +66,47 @@ localize.
    every call is rejected with SIP 503 (which is the correct fail-closed
    behavior, not a bug).
 4. Verify: `curl https://<render-service>/healthz` should report
-   `"status":"ok"` and show each `configured` flag as `true`.
+   `"status":"ok"`. The OpenAI key, webhook secret, app URL, and telephony
+   token flags must be `true`; `transferConfigured` may remain `false` if
+   human transfer is intentionally disabled.
+
+### 1A. Deploy the Render Odysseus worker
+
+Create a second Render Web Service from the same repository:
+
+- Runtime: Docker
+- Dockerfile: `services/odysseus-worker/Dockerfile`
+- Docker context: repository root
+- Health check: `/healthz`
+- Definition: `services/odysseus-worker/render.yaml`
+
+The Docker image is pinned to the same Playwright version as the workspace and
+includes Chromium plus its Linux runtime dependencies. Do not replace this
+with a native Node build unless those system dependencies are installed too.
+
+Set these worker variables:
+
+| Variable | Value |
+| --- | --- |
+| `ODYSSEUS_WORKER_TOKEN` | A new long random secret, different from the telephony token. |
+| `CB_EMAIL` / `CB_PASSWORD` | Cruise Brothers Agent Tools credentials. |
+| `ODYSSEUS_CHROME_EXECUTABLE_PATH` | Leave unset to use Playwright Chromium on Render. |
+
+Set these variables in Vercel Production and redeploy:
+
+| Variable | Value |
+| --- | --- |
+| `VOICE_CONVERSATION_STORE` | `dynamodb` |
+| `VOICE_CONVERSATION_TABLE` | `lll-shadow-campaigns` |
+| `NEXT_PUBLIC_VOICE_ASSISTANT_PHONE` | `+18557995436` for the first-load phone option. |
+| `ODYSSEUS_WORKER_URL` | The worker's Render base URL, without a trailing slash. |
+| `ODYSSEUS_WORKER_TOKEN` | Exactly the same worker secret used on Render. |
+
+The existing Vercel AWS credentials must permit `GetItem`, `PutItem`,
+`UpdateItem`, `DeleteItem`, and `Query` on `lll-shadow-campaigns`. Enable
+DynamoDB TTL on the `ttl` attribute when convenient; application reads also
+reject expired conversation records, so TTL deletion timing is not trusted for
+authorization.
 
 ### 2. Create the OpenAI webhook
 
@@ -144,6 +188,9 @@ separate business decision with service-continuity consequences.
 | Busy signal | `MAX_CONCURRENT_CALLS` reached; Render logs show `call.rejected` with `at_concurrent_call_capacity` |
 | Agent refuses to transfer | `HUMAN_TRANSFER_NUMBER` unset or outside business hours; this is intended behavior |
 | Calls drop during a deploy | Expected: Render recycles instances. The service says a wrap-up line and hangs up gracefully (`service.shutdown_started`). |
+| Some tool calls return `conversation_not_found` | Vercel is missing `VOICE_CONVERSATION_STORE=dynamodb`, its AWS permissions are incomplete, or the conversation expired after 45 minutes. |
+| Live search returns `odysseus_worker_not_configured` | `ODYSSEUS_WORKER_URL` or its shared worker token is missing in Vercel. |
+| Realtime reports an active-response error after tools | Check for a current deployment: tool outputs must be batched and followed by exactly one `response.create`. |
 
 ---
 
@@ -152,6 +199,9 @@ separate business decision with service-continuity consequences.
 - `MAX_CALL_SECONDS` hard ceiling with a spoken wrap-up before hangup.
 - `MAX_CONCURRENT_CALLS` with a correct SIP 486 rejection.
 - Per-conversation tool budget (40 calls) enforced in the shared runtime.
+- Shared DynamoDB conversation state and one-hour sanitized trace retention.
+- Identical concurrent tool calls are coalesced; one result is returned for
+  each original Realtime `call_id`, followed by one model response request.
 - No call recording, ever.
 - Emergency language triggers an immediate "hang up and dial 911" response.
 - Caller ID never authenticates: private booking drafts require an approved

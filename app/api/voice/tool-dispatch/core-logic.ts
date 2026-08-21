@@ -14,7 +14,7 @@ import { runExcursionFinder } from '@/lib/chat/tools/excursion-finder';
 import { runCruiseBrothersScraper } from '@/lib/chat/tools/cruise-brothers-scraper';
 import { runSocialMediaInsights, runCruiseTrendAnalysis } from '@/lib/chat/tools/social-media-insights';
 import type { TravelerPerspective, TrendCategory } from '@/lib/chat/tools/social-media-insights';
-import { runOdysseusSearch } from '@/lib/chat/tools/odysseus-search';
+import { executeOdysseusSearch } from '@/lib/conversation/odysseus-executor';
 import { runPricingComparator } from '@/lib/chat/tools/pricing-comparator';
 
 // ─── Request / Response types ─────────────────────────────────────────────────
@@ -188,14 +188,27 @@ export async function handleVoiceToolDispatch(
 
         if (toolId === 'odysseus_search') {
             const p = OdysseusSearchPayloadSchema.parse(payload);
-            const result = await runOdysseusSearch({
+            const execution = await executeOdysseusSearch({
                 passengers: p.passengers,
                 guestAges: p.guestAges,
                 startDate: p.startDate ?? null,
                 endDate: p.endDate ?? null,
                 vendorId: p.vendorId ?? null,
             });
-            await setToolCache(toolId, payload, result as unknown as Record<string, unknown>, 300);
+            if (!execution.ok) {
+                voiceLog('tool:error', { toolId, error: execution.error, durationMs: Date.now() - startMs });
+                return {
+                    status: execution.status,
+                    data: {
+                        error: execution.error,
+                        guidance: 'Tell the guest live cruise inventory is temporarily unavailable. Do not say the booking system is down.',
+                    },
+                };
+            }
+            const result = execution.output;
+            if (result.results.length > 0) {
+                await setToolCache(toolId, payload, result as unknown as Record<string, unknown>, 300);
+            }
             voiceLog('tool:complete', { toolId, durationMs: Date.now() - startMs });
             return { status: 200, data: result as unknown as Record<string, unknown> };
         }

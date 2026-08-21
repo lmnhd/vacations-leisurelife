@@ -22,13 +22,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   // Only conversations this server knows about; unknown ids return an empty
   // stream rather than an error, so the trace window degrades quietly.
-  const conversation = getConversation(conversationId);
+  const conversation = await getConversation(conversationId);
   if (!conversation) {
     return NextResponse.json({ events: [], live: false });
   }
 
   const sinceEventId = request.nextUrl.searchParams.get("sinceEventId") ?? undefined;
-  const events = readTraceEvents(conversationId, sinceEventId);
+  const events = await readTraceEvents(conversationId, sinceEventId);
 
   return NextResponse.json({ events, live: true });
 }

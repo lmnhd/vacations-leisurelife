@@ -74,8 +74,8 @@ Implementation home: `lib/conversation/`.
 | `skill-transition-policy.ts` | Deterministic allow/deny. The model may request; only the server activates. |
 | `tool-policy.ts` | Skill/mode/authorization intersection producing the per-conversation allowlist that gates every dispatch. |
 | `agent-config-assembler.ts` | Produces the one shared agent configuration consumed by text, WebRTC, and SIP. Asserts each skill/version appears exactly once. |
-| `conversation-store.ts` | Logical `conversationId`, transport session mapping, active skill/snapshot versions, sanitized turn metadata. |
-| `trace-events.ts` | Typed, sanitized trace event contract + non-blocking ring buffer + projection for the hidden trace window. |
+| `conversation-registry.ts` | Logical `conversationId`, transport session mapping, active skill/snapshot versions, and counters. Production is shared through DynamoDB; local tests use memory. |
+| `trace-events.ts` | Typed, sanitized trace event contract plus a local ring buffer and one-hour DynamoDB projection so multi-instance browser and telephone events reach the hidden trace window. |
 
 Route-to-skill selection is deterministic: `/voice-assistant` -> `public_cruise_concierge_v1`; `/deals/[id]/book` -> `deal_booking_completion_v1`; Group campaign page -> `campaign_landing_chat_v1`. `.github/skills/deal-campaign-generation` and all operator campaign tools are never loaded into a guest conversation.
 
@@ -92,6 +92,12 @@ GA contract (verified against official docs August 13, 2026):
 
 Model policy: session profiles `quality` -> `gpt-realtime-2.1`, `fast` -> `gpt-realtime-2.1-mini`, registered in `lib/ai/llm-gateway/models.ts` (`ModelName.REALTIME_QUALITY` / `ModelName.REALTIME_FAST`, tasks `voice_realtime` / `voice_realtime_fast`). Raw Realtime model IDs appear only in the gateway registry. Selection is server-side only.
 
+Function calls are collected until `response.done`. Identical calls are
+coalesced by tool id plus canonical arguments, every provider `call_id`
+receives a `function_call_output`, and the transport sends exactly one
+`response.create` for the completed batch. Sanitized Realtime error code,
+type, parameter, and event id are retained for debugging.
+
 ### 2.3 Telephone transport (SIP)
 
 ```text
@@ -103,6 +109,12 @@ OpenAI realtime.call.incoming webhook -> Render control service (services/voice-
   -> sideband WebSocket: explicit opening response, tools, monitoring, transfer (refer), hangup
   -> sanitized journal events
 ```
+
+Live Odysseus cache misses do not launch Playwright inside Vercel. They are
+sent to the authenticated `leisure-life-odysseus-worker` Render service, which
+serializes searches through one persistent browser session. Vercel continues
+to own conversation authorization, tool policy, and the 15-minute DynamoDB
+read-through cache.
 
 - Caller ID never authenticates or attaches a draft. Resume requires the approved short-lived call-intent correlation or another authorized credential; otherwise the call is the anonymous cold-call concierge.
 - Transfer uses `POST /v1/realtime/calls/{call_id}/refer` and is narrated as successful only after the API accepts the request.

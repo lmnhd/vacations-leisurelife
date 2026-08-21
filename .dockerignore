@@ -1,0 +1,12 @@
+.git
+.next
+node_modules
+services/voice-telephony/node_modules
+.env
+.env.*
+.playwright-state.json
+test-results
+playwright-report
+coverage
+temp_unzip
+tmp

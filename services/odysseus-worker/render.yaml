@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: leisure-life-odysseus-worker
+    runtime: docker
+    plan: starter
+    region: virginia
+    dockerfilePath: ./services/odysseus-worker/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ODYSSEUS_WORKER_TOKEN
+        sync: false
+      - key: CB_EMAIL
+        sync: false
+      - key: CB_PASSWORD
+        sync: false
+      - key: ODYSSEUS_CHROME_EXECUTABLE_PATH
+        sync: false

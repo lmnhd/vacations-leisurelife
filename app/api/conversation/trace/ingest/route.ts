@@ -16,6 +16,7 @@ import { z } from "zod/v3";
 
 import { getConversation } from "@/lib/conversation/conversation-registry";
 import { ingestClientTraceEvents } from "@/lib/conversation/client-trace-ingest";
+import { flushTraceEvents } from "@/lib/conversation/trace-events";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "invalid_request_body" }, { status: 400 });
   }
 
-  const conversation = getConversation(parsed.data.conversationId);
+  const conversation = await getConversation(parsed.data.conversationId);
   if (!conversation) {
     // Unknown or expired conversation: accept quietly so a late batch from a
     // closed session never surfaces an error to the guest.
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     parsed.data.events,
     { skillId: conversation.skillId, skillVersion: conversation.skillVersion }
   );
+  await flushTraceEvents();
 
   return NextResponse.json(result);
 }

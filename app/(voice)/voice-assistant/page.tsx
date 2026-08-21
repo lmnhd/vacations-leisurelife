@@ -11,5 +11,8 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default function VoiceAssistantPage() {
-  return <VoiceAssistantExperience />;
+  const telephoneNumber =
+    process.env.NEXT_PUBLIC_VOICE_ASSISTANT_PHONE?.trim() || '+18557995436';
+
+  return <VoiceAssistantExperience telephoneNumber={telephoneNumber} />;
 }

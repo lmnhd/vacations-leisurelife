@@ -18,7 +18,11 @@ import { selectInitialSkill } from "./skill-transition-policy";
 import { buildContextSnapshot } from "./context-providers";
 import { assembleAgentConfiguration, type AgentConfiguration } from "./agent-config-assembler";
 import { createShowcaseProfile } from "./showcase-fixtures";
-import { createConversation, attachTransportSession } from "./conversation-registry";
+import {
+  createConversation,
+  attachTransportSession,
+  updateConversation,
+} from "./conversation-registry";
 import { emitTraceEvent } from "./trace-events";
 import type { ToolAuthorizationLevel } from "./tool-policy";
 import {
@@ -84,7 +88,7 @@ export async function launchVoiceConversation(input: LaunchInput): Promise<Launc
 
   const sessionProfile = envelope.sessionProfile ?? defaultProfileForChannel(envelope.channel);
 
-  const conversation = createConversation({
+  const conversation = await createConversation({
     envelope,
     authorization: input.authorization,
     skillId: skillSelection.skillId,
@@ -108,7 +112,9 @@ export async function launchVoiceConversation(input: LaunchInput): Promise<Launc
     sessionProfile,
   });
 
-  conversation.allowedToolIds = config.allowedToolIds;
+  await updateConversation(conversation.conversationId, {
+    allowedToolIds: config.allowedToolIds,
+  });
 
   emitTraceEvent(conversation.conversationId, {
     severity: "info",
@@ -202,7 +208,7 @@ export async function launchVoiceConversation(input: LaunchInput): Promise<Launc
   }
 
   if (secret.transportSessionId) {
-    attachTransportSession(
+    await attachTransportSession(
       conversation.conversationId,
       secret.transportSessionId,
       envelope.channel

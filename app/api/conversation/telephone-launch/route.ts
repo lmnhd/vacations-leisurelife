@@ -24,8 +24,9 @@ import { assembleAgentConfiguration } from "@/lib/conversation/agent-config-asse
 import {
   attachTransportSession,
   createConversation,
+  updateConversation,
 } from "@/lib/conversation/conversation-registry";
-import { emitTraceEvent } from "@/lib/conversation/trace-events";
+import { emitTraceEvent, flushTraceEvents } from "@/lib/conversation/trace-events";
 import {
   REALTIME_VOICE,
   defaultProfileForChannel,
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const snapshot = await buildContextSnapshot({ envelope, bookingDraft: null });
   const sessionProfile = defaultProfileForChannel("telephone");
 
-  const conversation = createConversation({
+  const conversation = await createConversation({
     envelope,
     authorization: "public",
     skillId: skillSelection.skillId,
@@ -86,8 +87,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     sessionProfile,
   });
 
-  conversation.allowedToolIds = config.allowedToolIds;
-  attachTransportSession(conversation.conversationId, parsed.data.callId, "telephone");
+  await updateConversation(conversation.conversationId, {
+    allowedToolIds: config.allowedToolIds,
+  });
+  await attachTransportSession(conversation.conversationId, parsed.data.callId, "telephone");
 
   emitTraceEvent(conversation.conversationId, {
     severity: "info",
@@ -105,6 +108,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   });
 
   const model = resolveRealtimeModel(sessionProfile);
+  await flushTraceEvents();
 
   return NextResponse.json({
     conversationId: conversation.conversationId,

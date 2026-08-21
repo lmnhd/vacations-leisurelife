@@ -24,6 +24,7 @@ import {
   type CallIntentRecord,
 } from "../services/voice-telephony/src/call-policy.ts";
 import { buildCallOpeningResponse } from "../services/voice-telephony/src/call-opening.ts";
+import { canonicalToolInvocationKey } from "../services/voice-telephony/src/call-session.ts";
 
 const SECRET = "whsec_" + Buffer.from("test-secret-value-1234567890").toString("base64");
 
@@ -312,6 +313,24 @@ function testCallOpeningResponse(): void {
   console.log("  proactive call opening: ok");
 }
 
+function testToolInvocationDeduplicationKey(): void {
+  const first = canonicalToolInvocationKey(
+    "odysseus_search",
+    JSON.stringify({ startDate: "11/15/2026", passengers: 2 })
+  );
+  const reordered = canonicalToolInvocationKey(
+    "odysseus_search",
+    JSON.stringify({ passengers: 2, startDate: "11/15/2026" })
+  );
+  const different = canonicalToolInvocationKey(
+    "odysseus_search",
+    JSON.stringify({ passengers: 3, startDate: "11/15/2026" })
+  );
+  assert.equal(first, reordered, "argument key ordering must not defeat deduplication");
+  assert.notEqual(first, different, "materially different searches must remain distinct");
+  console.log("  tool invocation deduplication key: ok");
+}
+
 function run(): void {
   console.log("Telephony service checks:");
   testWebhookVerification();
@@ -321,6 +340,7 @@ function run(): void {
   testTransferAvailability();
   testEmergencyDetection();
   testCallOpeningResponse();
+  testToolInvocationDeduplicationKey();
   console.log("All telephony service checks passed.");
 }
 

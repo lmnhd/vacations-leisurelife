@@ -27,6 +27,7 @@ const PORT = Number(process.env.PORT ?? 10000);
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
 const OPENAI_WEBHOOK_SECRET = process.env.OPENAI_WEBHOOK_SECRET ?? "";
 const APP_URL = process.env.LEISURE_LIFE_APP_URL ?? "";
+const TELEPHONY_SERVICE_TOKEN = process.env.TELEPHONY_SERVICE_TOKEN ?? "";
 const TRANSFER_NUMBER = process.env.HUMAN_TRANSFER_NUMBER;
 const MAX_CALL_SECONDS = Number(process.env.MAX_CALL_SECONDS ?? 900);
 const MAX_CONCURRENT_CALLS = Number(process.env.MAX_CONCURRENT_CALLS ?? 4);
@@ -66,6 +67,7 @@ async function handleRequest(
         openaiKey: OPENAI_API_KEY.length > 0,
         webhookSecret: OPENAI_WEBHOOK_SECRET.length > 0,
         appUrl: APP_URL.length > 0,
+        telephonyToken: TELEPHONY_SERVICE_TOKEN.length > 0,
         transferConfigured: Boolean(TRANSFER_NUMBER),
       },
     });
@@ -161,6 +163,7 @@ async function setUpCall(callId: string, fromUri: string | null): Promise<void> 
   }
 
   journal("call.accepted", { callId, conversationId: configuration.conversationId });
+  void postTelephonyTrace(configuration.conversationId, "call.accepted", { callId });
 
   const session = new CallSession({
     callId,
@@ -171,7 +174,10 @@ async function setUpCall(callId: string, fromUri: string | null): Promise<void> 
     businessHours: BUSINESS_HOURS,
     maxCallSeconds: MAX_CALL_SECONDS,
     openingText: AI_DISCLOSURE_TEXT,
-    onJournal: journal,
+    onJournal: (event, detail) => {
+      journal(event, detail);
+      void postTelephonyTrace(configuration.conversationId, event, detail);
+    },
     onClosed: (endedCallId) => {
       activeSessions.delete(endedCallId);
     },
@@ -179,6 +185,26 @@ async function setUpCall(callId: string, fromUri: string | null): Promise<void> 
 
   activeSessions.set(callId, session);
   session.start();
+}
+
+async function postTelephonyTrace(
+  conversationId: string,
+  event: string,
+  detail: Record<string, string | number | boolean>
+): Promise<void> {
+  if (!APP_URL) return;
+  try {
+    await fetch(`${APP_URL}/api/conversation/trace/telephony-ingest`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-telephony-service-token": TELEPHONY_SERVICE_TOKEN,
+      },
+      body: JSON.stringify({ conversationId, event, detail }),
+    });
+  } catch {
+    // Trace transport must never interfere with a live call.
+  }
 }
 
 interface TelephonyAgentConfiguration {

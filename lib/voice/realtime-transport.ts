@@ -47,6 +47,14 @@ export interface RealtimeTransportCallbacks {
   onToolStarted?: (toolId: string, callId: string) => void;
   onToolFinished?: (toolId: string, callId: string, durationMs: number) => void;
   onError: (message: string) => void;
+  onRealtimeError?: (detail: RealtimeErrorDetail) => void;
+}
+
+export interface RealtimeErrorDetail {
+  code: string;
+  type: string;
+  param: string;
+  eventId: string;
 }
 
 export interface RealtimeTransportHandle {
@@ -104,7 +112,7 @@ export async function connectRealtimeTransport(
   };
 
   const channel = peer.createDataChannel("oai-events");
-  const pendingCalls = new Map<string, { toolId: string; args: string; startedMs: number }>();
+  const toolBatch: ToolBatchState = { pending: new Map(), flushing: false };
 
   channel.onopen = () => setState("connected");
   channel.onclose = () => setState("closed");
@@ -113,7 +121,7 @@ export async function connectRealtimeTransport(
     callbacks.onError("The voice control channel failed.");
   };
   channel.onmessage = (event: MessageEvent) => {
-    handleServerEvent(String(event.data), channel, pendingCalls, callbacks);
+    handleServerEvent(String(event.data), channel, toolBatch, callbacks);
   };
 
   const offer = await peer.createOffer();
@@ -178,7 +186,7 @@ export async function connectRealtimeTransport(
 function handleServerEvent(
   raw: string,
   channel: RTCDataChannel,
-  pendingCalls: Map<string, { toolId: string; args: string; startedMs: number }>,
+  toolBatch: ToolBatchState,
   callbacks: RealtimeTransportCallbacks
 ): void {
   let message: Record<string, unknown>;
@@ -209,7 +217,12 @@ function handleServerEvent(
     return;
   }
   if (type === "response.done") {
-    callbacks.onActivityChange("listening");
+    if (toolBatch.pending.size > 0) {
+      callbacks.onActivityChange("thinking");
+      void flushToolBatch(channel, toolBatch, callbacks);
+    } else {
+      callbacks.onActivityChange("listening");
+    }
     return;
   }
 
@@ -271,57 +284,112 @@ function handleServerEvent(
     const toolId = stringField(message, "name");
     const args = stringField(message, "arguments") ?? "{}";
     if (!callId || !toolId) return;
-    if (pendingCalls.has(callId)) return;
+    if (toolBatch.pending.has(callId)) return;
 
-    pendingCalls.set(callId, { toolId, args, startedMs: Date.now() });
+    toolBatch.pending.set(callId, { toolId, args, startedMs: Date.now() });
     callbacks.onToolStarted?.(toolId, callId);
-
-    void callbacks
-      .onToolCall({ callId, toolId, argumentsJson: args })
-      .then((resultJson) => {
-        const pending = pendingCalls.get(callId);
-        pendingCalls.delete(callId);
-        if (pending) {
-          callbacks.onToolFinished?.(toolId, callId, Date.now() - pending.startedMs);
-        }
-        if (channel.readyState !== "open") return;
-        channel.send(
-          JSON.stringify({
-            type: "conversation.item.create",
-            item: { type: "function_call_output", call_id: callId, output: resultJson },
-          })
-        );
-        channel.send(JSON.stringify({ type: "response.create" }));
-      })
-      .catch(() => {
-        pendingCalls.delete(callId);
-        if (channel.readyState !== "open") return;
-        channel.send(
-          JSON.stringify({
-            type: "conversation.item.create",
-            item: {
-              type: "function_call_output",
-              call_id: callId,
-              output: JSON.stringify({
-                error: "tool_failed",
-                guidance: "Tell the guest this lookup failed. Do not invent a result.",
-              }),
-            },
-          })
-        );
-        channel.send(JSON.stringify({ type: "response.create" }));
-      });
     return;
   }
 
   if (type === "error") {
     const errorObject = message["error"];
-    const detail =
+    const errorRecord =
       errorObject && typeof errorObject === "object"
-        ? stringField(errorObject as Record<string, unknown>, "message")
-        : null;
-    callbacks.onError(detail ?? "The voice service reported an error.");
+        ? errorObject as Record<string, unknown>
+        : {};
+    callbacks.onRealtimeError?.({
+      code: stringField(errorRecord, "code") ?? "unknown",
+      type: stringField(errorRecord, "type") ?? "unknown",
+      param: stringField(errorRecord, "param") ?? "none",
+      eventId: stringField(message, "event_id") ?? "none",
+    });
+    callbacks.onError(
+      stringField(errorRecord, "message") ?? "The voice service reported an error."
+    );
   }
+}
+
+interface PendingToolCall {
+  toolId: string;
+  args: string;
+  startedMs: number;
+}
+
+interface ToolBatchState {
+  pending: Map<string, PendingToolCall>;
+  flushing: boolean;
+}
+
+async function flushToolBatch(
+  channel: RTCDataChannel,
+  state: ToolBatchState,
+  callbacks: RealtimeTransportCallbacks
+): Promise<void> {
+  if (state.flushing || state.pending.size === 0) return;
+  state.flushing = true;
+  try {
+    const calls = [...state.pending.entries()];
+    for (const [callId] of calls) state.pending.delete(callId);
+
+    const results = new Map<string, Promise<string>>();
+    for (const [callId, call] of calls) {
+      const key = canonicalToolInvocationKey(call.toolId, call.args);
+      if (!results.has(key)) {
+        results.set(
+          key,
+          callbacks
+            .onToolCall({ callId, toolId: call.toolId, argumentsJson: call.args })
+            .catch(() =>
+              JSON.stringify({
+                error: "tool_failed",
+                guidance: "Tell the guest this lookup failed. Do not invent a result.",
+              })
+            )
+        );
+      }
+    }
+
+    for (const [callId, call] of calls) {
+      const result = await results.get(canonicalToolInvocationKey(call.toolId, call.args));
+      callbacks.onToolFinished?.(call.toolId, callId, Date.now() - call.startedMs);
+      if (channel.readyState !== "open") continue;
+      channel.send(
+        JSON.stringify({
+          type: "conversation.item.create",
+          item: {
+            type: "function_call_output",
+            call_id: callId,
+            output: result ?? JSON.stringify({ error: "tool_failed" }),
+          },
+        })
+      );
+    }
+
+    if (channel.readyState === "open") {
+      channel.send(JSON.stringify({ type: "response.create" }));
+    }
+  } finally {
+    state.flushing = false;
+  }
+}
+
+export function canonicalToolInvocationKey(toolId: string, argumentsJson: string): string {
+  let payload: unknown = argumentsJson;
+  try {
+    payload = JSON.parse(argumentsJson) as unknown;
+  } catch {
+    payload = argumentsJson;
+  }
+  return `${toolId}:${JSON.stringify(sortJsonValue(payload))}`;
+}
+
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortJsonValue);
+  if (!value || typeof value !== "object") return value;
+  const source = value as Record<string, unknown>;
+  const sorted: Record<string, unknown> = {};
+  for (const key of Object.keys(source).sort()) sorted[key] = sortJsonValue(source[key]);
+  return sorted;
 }
 
 function stringField(source: Record<string, unknown>, key: string): string | null {

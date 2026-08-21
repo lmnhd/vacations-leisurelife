@@ -13,6 +13,7 @@ import { launchVoiceConversation } from "@/lib/conversation/session-launcher";
 import { BOOKING_GUEST_SESSION_COOKIE } from "@/lib/booking-assistant/resume-tokens";
 import { requireGuestDraftSession } from "@/lib/booking-assistant/guest-authorization";
 import type { ToolAuthorizationLevel } from "@/lib/conversation/tool-policy";
+import { flushTraceEvents } from "@/lib/conversation/trace-events";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     bookingDraftId,
     personId,
   });
+  await flushTraceEvents();
 
   return NextResponse.json(result.body, { status: result.status });
 }
