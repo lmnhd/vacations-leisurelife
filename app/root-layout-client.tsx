@@ -2,6 +2,7 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { Suspense, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import Loading from "./(dashboard)/loading";
 
 import { ModalProvider } from "@/components/modal-provider";
@@ -10,6 +11,14 @@ import { CrispProvider } from "@/components/crisp-provider";
 import { BookingProvider } from "./contexts/BookingContext";
 
 export function RootLayoutClient({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+
+  // Public trip offer pages contain no authenticated or booking flows.
+  // Keep them available if the Clerk script is temporarily unreachable.
+  if (pathname?.startsWith("/trip-options/")) {
+    return <>{children}</>;
+  }
+
   return (
     <ClerkProvider>
       <CrispProvider />
