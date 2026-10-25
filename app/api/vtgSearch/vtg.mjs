@@ -6,19 +6,26 @@ import axios from "axios";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const cookies = getCookies();
-const cookie = `${cookies[4].name}=${cookies[4].value}`;
-console.log(cookie);
+function getCookieHeader() {
+  const cookies = getCookies();
+  const selectedCookie = cookies[4] ?? cookies[0];
+  if (!selectedCookie?.name || !selectedCookie?.value) {
+    return "";
+  }
+
+  return `${selectedCookie.name}=${selectedCookie.value}`;
+}
 
 export function search(
   url = "https://www.vacationstogo.com/ticker.cfm?incCT=y&sm=202311&tm=202312&r=0&l=14&s=0&n=2&d=0&v=0"
 ) {
+  const cookie = getCookieHeader();
   return new Promise((resolve, reject) => {
     axios
       .get(url, {
         headers: {
           "Content-Type": "application/json",
-          Cookie: cookie,
+          ...(cookie ? { Cookie: cookie } : {}),
         },
         //, params: params,
       })
